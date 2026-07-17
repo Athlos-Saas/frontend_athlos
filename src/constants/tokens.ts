@@ -1,5 +1,5 @@
 /**
- * ATLOS Design System — fuente única de verdad para los tokens de color.
+ * ATHLOS Design System — fuente única de verdad para los tokens de color.
  * Espejo en CSS: src/styles/globals.css (bloque @theme).
  * Se usa desde JS/TS puro (Recharts, canvas, inline styles) donde las
  * clases de Tailwind no aplican directamente.

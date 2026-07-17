@@ -1,4 +1,4 @@
-# ATLOS Design System
+# ATHLOS Design System
 
 Documentación técnica del sistema de diseño y la arquitectura frontend
 resultante de la refactorización completa del proyecto (ver historial de

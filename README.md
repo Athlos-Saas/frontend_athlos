@@ -1,4 +1,4 @@
-# ATLOS · Frontend
+# ATHLOS · Frontend
 
 Plataforma SaaS de inteligencia deportiva: **React 18 + TypeScript + Vite +
 Tailwind CSS v4 + Radix UI + Supabase JS**. Habla directo con Supabase usando

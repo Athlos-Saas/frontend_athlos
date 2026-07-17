@@ -22,7 +22,7 @@ const PLACEHOLDER_ROUTES = new Set(['/pronosticos']);
 export default function App() {
   const { session, profile, isLoading, signIn, signOut } = useAuth();
 
-  if (isLoading) return <Spinner label="Iniciando ATLOS…" className="min-h-screen" />;
+  if (isLoading) return <Spinner label="Iniciando ATHLOS…" className="min-h-screen" />;
   if (!session) return <Login onSignIn={signIn} />;
 
   if (!profile?.org_id) {
