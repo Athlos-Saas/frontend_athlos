@@ -19,7 +19,7 @@ export function Sidebar() {
     >
       <div className={cn('flex h-16 shrink-0 items-center gap-2 border-b border-border px-5', isCollapsed && 'justify-center px-0')}>
         <span className="relative flex size-8 shrink-0 items-center justify-center rounded-md bg-ai/15">
-          <img src="/images/Favicon.png" alt="" className="size-6 mix-blend-screen" />
+          <span className="size-2 rounded-full bg-ai shadow-[0_0_12px_2px_rgba(59,130,246,0.6)]" />
         </span>
         {!isCollapsed && (
           <div className="leading-tight">

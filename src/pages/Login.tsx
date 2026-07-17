@@ -114,7 +114,7 @@ export default function Login({ onSignIn }: LoginProps) {
         <div className="relative w-full max-w-sm">
           <div className="mb-7 flex items-center gap-2 lg:hidden">
             <span className="flex size-9 items-center justify-center rounded-md bg-ai/15">
-              <img src="/images/Favicon.png" alt="" className="size-7 mix-blend-screen" />
+              <span className="size-2.5 rounded-full bg-ai shadow-[0_0_12px_2px_rgba(59,130,246,0.6)]" />
             </span>
             <span className="text-2xl font-bold tracking-wide text-foreground">ATHLOS</span>
           </div>
