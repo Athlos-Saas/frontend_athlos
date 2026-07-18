@@ -5,6 +5,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { ModulePlaceholder } from '@/components/dashboard/ModulePlaceholder';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
+import { MODULE_PREVIEWS } from '@/constants/modulePreviews';
 import { NAV_ITEMS_FLAT } from '@/constants/navigation';
 
 import { useAuth } from './hooks/useAuth';
@@ -55,19 +56,24 @@ export default function App() {
           <Route path="/modelos" element={<ModelosIa orgId={orgId} />} />
           <Route path="/ai" element={<AiIntelligenceCenter orgId={orgId} />} />
 
-          {NAV_ITEMS_FLAT.filter((item) => item.comingSoon || PLACEHOLDER_ROUTES.has(item.to)).map((item) => (
-            <Route
-              key={item.to}
-              path={item.to}
-              element={
-                <ModulePlaceholder
-                  title={item.label}
-                  icon={item.icon}
-                  description={`Vista de ${item.label.toLowerCase()} para tu organización.`}
-                />
-              }
-            />
-          ))}
+          {NAV_ITEMS_FLAT.filter((item) => item.comingSoon || PLACEHOLDER_ROUTES.has(item.to)).map((item) => {
+            const preview = MODULE_PREVIEWS[item.to];
+            return (
+              <Route
+                key={item.to}
+                path={item.to}
+                element={
+                  <ModulePlaceholder
+                    title={item.label}
+                    icon={item.icon}
+                    description={preview?.description ?? `Vista de ${item.label.toLowerCase()} para tu organización.`}
+                    bullets={preview?.bullets}
+                    kpis={preview?.kpis}
+                  />
+                }
+              />
+            );
+          })}
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
