@@ -1,4 +1,4 @@
-import { Bell, ChevronDown, Globe, LogOut, Moon, Search, Settings, User } from 'lucide-react';
+import { Bell, ChevronDown, Globe, LogOut, Menu, Moon, Search, Settings, User } from 'lucide-react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
@@ -22,6 +22,7 @@ export interface HeaderProfile {
 export interface HeaderProps {
   profile: HeaderProfile;
   onSignOut: () => void;
+  onOpenMobileNav: () => void;
 }
 
 const SEASONS = ['2026', '2025', '2024'];
@@ -33,26 +34,36 @@ function initials(name?: string | null) {
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || 'AT';
 }
 
-export function Header({ profile, onSignOut }: HeaderProps) {
+export function Header({ profile, onSignOut, onOpenMobileNav }: HeaderProps) {
   const setCommandPaletteOpen = useUiStore((state) => state.setCommandPaletteOpen);
 
   return (
-    <header className="glass sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border px-6">
+    <header className="glass sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-border px-4 sm:gap-3 sm:px-6">
+      <button
+        type="button"
+        onClick={onOpenMobileNav}
+        aria-label="Abrir menú de navegación"
+        className="focus-ring flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-panel hover:text-foreground lg:hidden"
+      >
+        <Menu className="size-5" aria-hidden="true" />
+      </button>
+
       <button
         type="button"
         onClick={() => setCommandPaletteOpen(true)}
+        aria-label="Buscar módulos, atletas, equipos"
         className="focus-ring flex h-9 w-full max-w-sm items-center gap-2 rounded-md border border-border bg-panel px-3 text-left text-sm text-muted-foreground transition-colors hover:border-ai/30 hover:text-foreground"
       >
-        <Search className="size-4" aria-hidden="true" />
-        <span className="flex-1 truncate">Buscar módulos, atletas, equipos…</span>
-        <kbd className="rounded border border-border bg-bg px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+        <Search className="size-4 shrink-0" aria-hidden="true" />
+        <span className="hidden flex-1 truncate sm:block">Buscar módulos, atletas, equipos…</span>
+        <kbd className="hidden rounded border border-border bg-bg px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground sm:block">
           ⌘K
         </kbd>
       </button>
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-1 sm:gap-2">
         <Select defaultValue={SEASONS[0]}>
-          <SelectTrigger aria-label="Temporada" className="h-9 w-[92px]">
+          <SelectTrigger aria-label="Temporada" className="hidden h-9 w-[92px] md:flex">
             <SelectValue placeholder="Temporada" />
           </SelectTrigger>
           <SelectContent>
@@ -65,7 +76,7 @@ export function Header({ profile, onSignOut }: HeaderProps) {
         </Select>
 
         <Select defaultValue={SPORTS[0]}>
-          <SelectTrigger aria-label="Deporte" className="h-9 w-[130px]">
+          <SelectTrigger aria-label="Deporte" className="hidden h-9 w-[130px] md:flex">
             <SelectValue placeholder="Deporte" />
           </SelectTrigger>
           <SelectContent>
@@ -77,7 +88,7 @@ export function Header({ profile, onSignOut }: HeaderProps) {
           </SelectContent>
         </Select>
 
-        <div className="mx-1 h-6 w-px bg-border" aria-hidden="true" />
+        <div className="mx-1 hidden h-6 w-px bg-border md:block" aria-hidden="true" />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -104,7 +115,7 @@ export function Header({ profile, onSignOut }: HeaderProps) {
               type="button"
               aria-label="Tema (modo claro próximamente)"
               disabled
-              className="focus-ring flex size-9 items-center justify-center rounded-md text-muted-foreground opacity-50"
+              className="focus-ring hidden size-9 items-center justify-center rounded-md text-muted-foreground opacity-50 sm:flex"
             >
               <Moon className="size-4" aria-hidden="true" />
             </button>
@@ -118,7 +129,7 @@ export function Header({ profile, onSignOut }: HeaderProps) {
               type="button"
               aria-label="Idioma (Español)"
               disabled
-              className="focus-ring flex size-9 items-center justify-center rounded-md text-muted-foreground opacity-50"
+              className="focus-ring hidden size-9 items-center justify-center rounded-md text-muted-foreground opacity-50 sm:flex"
             >
               <Globe className="size-4" aria-hidden="true" />
             </button>
@@ -126,7 +137,7 @@ export function Header({ profile, onSignOut }: HeaderProps) {
           <TooltipContent>Español — más idiomas próximamente</TooltipContent>
         </Tooltip>
 
-        <div className="mx-1 h-6 w-px bg-border" aria-hidden="true" />
+        <div className="mx-1 hidden h-6 w-px bg-border sm:block" aria-hidden="true" />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

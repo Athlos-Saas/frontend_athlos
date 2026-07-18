@@ -29,7 +29,7 @@ export function CommandPalette({ open, onOpenChange, groups, placeholder = 'Busc
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="animate-fade-in fixed inset-0 z-50 bg-bg/70 backdrop-blur-sm" />
         <DialogPrimitive.Content
-          className="animate-slide-up glass fixed left-1/2 top-24 z-50 w-full max-w-xl -translate-x-1/2 overflow-hidden rounded-lg border border-border shadow-elevated focus:outline-none"
+          className="animate-slide-up glass fixed left-1/2 top-24 z-50 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 overflow-hidden rounded-lg border border-border shadow-elevated focus:outline-none"
           aria-describedby={undefined}
         >
           <DialogPrimitive.Title className="sr-only">Buscador inteligente</DialogPrimitive.Title>

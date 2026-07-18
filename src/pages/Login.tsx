@@ -112,11 +112,8 @@ export default function Login({ onSignIn }: LoginProps) {
         />
 
         <div className="relative w-full max-w-sm">
-          <div className="mb-7 flex items-center gap-2 lg:hidden">
-            <span className="flex size-9 items-center justify-center rounded-md bg-ai/15">
-              <span className="size-2.5 rounded-full bg-ai shadow-[0_0_12px_2px_rgba(59,130,246,0.6)]" />
-            </span>
-            <span className="text-2xl font-bold tracking-wide text-foreground">ATHLOS</span>
+          <div className="mb-7 lg:hidden">
+            <img src="/images/Logo.png" alt="ATHLOS" className="h-16 w-auto mix-blend-screen" />
           </div>
 
           <h2 className="text-xl font-semibold text-foreground">Bienvenido de nuevo</h2>

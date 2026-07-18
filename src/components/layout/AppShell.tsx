@@ -1,7 +1,8 @@
-import { useEffect, useMemo } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { CommandPalette } from '@/components/ui/CommandPalette';
+import { Drawer, DrawerContent } from '@/components/ui/Drawer';
 import { Toaster } from '@/components/ui/Toast';
 import { TooltipProvider } from '@/components/ui/Tooltip';
 import { NAV_SECTIONS } from '@/constants/navigation';
@@ -9,7 +10,7 @@ import { useUiStore } from '@/store/uiStore';
 import { cn } from '@/utils/cn';
 
 import { Header, type HeaderProfile } from './Header';
-import { Sidebar } from './Sidebar';
+import { Sidebar, SidebarNavContent } from './Sidebar';
 
 export interface AppShellProps {
   profile: HeaderProfile;
@@ -20,7 +21,13 @@ export function AppShell({ profile, onSignOut }: AppShellProps) {
   const isCollapsed = useUiStore((state) => state.isSidebarCollapsed);
   const isCommandPaletteOpen = useUiStore((state) => state.isCommandPaletteOpen);
   const setCommandPaletteOpen = useUiStore((state) => state.setCommandPaletteOpen);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    setIsMobileNavOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -57,15 +64,29 @@ export function AppShell({ profile, onSignOut }: AppShellProps) {
       </a>
       <div className="min-h-screen bg-bg">
         <Sidebar />
-        <div className={cn('flex min-h-screen flex-col transition-[margin] duration-200', isCollapsed ? 'ml-[76px]' : 'ml-64')}>
-          <Header profile={profile} onSignOut={onSignOut} />
-          <main id="main-content" tabIndex={-1} className="flex-1 px-6 py-6 focus:outline-none lg:px-8 lg:py-8">
+        <div
+          className={cn(
+            'flex min-h-screen flex-col transition-[margin] duration-200',
+            isCollapsed ? 'lg:ml-[76px]' : 'lg:ml-64',
+          )}
+        >
+          <Header profile={profile} onSignOut={onSignOut} onOpenMobileNav={() => setIsMobileNavOpen(true)} />
+          <main id="main-content" tabIndex={-1} className="flex-1 px-4 py-6 focus:outline-none sm:px-6 lg:px-8 lg:py-8">
             <div className="mx-auto w-full max-w-[1400px]">
               <Outlet />
             </div>
           </main>
         </div>
       </div>
+
+      <Drawer open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
+        <DrawerContent side="left" className="w-72 p-0 lg:hidden">
+          <div className="flex h-full flex-col">
+            <SidebarNavContent isCollapsed={false} onNavigate={() => setIsMobileNavOpen(false)} />
+          </div>
+        </DrawerContent>
+      </Drawer>
+
       <CommandPalette open={isCommandPaletteOpen} onOpenChange={setCommandPaletteOpen} groups={commandGroups} />
       <Toaster />
     </TooltipProvider>

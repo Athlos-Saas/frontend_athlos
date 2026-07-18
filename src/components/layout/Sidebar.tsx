@@ -5,28 +5,20 @@ import { cn } from '@/utils/cn';
 import { NAV_SECTIONS } from '@/constants/navigation';
 import { useUiStore } from '@/store/uiStore';
 
-export function Sidebar() {
-  const isCollapsed = useUiStore((state) => state.isSidebarCollapsed);
-  const toggleSidebar = useUiStore((state) => state.toggleSidebar);
+export interface SidebarNavContentProps {
+  isCollapsed: boolean;
+  onNavigate?: () => void;
+}
 
+export function SidebarNavContent({ isCollapsed, onNavigate }: SidebarNavContentProps) {
   return (
-    <aside
-      aria-label="Barra lateral"
-      className={cn(
-        'fixed inset-y-0 left-0 z-30 flex flex-col border-r border-border bg-panel transition-[width] duration-200',
-        isCollapsed ? 'w-[76px]' : 'w-64',
-      )}
-    >
-      <div className={cn('flex h-16 shrink-0 items-center gap-2 border-b border-border px-5', isCollapsed && 'justify-center px-0')}>
-        <span className="relative flex size-8 shrink-0 items-center justify-center rounded-md bg-ai/15">
-          <span className="size-2 rounded-full bg-ai shadow-[0_0_12px_2px_rgba(59,130,246,0.6)]" />
-        </span>
-        {!isCollapsed && (
-          <div className="leading-tight">
-            <p className="text-sm font-bold tracking-wide text-foreground">ATHLOS</p>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Sport Intelligence</p>
-          </div>
-        )}
+    <>
+      <div className={cn('flex h-20 shrink-0 items-center border-b border-border px-5', isCollapsed && 'justify-center px-0')}>
+        <img
+          src="/images/Logo.png"
+          alt="ATHLOS"
+          className={cn('w-auto mix-blend-screen', isCollapsed ? 'h-11' : 'h-14')}
+        />
       </div>
 
       <nav id="main-navigation" aria-label="Navegación principal" className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
@@ -45,6 +37,7 @@ export function Sidebar() {
                     end={item.to === '/'}
                     title={isCollapsed ? item.label : undefined}
                     aria-label={isCollapsed ? item.label : undefined}
+                    onClick={onNavigate}
                     className={({ isActive }) =>
                       cn(
                         'focus-ring group flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors',
@@ -71,6 +64,23 @@ export function Sidebar() {
           </div>
         ))}
       </nav>
+    </>
+  );
+}
+
+export function Sidebar() {
+  const isCollapsed = useUiStore((state) => state.isSidebarCollapsed);
+  const toggleSidebar = useUiStore((state) => state.toggleSidebar);
+
+  return (
+    <aside
+      aria-label="Barra lateral"
+      className={cn(
+        'fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-border bg-panel transition-[width] duration-200 lg:flex',
+        isCollapsed ? 'w-[76px]' : 'w-64',
+      )}
+    >
+      <SidebarNavContent isCollapsed={isCollapsed} />
 
       <div className="border-t border-border p-3">
         <button
