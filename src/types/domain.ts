@@ -31,6 +31,7 @@ export interface Player {
 }
 
 export interface GpsSession {
+  id: string;
   session_date: string;
   distance_km: number;
   sprint_distance_m: number;
@@ -39,6 +40,7 @@ export interface GpsSession {
 }
 
 export interface LeagueAttackerStat {
+  id: string;
   player_name: string;
   team_name: string;
   goals: number;
@@ -47,6 +49,7 @@ export interface LeagueAttackerStat {
 }
 
 export interface LeagueGoalkeeperStat {
+  id: string;
   player_name: string;
   team_name: string;
   gaa: number | null;
@@ -64,6 +67,7 @@ export interface ConferenceBenchmark {
 }
 
 export interface Injury {
+  id: string;
   player_id: string;
   severity: 'minor' | 'moderate' | 'severe';
   notes: string | null;

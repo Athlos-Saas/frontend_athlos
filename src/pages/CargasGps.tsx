@@ -1,23 +1,29 @@
 import { useEffect, useState } from 'react';
 import { Activity, AlertTriangle, Gauge } from 'lucide-react';
 
+import { Trash2 } from 'lucide-react';
+
 import { ComparisonBarChart } from '@/components/charts/ComparisonBarChart';
 import { TrendLineChart } from '@/components/charts/TrendLineChart';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ChartCard } from '@/components/ui/ChartCard';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Spinner } from '@/components/ui/Spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
 import { ImportDialog } from '@/components/import/ImportDialog';
+import { ImportHistory } from '@/components/import/ImportHistory';
 import { colors } from '@/constants/tokens';
 import { supabase } from '@/lib/supabase';
-import { parseCatapult } from '@/lib/importers/catapult';
+import { parseCatapult, validateCatapult } from '@/lib/importers/catapult';
 import { downloadCatapultTemplate } from '@/lib/importers/templates';
 import { getOrCreatePlayers } from '@/lib/importers/playerLookup';
 import { useTeamSelection } from '@/lib/importers/useTeamSelection';
+import { toast } from '@/store/toastStore';
 import { canWrite } from '@/utils/permissions';
 import type { GpsSession, MlPrediction, Player } from '@/types/domain';
 
@@ -60,7 +66,7 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
     Promise.all([
       supabase
         .from('gps_sessions')
-        .select('session_date, distance_km, sprint_distance_m, top_speed_kmh, player_load')
+        .select('id, session_date, distance_km, sprint_distance_m, top_speed_kmh, player_load')
         .eq('player_id', selectedPlayerId)
         .order('session_date'),
       supabase
@@ -104,6 +110,16 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
     return { written: rows.length, skipped: parsedSessions.length - rows.length, warnings: [] };
   };
 
+  const handleDeleteSession = async (sessionId: string) => {
+    const { error } = await supabase.from('gps_sessions').delete().eq('id', sessionId);
+    if (error) {
+      toast({ title: 'No se pudo eliminar la sesión', description: error.message, variant: 'danger' });
+      return;
+    }
+    toast({ title: 'Sesión eliminada', variant: 'success' });
+    setReloadToken((n) => n + 1);
+  };
+
   if (hasError) return <ErrorState onRetry={() => window.location.reload()} />;
   if (players === null) return <Spinner />;
 
@@ -133,6 +149,7 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
               </Select>
             )}
             <ImportDialog
+              orgId={orgId}
               triggerLabel="Importar sesiones GPS (Catapult)"
               title="Importar sesiones GPS"
               description="Sube el export CSV de Catapult (columnas Player Name, Player Load, Distance (km)...)."
@@ -141,12 +158,15 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
               disabled={!teamId}
               parse={parseCatapult}
               describePreview={(parsed) => `Detecté ${parsed.length} sesiones.`}
+              validate={validateCatapult}
               onConfirm={handleCatapultImport}
               onDownloadTemplate={downloadCatapultTemplate}
             />
           </div>
         )}
       </div>
+
+      {canWrite(role) && <ImportHistory orgId={orgId} kind="catapult" reloadToken={reloadToken} />}
 
       {players.length === 0 ? (
         <EmptyState icon={Activity} title="Aún no hay jugadores" description="Corre el seed del backend para poblar la organización." />
@@ -178,6 +198,51 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
                 <ComparisonBarChart data={sessions} xKey="session_date" yKey="top_speed_kmh" name="Vel. máx" color={colors.blue} />
               </ChartCard>
             </div>
+          )}
+
+          {sessions.length > 0 && (
+            <Card className="mb-5">
+              <CardHeader>
+                <CardTitle>Sesiones</CardTitle>
+              </CardHeader>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead className="text-right">Distancia (km)</TableHead>
+                    <TableHead className="text-right">Player Load</TableHead>
+                    <TableHead className="text-right">Vel. máx (km/h)</TableHead>
+                    {canWrite(role) && <TableHead className="w-10" />}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sessions.map((session) => (
+                    <TableRow key={session.id}>
+                      <TableCell className="text-muted-foreground">{session.session_date}</TableCell>
+                      <TableCell className="text-right">{session.distance_km?.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">{session.player_load?.toFixed(0)}</TableCell>
+                      <TableCell className="text-right">{session.top_speed_kmh?.toFixed(1)}</TableCell>
+                      {canWrite(role) && (
+                        <TableCell className="text-right">
+                          <ConfirmDialog
+                            trigger={
+                              <Button variant="ghost" size="icon">
+                                <Trash2 className="size-4" aria-hidden="true" />
+                                <span className="sr-only">Eliminar</span>
+                              </Button>
+                            }
+                            title="¿Eliminar esta sesión?"
+                            description="Se borra la sesión GPS completa (todas sus columnas y zonas). Si el dato está mal, puedes reimportar el archivo corregido después."
+                            confirmLabel="Eliminar"
+                            onConfirm={() => handleDeleteSession(session.id)}
+                          />
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
           )}
 
           <Card>

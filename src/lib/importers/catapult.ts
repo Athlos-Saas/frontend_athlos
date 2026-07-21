@@ -196,3 +196,21 @@ export function parseCatapult(workbook: WorkBook): CatapultSessionRow[] {
 
   return rows;
 }
+
+/** Rangos plausibles para una sesión GPS; no bloquean el import, solo avisan. */
+export function validateCatapult(rows: CatapultSessionRow[]): string[] {
+  const warnings: string[] = [];
+  for (const row of rows) {
+    const label = `${row.player_name} (${row.session_date})`;
+    if (row.distance_km !== null && (row.distance_km < 0 || row.distance_km > 20)) {
+      warnings.push(`${label}: distancia ${row.distance_km}km fuera de lo esperado (0-20km).`);
+    }
+    if (row.top_speed_kmh !== null && (row.top_speed_kmh < 0 || row.top_speed_kmh > 45)) {
+      warnings.push(`${label}: velocidad máx ${row.top_speed_kmh}km/h fuera de lo esperado (0-45km/h).`);
+    }
+    if (row.duration_s !== null && row.duration_s <= 0) {
+      warnings.push(`${label}: duración ${row.duration_s}s inválida.`);
+    }
+  }
+  return warnings;
+}

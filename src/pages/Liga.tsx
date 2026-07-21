@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ShieldHalf, Trophy } from 'lucide-react';
+import { Pencil, ShieldHalf, Trash2, Trophy } from 'lucide-react';
 
 import { BenchmarkBarChart } from '@/components/charts/BenchmarkBarChart';
 import { ComparisonBarChart } from '@/components/charts/ComparisonBarChart';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ChartCard } from '@/components/ui/ChartCard';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Field } from '@/components/ui/Field';
@@ -13,12 +16,28 @@ import { Input } from '@/components/ui/Input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { DataTable, type DataTableColumn, type DataTableFilter } from '@/components/tables/DataTable';
 import { ImportDialog } from '@/components/import/ImportDialog';
+import { ImportHistory } from '@/components/import/ImportHistory';
 import { colors } from '@/constants/tokens';
 import { supabase } from '@/lib/supabase';
-import { parseConferenceStats } from '@/lib/importers/conferenceStats';
+import { parseConferenceStats, validateConferenceStats } from '@/lib/importers/conferenceStats';
 import { downloadConferenceTemplate } from '@/lib/importers/templates';
+import { matchPlayerId } from '@/lib/importers/nameMatching';
+import { toast } from '@/store/toastStore';
 import { canWrite } from '@/utils/permissions';
-import type { ConferenceBenchmark, LeagueAttackerStat, LeagueGoalkeeperStat } from '@/types/domain';
+import type { ConferenceBenchmark, LeagueAttackerStat, LeagueGoalkeeperStat, Player } from '@/types/domain';
+
+interface EditableField {
+  key: string;
+  label: string;
+  value: number;
+}
+
+interface EditingRow {
+  table: 'league_attacker_stats' | 'league_goalkeeper_stats';
+  id: string;
+  title: string;
+  fields: EditableField[];
+}
 
 type LoadState = 'loading' | 'error' | 'ready';
 
@@ -107,12 +126,14 @@ function roleDistribution<T extends { role_name?: string | null; gk_role?: strin
 export default function Liga({ orgId, role }: { orgId: string; role: string | null }) {
   const [season, setSeason] = useState('2025');
   const [competition, setCompetition] = useState('SAC');
+  const [homeTeamName, setHomeTeamName] = useState('');
   const [attackers, setAttackers] = useState<LeagueAttackerStat[]>([]);
   const [goalkeepers, setGoalkeepers] = useState<LeagueGoalkeeperStat[]>([]);
   const [attackerBenchmarks, setAttackerBenchmarks] = useState<ConferenceBenchmark[]>([]);
   const [goalkeeperBenchmarks, setGoalkeeperBenchmarks] = useState<ConferenceBenchmark[]>([]);
   const [state, setState] = useState<LoadState>('loading');
   const [reloadToken, setReloadToken] = useState(0);
+  const [editingRow, setEditingRow] = useState<EditingRow | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -120,14 +141,14 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
     Promise.all([
       supabase
         .from('league_attacker_stats')
-        .select('player_name, team_name, goals, proba_top_scorer, role_name')
+        .select('id, player_name, team_name, goals, proba_top_scorer, role_name')
         .eq('org_id', orgId)
         .eq('season', season)
         .order('proba_top_scorer', { ascending: false, nullsFirst: false })
         .limit(30),
       supabase
         .from('league_goalkeeper_stats')
-        .select('player_name, team_name, gaa, save_pct, gk_role')
+        .select('id, player_name, team_name, gaa, save_pct, gk_role')
         .eq('org_id', orgId)
         .eq('season', season)
         .order('gaa', { ascending: true, nullsFirst: false })
@@ -178,8 +199,34 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
   );
 
   const handleConferenceImport = async (parsed: ReturnType<typeof parseConferenceStats>) => {
-    const attackerRows = parsed.attackers.map((row) => ({ org_id: orgId, season, competition, ...row }));
-    const goalkeeperRows = parsed.goalkeepers.map((row) => ({ org_id: orgId, season, competition, ...row }));
+    const { data: roster, error: rosterError } = await supabase
+      .from('players')
+      .select('id, full_name')
+      .eq('org_id', orgId);
+    if (rosterError) throw rosterError;
+    const players: Player[] = roster ?? [];
+
+    // Solo se intenta resolver player_id para filas del equipo propio: un
+    // rival con el mismo (inicial, apellido) que un jugador propio produce
+    // un match falso (dos personas distintas), así que sin homeTeamName no
+    // se matchea nada (más seguro que matchear todo).
+    const isHomeTeam = (teamName: string) =>
+      homeTeamName.trim().length > 0 && teamName.trim().toLowerCase() === homeTeamName.trim().toLowerCase();
+
+    const attackerRows = parsed.attackers.map((row) => ({
+      org_id: orgId,
+      season,
+      competition,
+      player_id: isHomeTeam(row.team_name) ? matchPlayerId(row.player_name, players) : null,
+      ...row,
+    }));
+    const goalkeeperRows = parsed.goalkeepers.map((row) => ({
+      org_id: orgId,
+      season,
+      competition,
+      player_id: isHomeTeam(row.team_name) ? matchPlayerId(row.player_name, players) : null,
+      ...row,
+    }));
 
     if (attackerRows.length > 0) {
       const { error } = await supabase
@@ -202,6 +249,71 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
     };
   };
 
+  const handleSaveRow = async (values: Record<string, number>) => {
+    if (!editingRow) return;
+    const { error } = await supabase.from(editingRow.table).update(values).eq('id', editingRow.id);
+    if (error) {
+      toast({ title: 'No se pudo guardar', description: error.message, variant: 'danger' });
+      return;
+    }
+    toast({ title: 'Fila actualizada', variant: 'success' });
+    setEditingRow(null);
+    setReloadToken((n) => n + 1);
+  };
+
+  const handleDeleteRow = async (table: EditingRow['table'], id: string) => {
+    const { error } = await supabase.from(table).delete().eq('id', id);
+    if (error) {
+      toast({ title: 'No se pudo eliminar', description: error.message, variant: 'danger' });
+      return;
+    }
+    toast({ title: 'Fila eliminada', variant: 'success' });
+    setReloadToken((n) => n + 1);
+  };
+
+  const rowActions = (row: LeagueAttackerStat | LeagueGoalkeeperStat, table: EditingRow['table']) => {
+    if (!canWrite(role)) return null;
+    const isAttacker = table === 'league_attacker_stats';
+    return (
+      <div className="flex justify-end gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() =>
+            setEditingRow(
+              isAttacker
+                ? { table, id: row.id, title: row.player_name, fields: [{ key: 'goals', label: 'Goles', value: (row as LeagueAttackerStat).goals }] }
+                : {
+                    table,
+                    id: row.id,
+                    title: row.player_name,
+                    fields: [
+                      { key: 'gaa', label: 'GAA', value: (row as LeagueGoalkeeperStat).gaa ?? 0 },
+                      { key: 'save_pct', label: '% atajadas (0-1)', value: (row as LeagueGoalkeeperStat).save_pct ?? 0 },
+                    ],
+                  },
+            )
+          }
+        >
+          <Pencil className="size-4" aria-hidden="true" />
+          <span className="sr-only">Editar</span>
+        </Button>
+        <ConfirmDialog
+          trigger={
+            <Button variant="ghost" size="icon">
+              <Trash2 className="size-4" aria-hidden="true" />
+              <span className="sr-only">Eliminar</span>
+            </Button>
+          }
+          title={`¿Eliminar a ${row.player_name}?`}
+          description="Se borra esta fila de stats de liga. No afecta al jugador en el roster ni sus sesiones GPS."
+          confirmLabel="Eliminar"
+          onConfirm={() => handleDeleteRow(table, row.id)}
+        />
+      </div>
+    );
+  };
+
   if (state === 'error') return <ErrorState onRetry={() => setReloadToken((n) => n + 1)} />;
 
   return (
@@ -221,21 +333,35 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
           <Field label="Competición" htmlFor="competition" className="max-w-[160px]">
             <Input id="competition" value={competition} onChange={(event) => setCompetition(event.target.value)} />
           </Field>
+          {canWrite(role) && (
+            <Field
+              label="Equipo propio"
+              htmlFor="home-team-name"
+              hint="Como aparece en la columna Team del Excel, ej. 'John Brown'"
+              className="max-w-[220px]"
+            >
+              <Input id="home-team-name" value={homeTeamName} onChange={(event) => setHomeTeamName(event.target.value)} />
+            </Field>
+          )}
         </div>
         {canWrite(role) && (
           <ImportDialog
+            orgId={orgId}
             triggerLabel="Importar stats de conferencia (Excel)"
             title="Importar stats de conferencia"
-            description="Sube el Excel con las hojas Game-Scoring, Game-Shooting, Game-Goalkepeer, Season-Scoring, Season-Shooting, Season-Misc y Season-Goalkepeer."
+            description="Sube el Excel con las hojas Game-Scoring, Game-Shooting, Game-Goalkepeer, Season-Scoring, Season-Shooting, Season-Misc y Season-Goalkepeer. Completa 'Equipo propio' para vincular tus jugadores con sus stats de liga."
             accept=".xlsx"
             expectedKind="conference"
             parse={parseConferenceStats}
             describePreview={(parsed) => `Detecté ${parsed.attackers.length} atacantes y ${parsed.goalkeepers.length} porteros.`}
+            validate={validateConferenceStats}
             onConfirm={handleConferenceImport}
             onDownloadTemplate={downloadConferenceTemplate}
           />
         )}
       </div>
+
+      {canWrite(role) && <ImportHistory orgId={orgId} kind="conference" reloadToken={reloadToken} />}
 
       <Tabs defaultValue="atacantes">
         <TabsList>
@@ -258,12 +384,13 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
                 <DataTable
                   columns={ATTACKER_COLUMNS}
                   data={attackers}
-                  getRowId={(row) => `${row.player_name}-${row.team_name}`}
+                  getRowId={(row) => row.id}
                   isLoading={state === 'loading'}
                   searchPlaceholder="Buscar jugador o equipo…"
                   filters={roleFilter.options.length > 1 ? [roleFilter] : undefined}
                   exportFileName={`liga-goleadores-${season}.csv`}
                   pageSize={10}
+                  rowActions={canWrite(role) ? (row) => rowActions(row, 'league_attacker_stats') : undefined}
                 />
               </Card>
 
@@ -320,11 +447,12 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
                 <DataTable
                   columns={GOALKEEPER_COLUMNS}
                   data={goalkeepers}
-                  getRowId={(row) => `${row.player_name}-${row.team_name}`}
+                  getRowId={(row) => row.id}
                   isLoading={state === 'loading'}
                   searchPlaceholder="Buscar jugador o equipo…"
                   exportFileName={`liga-porteros-${season}.csv`}
                   pageSize={10}
+                  rowActions={canWrite(role) ? (row) => rowActions(row, 'league_goalkeeper_stats') : undefined}
                 />
               </Card>
 
@@ -366,6 +494,62 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
           )}
         </TabsContent>
       </Tabs>
+
+      <EditRowDialog editingRow={editingRow} onClose={() => setEditingRow(null)} onSave={handleSaveRow} />
     </div>
+  );
+}
+
+function EditRowDialog({
+  editingRow,
+  onClose,
+  onSave,
+}: {
+  editingRow: EditingRow | null;
+  onClose: () => void;
+  onSave: (values: Record<string, number>) => Promise<void>;
+}) {
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (editingRow) {
+      setValues(Object.fromEntries(editingRow.fields.map((field) => [field.key, String(field.value)])));
+    }
+  }, [editingRow]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    await onSave(Object.fromEntries(Object.entries(values).map(([key, value]) => [key, Number(value)])));
+    setIsSaving(false);
+  };
+
+  return (
+    <Dialog open={!!editingRow} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar {editingRow?.title}</DialogTitle>
+        </DialogHeader>
+        {editingRow?.fields.map((field) => (
+          <Field key={field.key} label={field.label} htmlFor={`edit-${field.key}`}>
+            <Input
+              id={`edit-${field.key}`}
+              type="number"
+              step="any"
+              value={values[field.key] ?? ''}
+              onChange={(event) => setValues((current) => ({ ...current, [field.key]: event.target.value }))}
+            />
+          </Field>
+        ))}
+        <DialogFooter>
+          <Button variant="secondary" size="sm" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button size="sm" isLoading={isSaving} onClick={handleSave}>
+            Guardar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

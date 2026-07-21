@@ -1,12 +1,18 @@
 import { useEffect, useState } from 'react';
-import { BrainCircuit } from 'lucide-react';
+import { BrainCircuit, RefreshCw } from 'lucide-react';
 
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { Field } from '@/components/ui/Field';
+import { Input } from '@/components/ui/Input';
 import { DataTable, type DataTableColumn } from '@/components/tables/DataTable';
+import { getBackendUrl, triggerTraining } from '@/lib/backendApi';
 import { supabase } from '@/lib/supabase';
+import { toast } from '@/store/toastStore';
+import { canWrite } from '@/utils/permissions';
 import type { MlModel } from '@/types/domain';
 
 type LoadState = 'loading' | 'error' | 'ready';
@@ -38,10 +44,13 @@ const COLUMNS: DataTableColumn<MlModel>[] = [
   },
 ];
 
-export default function ModelosIa({ orgId }: { orgId: string }) {
+export default function ModelosIa({ orgId, role }: { orgId: string; role: string | null }) {
   const [models, setModels] = useState<MlModel[]>([]);
   const [state, setState] = useState<LoadState>('loading');
   const [reloadToken, setReloadToken] = useState(0);
+  const [season, setSeason] = useState(String(new Date().getFullYear()));
+  const [isTraining, setIsTraining] = useState(false);
+  const backendUrl = getBackendUrl();
 
   useEffect(() => {
     let isMounted = true;
@@ -66,16 +75,64 @@ export default function ModelosIa({ orgId }: { orgId: string }) {
     };
   }, [orgId, reloadToken]);
 
+  const handleRetrain = async () => {
+    setIsTraining(true);
+    try {
+      const physical = await triggerTraining('physical', { org_id: orgId });
+      const technical = await triggerTraining('technical', { org_id: orgId, season });
+      toast({
+        title: 'Reentrenamiento completo',
+        description: `${physical.length + technical.length} modelos actualizados.`,
+        variant: 'success',
+      });
+      setReloadToken((n) => n + 1);
+    } catch (error) {
+      toast({
+        title: 'No se pudo reentrenar',
+        description: error instanceof Error ? error.message : 'Error inesperado.',
+        variant: 'danger',
+      });
+    } finally {
+      setIsTraining(false);
+    }
+  };
+
   if (state === 'error') return <ErrorState onRetry={() => setReloadToken((n) => n + 1)} />;
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Modelos IA</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Registro de modelos entrenados por el pipeline de Machine Learning (<code>run_training.py</code>).
-        </p>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Modelos IA</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Registro de modelos entrenados por el pipeline de Machine Learning (<code>run_training.py</code>).
+          </p>
+        </div>
+        {canWrite(role) && (
+          <div className="flex items-end gap-2">
+            <Field label="Temporada" htmlFor="retrain-season" className="max-w-[140px]">
+              <Input id="retrain-season" value={season} onChange={(event) => setSeason(event.target.value)} />
+            </Field>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={!backendUrl}
+              isLoading={isTraining}
+              onClick={handleRetrain}
+              title={backendUrl ? undefined : 'Configura VITE_API_URL para habilitar esto (ver .env.example).'}
+            >
+              <RefreshCw className="size-4" aria-hidden="true" /> Reentrenar modelos
+            </Button>
+          </div>
+        )}
       </div>
+
+      {canWrite(role) && !backendUrl && (
+        <p className="mb-5 text-xs text-muted-foreground">
+          "Reentrenar modelos" necesita un backend FastAPI accesible desde el navegador (VITE_API_URL). Mientras
+          tanto, corre <code>run_training.py</code> desde el backend.
+        </p>
+      )}
 
       <Card>
         <CardHeader>

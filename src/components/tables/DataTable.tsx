@@ -52,6 +52,8 @@ export interface DataTableProps<T> {
   rowActions?: (row: T) => ReactNode;
   filters?: DataTableFilter<T>[];
   emptyState?: ReactNode;
+  /** Agrega una primera columna "#" con el número de fila (1, 2, 3...), respetando orden/filtro/paginación. */
+  showRowNumber?: boolean;
 }
 
 type SortDirection = 'asc' | 'desc' | false;
@@ -91,6 +93,7 @@ export function DataTable<T>({
   rowActions,
   filters,
   emptyState,
+  showRowNumber,
 }: DataTableProps<T>) {
   const [search, setSearch] = useState('');
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
@@ -219,6 +222,7 @@ export function DataTable<T>({
           <Table>
             <TableHeader>
               <TableRow>
+                {showRowNumber && <TableHead className="w-10">#</TableHead>}
                 {columns.map((column) => (
                   <TableHead
                     key={column.id}
@@ -235,10 +239,13 @@ export function DataTable<T>({
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableSkeletonRows columns={columns.length + (rowActions ? 1 : 0)} />
+                <TableSkeletonRows columns={columns.length + (rowActions ? 1 : 0) + (showRowNumber ? 1 : 0)} />
               ) : (
-                pageRows.map((row) => (
+                pageRows.map((row, index) => (
                   <TableRow key={getRowId(row)}>
+                    {showRowNumber && (
+                      <TableCell className="text-muted-foreground">{(currentPage - 1) * pageSize + index + 1}</TableCell>
+                    )}
                     {columns.map((column) => (
                       <TableCell
                         key={column.id}

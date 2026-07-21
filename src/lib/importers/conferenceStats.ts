@@ -190,3 +190,26 @@ export function parseConferenceStats(workbook: WorkBook): ParsedConferenceStats 
 
   return { attackers, goalkeepers };
 }
+
+function pctOutOfRange(value: number | null): boolean {
+  return value !== null && (value < 0 || value > 1);
+}
+
+/** Rangos plausibles para stats de conferencia; no bloquean el import, solo avisan. */
+export function validateConferenceStats(parsed: ParsedConferenceStats): string[] {
+  const warnings: string[] = [];
+  for (const row of parsed.attackers) {
+    const label = `${row.player_name} (${row.team_name})`;
+    if (pctOutOfRange(row.sh_pct)) warnings.push(`${label}: % tiro fuera de 0-100%.`);
+    if (pctOutOfRange(row.sog_pct)) warnings.push(`${label}: % tiro a puerta fuera de 0-100%.`);
+    if (row.shots_on_goal !== null && row.shots !== null && row.shots_on_goal > row.shots) {
+      warnings.push(`${label}: tiros a puerta (${row.shots_on_goal}) mayor que tiros totales (${row.shots}).`);
+    }
+  }
+  for (const row of parsed.goalkeepers) {
+    if (pctOutOfRange(row.save_pct)) {
+      warnings.push(`${row.player_name} (${row.team_name}): % atajadas fuera de 0-100%.`);
+    }
+  }
+  return warnings;
+}

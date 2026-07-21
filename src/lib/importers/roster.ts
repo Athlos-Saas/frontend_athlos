@@ -102,3 +102,27 @@ export function parseRoster(workbook: WorkBook, season: string): ParsedRoster {
 
   return { players, injuries };
 }
+
+function ageFromBirthdate(birthdate: string | null): number | null {
+  if (!birthdate) return null;
+  const years = (Date.now() - new Date(birthdate).getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+  return Math.floor(years);
+}
+
+/** Rangos plausibles para un jugador de fútbol universitario; no bloquean el import, solo avisan. */
+export function validateRoster(parsed: ParsedRoster): string[] {
+  const warnings: string[] = [];
+  for (const player of parsed.players) {
+    if (player.height_cm !== null && (player.height_cm < 140 || player.height_cm > 220)) {
+      warnings.push(`${player.full_name}: altura ${player.height_cm}cm fuera de lo esperado (140-220cm).`);
+    }
+    if (player.weight_kg !== null && (player.weight_kg < 40 || player.weight_kg > 150)) {
+      warnings.push(`${player.full_name}: peso ${player.weight_kg}kg fuera de lo esperado (40-150kg).`);
+    }
+    const age = ageFromBirthdate(player.birthdate);
+    if (age !== null && (age < 14 || age > 50)) {
+      warnings.push(`${player.full_name}: edad calculada ${age} años fuera de lo esperado (14-50).`);
+    }
+  }
+  return warnings;
+}

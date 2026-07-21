@@ -54,7 +54,7 @@ export default function App() {
           <Route path="/analisis" element={<Analisis orgId={orgId} role={role} />} />
           <Route path="/atletas" element={<Atletas orgId={orgId} role={role} />} />
           <Route path="/competiciones" element={<Competiciones orgId={orgId} role={role} />} />
-          <Route path="/modelos" element={<ModelosIa orgId={orgId} />} />
+          <Route path="/modelos" element={<ModelosIa orgId={orgId} role={role} />} />
           <Route path="/ai" element={<AiIntelligenceCenter orgId={orgId} />} />
 
           {NAV_ITEMS_FLAT.filter((item) => item.comingSoon || PLACEHOLDER_ROUTES.has(item.to)).map((item) => {
