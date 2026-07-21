@@ -1,6 +1,6 @@
 import Liga from './Liga';
 
-export default function Competiciones({ orgId }: { orgId: string }) {
+export default function Competiciones({ orgId, role }: { orgId: string; role: string | null }) {
   return (
     <div>
       <div className="mb-6">
@@ -9,7 +9,7 @@ export default function Competiciones({ orgId }: { orgId: string }) {
           Goleadores y roles ofensivos por liga y temporada. (Rediseño visual completo en Fase 7.)
         </p>
       </div>
-      <Liga orgId={orgId} />
+      <Liga orgId={orgId} role={role} />
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import CargasGps from './CargasGps';
 import Videos from './Videos';
 
-export default function Analisis({ orgId }: { orgId: string }) {
+export default function Analisis({ orgId, role }: { orgId: string; role: string | null }) {
   return (
     <div>
       <div className="mb-6">
@@ -18,7 +18,7 @@ export default function Analisis({ orgId }: { orgId: string }) {
           <TabsTrigger value="video">Video análisis</TabsTrigger>
         </TabsList>
         <TabsContent value="gps">
-          <CargasGps orgId={orgId} />
+          <CargasGps orgId={orgId} role={role} />
         </TabsContent>
         <TabsContent value="video">
           <Videos orgId={orgId} />

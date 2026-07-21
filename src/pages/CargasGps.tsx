@@ -11,19 +11,32 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Spinner } from '@/components/ui/Spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
+import { ImportDialog } from '@/components/import/ImportDialog';
 import { colors } from '@/constants/tokens';
 import { supabase } from '@/lib/supabase';
+import { parseCatapult } from '@/lib/importers/catapult';
+import { downloadCatapultTemplate } from '@/lib/importers/templates';
+import { getOrCreatePlayers } from '@/lib/importers/playerLookup';
+import { useTeamSelection } from '@/lib/importers/useTeamSelection';
+import { canWrite } from '@/utils/permissions';
 import type { GpsSession, MlPrediction, Player } from '@/types/domain';
 
-const ALERT_LABELS = ['alto', 'anomala'];
+const ALERT_LABELS = ['alto', 'anomala', 'sobre_esfuerzo'];
+const TYPE_LABEL: Record<string, string> = {
+  fatigue_risk: 'Fatiga',
+  anomaly: 'Anomalía',
+  player_load_expected: 'Sobre-esfuerzo',
+};
 
-export default function CargasGps({ orgId }: { orgId: string }) {
+export default function CargasGps({ orgId, role }: { orgId: string; role: string | null }) {
   const [players, setPlayers] = useState<Player[] | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState('');
   const [sessions, setSessions] = useState<GpsSession[]>([]);
   const [alerts, setAlerts] = useState<MlPrediction[]>([]);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
+  const { teams, teamId, setTeamId } = useTeamSelection(orgId);
 
   useEffect(() => {
     supabase
@@ -37,9 +50,9 @@ export default function CargasGps({ orgId }: { orgId: string }) {
           return;
         }
         setPlayers(data ?? []);
-        if (data?.length) setSelectedPlayerId(data[0].id);
+        if (data?.length) setSelectedPlayerId((current) => current || data[0].id);
       });
-  }, [orgId]);
+  }, [orgId, reloadToken]);
 
   useEffect(() => {
     if (!selectedPlayerId) return;
@@ -54,7 +67,7 @@ export default function CargasGps({ orgId }: { orgId: string }) {
         .from('ml_predictions')
         .select('prediction_type, label, score, created_at')
         .eq('player_id', selectedPlayerId)
-        .in('prediction_type', ['fatigue_risk', 'anomaly'])
+        .in('prediction_type', ['fatigue_risk', 'anomaly', 'player_load_expected'])
         .order('created_at', { ascending: false })
         .limit(50),
     ]).then(([sessionsRes, alertsRes]) => {
@@ -67,7 +80,29 @@ export default function CargasGps({ orgId }: { orgId: string }) {
       setAlerts(alertsRes.data ?? []);
       setIsLoadingDetail(false);
     });
-  }, [selectedPlayerId]);
+  }, [selectedPlayerId, reloadToken]);
+
+  const handleCatapultImport = async (parsedSessions: ReturnType<typeof parseCatapult>) => {
+    const names = [...new Set(parsedSessions.map((session) => session.player_name))];
+    const nameToId = await getOrCreatePlayers(orgId, teamId, names);
+
+    const rows = parsedSessions
+      .map(({ player_name, ...rest }) => {
+        const playerId = nameToId[player_name];
+        return playerId ? { org_id: orgId, player_id: playerId, ...rest } : null;
+      })
+      .filter((row): row is NonNullable<typeof row> => row !== null);
+
+    if (rows.length > 0) {
+      const { error } = await supabase
+        .from('gps_sessions')
+        .upsert(rows, { onConflict: 'player_id,session_date,session_title,split_name' });
+      if (error) throw error;
+    }
+
+    setReloadToken((n) => n + 1);
+    return { written: rows.length, skipped: parsedSessions.length - rows.length, warnings: [] };
+  };
 
   if (hasError) return <ErrorState onRetry={() => window.location.reload()} />;
   if (players === null) return <Spinner />;
@@ -76,9 +111,41 @@ export default function CargasGps({ orgId }: { orgId: string }) {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Cargas GPS</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Monitoreo físico por sesión con alertas del modelo</p>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Cargas GPS</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Monitoreo físico por sesión con alertas del modelo</p>
+        </div>
+        {canWrite(role) && (
+          <div className="flex items-center gap-2">
+            {teams.length > 1 && (
+              <Select value={teamId} onValueChange={setTeamId}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Equipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teams.map((team) => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name} · {team.season}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <ImportDialog
+              triggerLabel="Importar sesiones GPS (Catapult)"
+              title="Importar sesiones GPS"
+              description="Sube el export CSV de Catapult (columnas Player Name, Player Load, Distance (km)...)."
+              accept=".csv"
+              expectedKind="catapult"
+              disabled={!teamId}
+              parse={parseCatapult}
+              describePreview={(parsed) => `Detecté ${parsed.length} sesiones.`}
+              onConfirm={handleCatapultImport}
+              onDownloadTemplate={downloadCatapultTemplate}
+            />
+          </div>
+        )}
       </div>
 
       {players.length === 0 ? (
@@ -131,7 +198,7 @@ export default function CargasGps({ orgId }: { orgId: string }) {
               />
             )}
             {!isLoadingDetail && alerts.length > 0 && activeAlerts.length === 0 && (
-              <EmptyState icon={AlertTriangle} title="Sin alertas activas" description="No hay fatiga ni sesiones anómalas recientes." />
+              <EmptyState icon={AlertTriangle} title="Sin alertas activas" description="No hay fatiga, sobre-esfuerzo ni sesiones anómalas recientes." />
             )}
             {activeAlerts.length > 0 && (
               <Table>
@@ -147,9 +214,9 @@ export default function CargasGps({ orgId }: { orgId: string }) {
                   {activeAlerts.map((alert, index) => (
                     // eslint-disable-next-line react/no-array-index-key
                     <TableRow key={index}>
-                      <TableCell>{alert.prediction_type === 'fatigue_risk' ? 'Fatiga' : 'Anomalía'}</TableCell>
+                      <TableCell>{TYPE_LABEL[alert.prediction_type] ?? alert.prediction_type}</TableCell>
                       <TableCell>
-                        <Badge variant={alert.label === 'alto' ? 'danger' : 'warning'}>{alert.label}</Badge>
+                        <Badge variant={alert.label === 'anomala' ? 'warning' : 'danger'}>{alert.label}</Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{Number(alert.score).toFixed(3)}</TableCell>
                       <TableCell className="text-muted-foreground">

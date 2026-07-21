@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { Download } from 'lucide-react';
+import { Download, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 import { Button } from '@/components/ui/Button';
 import { Pagination } from '@/components/ui/Pagination';
@@ -71,6 +72,13 @@ function downloadCsv(filename: string, rows: string[][]) {
   URL.revokeObjectURL(url);
 }
 
+function downloadXlsx(filename: string, rows: string[][]) {
+  const sheet = XLSX.utils.aoa_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, sheet, 'Datos');
+  XLSX.writeFile(workbook, filename);
+}
+
 export function DataTable<T>({
   columns,
   data,
@@ -137,11 +145,20 @@ export function DataTable<T>({
     });
   }
 
-  function handleExport() {
-    if (!exportFileName) return;
+  function exportRows(): string[][] {
     const header = columns.map((column) => column.header);
     const rows = sorted.map((row) => columns.map((column) => String(column.accessor(row) ?? '')));
-    downloadCsv(exportFileName, [header, ...rows]);
+    return [header, ...rows];
+  }
+
+  function handleExportCsv() {
+    if (!exportFileName) return;
+    downloadCsv(exportFileName, exportRows());
+  }
+
+  function handleExportXlsx() {
+    if (!exportFileName) return;
+    downloadXlsx(exportFileName.replace(/\.csv$/i, '.xlsx'), exportRows());
   }
 
   const hasToolbar = searchable || (filters && filters.length > 0) || exportFileName;
@@ -183,9 +200,14 @@ export function DataTable<T>({
             </Select>
           ))}
           {exportFileName && (
-            <Button variant="secondary" size="sm" className="ml-auto" onClick={handleExport}>
-              <Download className="size-4" aria-hidden="true" /> Exportar CSV
-            </Button>
+            <div className="ml-auto flex gap-2">
+              <Button variant="secondary" size="sm" onClick={handleExportCsv}>
+                <Download className="size-4" aria-hidden="true" /> Exportar CSV
+              </Button>
+              <Button variant="secondary" size="sm" onClick={handleExportXlsx}>
+                <FileSpreadsheet className="size-4" aria-hidden="true" /> Exportar Excel
+              </Button>
+            </div>
           )}
         </div>
       )}

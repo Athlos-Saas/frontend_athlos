@@ -44,15 +44,16 @@ export default function App() {
   }
 
   const orgId = profile.org_id;
+  const role = profile.role;
 
   return (
     <Suspense fallback={<Spinner label="Cargando módulo…" className="min-h-[60vh]" />}>
       <Routes>
         <Route element={<AppShell profile={profile} onSignOut={signOut} />}>
           <Route index element={<Dashboard orgId={orgId} />} />
-          <Route path="/analisis" element={<Analisis orgId={orgId} />} />
-          <Route path="/atletas" element={<Atletas orgId={orgId} />} />
-          <Route path="/competiciones" element={<Competiciones orgId={orgId} />} />
+          <Route path="/analisis" element={<Analisis orgId={orgId} role={role} />} />
+          <Route path="/atletas" element={<Atletas orgId={orgId} role={role} />} />
+          <Route path="/competiciones" element={<Competiciones orgId={orgId} role={role} />} />
           <Route path="/modelos" element={<ModelosIa orgId={orgId} />} />
           <Route path="/ai" element={<AiIntelligenceCenter orgId={orgId} />} />
 

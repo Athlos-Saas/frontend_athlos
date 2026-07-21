@@ -3,7 +3,7 @@ import PerfilesMl from './PerfilesMl';
 import Roster from './Roster';
 import Wellness from './Wellness';
 
-export default function Atletas({ orgId }: { orgId: string }) {
+export default function Atletas({ orgId, role }: { orgId: string; role: string | null }) {
   return (
     <div>
       <div className="mb-6">
@@ -20,7 +20,7 @@ export default function Atletas({ orgId }: { orgId: string }) {
           <TabsTrigger value="wellness">Wellness diario</TabsTrigger>
         </TabsList>
         <TabsContent value="roster">
-          <Roster orgId={orgId} />
+          <Roster orgId={orgId} role={role} />
         </TabsContent>
         <TabsContent value="perfiles">
           <PerfilesMl orgId={orgId} />

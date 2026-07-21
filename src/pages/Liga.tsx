@@ -12,8 +12,12 @@ import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { DataTable, type DataTableColumn, type DataTableFilter } from '@/components/tables/DataTable';
+import { ImportDialog } from '@/components/import/ImportDialog';
 import { colors } from '@/constants/tokens';
 import { supabase } from '@/lib/supabase';
+import { parseConferenceStats } from '@/lib/importers/conferenceStats';
+import { downloadConferenceTemplate } from '@/lib/importers/templates';
+import { canWrite } from '@/utils/permissions';
 import type { ConferenceBenchmark, LeagueAttackerStat, LeagueGoalkeeperStat } from '@/types/domain';
 
 type LoadState = 'loading' | 'error' | 'ready';
@@ -100,8 +104,9 @@ function roleDistribution<T extends { role_name?: string | null; gk_role?: strin
   ).map(([rol, jugadores]) => ({ rol, jugadores }));
 }
 
-export default function Liga({ orgId }: { orgId: string }) {
+export default function Liga({ orgId, role }: { orgId: string; role: string | null }) {
   const [season, setSeason] = useState('2025');
+  const [competition, setCompetition] = useState('SAC');
   const [attackers, setAttackers] = useState<LeagueAttackerStat[]>([]);
   const [goalkeepers, setGoalkeepers] = useState<LeagueGoalkeeperStat[]>([]);
   const [attackerBenchmarks, setAttackerBenchmarks] = useState<ConferenceBenchmark[]>([]);
@@ -172,6 +177,31 @@ export default function Liga({ orgId }: { orgId: string }) {
     [attackers],
   );
 
+  const handleConferenceImport = async (parsed: ReturnType<typeof parseConferenceStats>) => {
+    const attackerRows = parsed.attackers.map((row) => ({ org_id: orgId, season, competition, ...row }));
+    const goalkeeperRows = parsed.goalkeepers.map((row) => ({ org_id: orgId, season, competition, ...row }));
+
+    if (attackerRows.length > 0) {
+      const { error } = await supabase
+        .from('league_attacker_stats')
+        .upsert(attackerRows, { onConflict: 'org_id,season,competition,player_name,team_name' });
+      if (error) throw error;
+    }
+    if (goalkeeperRows.length > 0) {
+      const { error } = await supabase
+        .from('league_goalkeeper_stats')
+        .upsert(goalkeeperRows, { onConflict: 'org_id,season,competition,player_name,team_name' });
+      if (error) throw error;
+    }
+
+    setReloadToken((n) => n + 1);
+    return {
+      written: attackerRows.length + goalkeeperRows.length,
+      skipped: 0,
+      warnings: ['Los roles y la probabilidad de goleador se calculan aparte, con el entrenamiento del backend.'],
+    };
+  };
+
   if (state === 'error') return <ErrorState onRetry={() => setReloadToken((n) => n + 1)} />;
 
   return (
@@ -183,9 +213,29 @@ export default function Liga({ orgId }: { orgId: string }) {
         </p>
       </div>
 
-      <Field label="Temporada" htmlFor="season" hint="Formato: YYYY" className="mb-5 max-w-[160px]">
-        <Input id="season" value={season} onChange={(event) => setSeason(event.target.value)} />
-      </Field>
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-wrap gap-3">
+          <Field label="Temporada" htmlFor="season" hint="Formato: YYYY" className="max-w-[160px]">
+            <Input id="season" value={season} onChange={(event) => setSeason(event.target.value)} />
+          </Field>
+          <Field label="Competición" htmlFor="competition" className="max-w-[160px]">
+            <Input id="competition" value={competition} onChange={(event) => setCompetition(event.target.value)} />
+          </Field>
+        </div>
+        {canWrite(role) && (
+          <ImportDialog
+            triggerLabel="Importar stats de conferencia (Excel)"
+            title="Importar stats de conferencia"
+            description="Sube el Excel con las hojas Game-Scoring, Game-Shooting, Game-Goalkepeer, Season-Scoring, Season-Shooting, Season-Misc y Season-Goalkepeer."
+            accept=".xlsx"
+            expectedKind="conference"
+            parse={parseConferenceStats}
+            describePreview={(parsed) => `Detecté ${parsed.attackers.length} atacantes y ${parsed.goalkeepers.length} porteros.`}
+            onConfirm={handleConferenceImport}
+            onDownloadTemplate={downloadConferenceTemplate}
+          />
+        )}
+      </div>
 
       <Tabs defaultValue="atacantes">
         <TabsList>
