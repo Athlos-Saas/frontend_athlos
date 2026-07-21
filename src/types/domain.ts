@@ -24,6 +24,10 @@ export interface MlPrediction {
 export interface Player {
   id: string;
   full_name: string;
+  position?: string | null;
+  height_cm?: number | null;
+  weight_kg?: number | null;
+  birthdate?: string | null;
 }
 
 export interface GpsSession {
@@ -40,6 +44,29 @@ export interface LeagueAttackerStat {
   goals: number;
   proba_top_scorer: number | null;
   role_name: string | null;
+}
+
+export interface LeagueGoalkeeperStat {
+  player_name: string;
+  team_name: string;
+  gaa: number | null;
+  save_pct: number | null;
+  gk_role: string | null;
+}
+
+export interface ConferenceBenchmark {
+  position_group: 'attacker' | 'goalkeeper';
+  team_name: string;
+  metric: string;
+  team_value: number | null;
+  conference_value: number | null;
+  diff: number | null;
+}
+
+export interface Injury {
+  player_id: string;
+  severity: 'minor' | 'moderate' | 'severe';
+  notes: string | null;
 }
 
 export interface VideoAnalysis {
