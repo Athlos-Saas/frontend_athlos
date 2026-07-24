@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Film, Play, Trash2, Upload } from 'lucide-react';
+import { Film, Pencil, Play, Trash2, Upload } from 'lucide-react';
 
 import { type TrajectoryPoint } from '@/components/charts/SoccerPitchMap';
 import { TacticalBoard, type RosterOption } from '@/components/videos/TacticalBoard';
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
@@ -49,6 +50,9 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
   const [trajectories, setTrajectories] = useState<Record<string, TrajectoryPoint[]>>({});
   const [rosterPlayers, setRosterPlayers] = useState<RosterOption[]>([]);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [editingVideo, setEditingVideo] = useState<VideoAnalysis | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [isSavingTitle, setIsSavingTitle] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadVideos = () => {
@@ -205,6 +209,29 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
     loadVideos();
   };
 
+  const openRename = (video: VideoAnalysis) => {
+    setEditingVideo(video);
+    setEditTitle(video.title);
+  };
+
+  const handleRenameVideo = async () => {
+    if (!editingVideo) return;
+    const trimmed = editTitle.trim();
+    if (!trimmed) return;
+
+    setIsSavingTitle(true);
+    const { error } = await supabase.from('video_analyses').update({ title: trimmed }).eq('id', editingVideo.id);
+    setIsSavingTitle(false);
+
+    if (error) {
+      toast({ title: 'No se pudo renombrar el video', description: error.message, variant: 'danger' });
+      return;
+    }
+    setVideos((current) => (current ?? []).map((v) => (v.id === editingVideo.id ? { ...v, title: trimmed } : v)));
+    toast({ title: 'Título actualizado', variant: 'success' });
+    setEditingVideo(null);
+  };
+
   const handleAssignTracks = async (trackIds: number[], playerId: string | null) => {
     if (!selectedVideoId || trackIds.length === 0) return;
     setIsAssigning(true);
@@ -307,6 +334,12 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                         {video.status === 'done' && (
                           <Button size="sm" variant="ghost" onClick={() => setSelectedVideoId(video.id)}>
                             Ver resultado
+                          </Button>
+                        )}
+                        {canWrite(role) && (
+                          <Button variant="ghost" size="icon" onClick={() => openRename(video)}>
+                            <Pencil className="size-4" aria-hidden="true" />
+                            <span className="sr-only">Editar título</span>
                           </Button>
                         )}
                         {canWrite(role) && (
@@ -418,6 +451,30 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
           )}
         </Card>
       )}
+
+      <Dialog open={editingVideo !== null} onOpenChange={(open) => !open && setEditingVideo(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar título del video</DialogTitle>
+          </DialogHeader>
+          <Field label="Título" htmlFor="edit-video-title">
+            <Input
+              id="edit-video-title"
+              value={editTitle}
+              onChange={(event) => setEditTitle(event.target.value)}
+              onKeyDown={(event) => event.key === 'Enter' && handleRenameVideo()}
+            />
+          </Field>
+          <DialogFooter>
+            <Button variant="secondary" size="sm" onClick={() => setEditingVideo(null)}>
+              Cancelar
+            </Button>
+            <Button size="sm" isLoading={isSavingTitle} disabled={!editTitle.trim()} onClick={handleRenameVideo}>
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
