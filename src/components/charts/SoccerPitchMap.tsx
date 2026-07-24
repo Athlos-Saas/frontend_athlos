@@ -25,7 +25,7 @@ function cumulativeDistanceFractions(points: { x: number; y: number }[]): number
   return distances.map((d) => d / total);
 }
 
-function PitchMarkings() {
+export function PitchMarkings() {
   return (
     <g stroke="rgba(255,255,255,0.35)" strokeWidth={0.35} fill="none">
       <rect x={0} y={0} width={FIELD_LENGTH_M} height={FIELD_WIDTH_M} />

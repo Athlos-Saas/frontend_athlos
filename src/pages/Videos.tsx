@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Film, Play, Trash2, Upload } from 'lucide-react';
 
 import { SoccerPitchMap, type TrajectoryPoint } from '@/components/charts/SoccerPitchMap';
+import { PositionBoard, type RosterOption } from '@/components/videos/PositionBoard';
 import { AnalyzingIndicator } from '@/components/ui/AnalyzingIndicator';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -47,6 +48,8 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
   const [resultVideoUrl, setResultVideoUrl] = useState<string | null>(null);
   const [trajectories, setTrajectories] = useState<Record<string, TrajectoryPoint[]>>({});
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
+  const [rosterPlayers, setRosterPlayers] = useState<RosterOption[]>([]);
+  const [isAssigning, setIsAssigning] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadVideos = () => {
@@ -65,6 +68,16 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
   };
 
   useEffect(loadVideos, [orgId]);
+
+  useEffect(() => {
+    supabase
+      .from('players')
+      .select('id, full_name, position')
+      .eq('org_id', orgId)
+      .eq('is_active', true)
+      .order('full_name')
+      .then(({ data }) => setRosterPlayers((data as RosterOption[]) ?? []));
+  }, [orgId]);
 
   // Mientras haya algún video "processing", refresca solo — para que el estado
   // avance a "done"/"failed" sin que el usuario tenga que recargar la página.
@@ -85,6 +98,15 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videos]);
 
+  const loadTracks = (videoId: string) => {
+    supabase
+      .from('video_player_tracks')
+      .select('track_id, distance_m, time_visible_s, avg_speed_kmh, max_speed_kmh, matched_player_id')
+      .eq('video_id', videoId)
+      .order('distance_m', { ascending: false })
+      .then(({ data }) => setTracks(data ?? []));
+  };
+
   useEffect(() => {
     setSelectedTrackId(null);
     if (!selectedVideoId) {
@@ -93,12 +115,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
       setTrajectories({});
       return;
     }
-    supabase
-      .from('video_player_tracks')
-      .select('track_id, distance_m, time_visible_s, avg_speed_kmh, max_speed_kmh')
-      .eq('video_id', selectedVideoId)
-      .order('distance_m', { ascending: false })
-      .then(({ data }) => setTracks(data ?? []));
+    loadTracks(selectedVideoId);
 
     const selected = (videos ?? []).find((video) => video.id === selectedVideoId);
     if (selected?.processed_path) {
@@ -190,6 +207,28 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
     loadVideos();
   };
 
+  const handleAssignTracks = async (trackIds: number[], playerId: string | null) => {
+    if (!selectedVideoId || trackIds.length === 0) return;
+    setIsAssigning(true);
+    const { error } = await supabase
+      .from('video_player_tracks')
+      .update({ matched_player_id: playerId })
+      .eq('video_id', selectedVideoId)
+      .in('track_id', trackIds);
+    setIsAssigning(false);
+    if (error) {
+      toast({ title: 'No se pudo guardar la asignación', description: error.message, variant: 'danger' });
+      return;
+    }
+    toast({
+      title: playerId ? `${trackIds.length} lectura(s) asignada(s)` : `${trackIds.length} lectura(s) liberada(s)`,
+      description: playerId ? 'Los datos de esas lecturas ya cuentan para el jugador en su ficha.' : undefined,
+      variant: 'success',
+    });
+    loadTracks(selectedVideoId);
+  };
+
+  const rosterNameById = new Map(rosterPlayers.map((player) => [player.id, player.full_name]));
   const doneVideos = (videos ?? []).filter((video) => video.status === 'done');
   const videosPager = usePagedRows(videos ?? [], 10);
   const tracksPager = usePagedRows(tracks, 10);
@@ -364,6 +403,29 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
             </div>
           )}
 
+          {selectedVideoId && Object.keys(trajectories).length > 0 && (
+            <div className="mb-5">
+              <div className="mb-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Alineación — asignar lecturas a jugadores</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  El tracking puede partir a un mismo jugador en varias lecturas (J1, J14…). Asígnalas aquí por posición y todos
+                  sus datos quedan ligados a su ficha.
+                </p>
+              </div>
+              {canWrite(role) ? (
+                <PositionBoard
+                  trajectories={trajectories}
+                  tracks={tracks}
+                  players={rosterPlayers}
+                  isSaving={isAssigning}
+                  onAssign={handleAssignTracks}
+                />
+              ) : (
+                <EmptyState title="Solo lectura" description="Necesitas rol admin/coach/medical/analyst para asignar lecturas a jugadores." />
+              )}
+            </div>
+          )}
+
           {selectedVideoId && tracks.length === 0 && (
             <EmptyState title="Sin tracks" description="Ese video no tiene tracks registrados." />
           )}
@@ -372,6 +434,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
               <TableHeader>
                 <TableRow>
                   <TableHead>Track</TableHead>
+                  <TableHead>Jugador</TableHead>
                   <TableHead>Distancia (m)</TableHead>
                   <TableHead>Tiempo visible (s)</TableHead>
                   <TableHead>Vel. media (km/h)</TableHead>
@@ -382,6 +445,13 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                 {tracksPager.paged.map((track) => (
                   <TableRow key={track.track_id}>
                     <TableCell className="font-medium">J{track.track_id}</TableCell>
+                    <TableCell>
+                      {track.matched_player_id ? (
+                        <Badge variant="success">{rosterNameById.get(track.matched_player_id) ?? 'Jugador'}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">--</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{Number(track.distance_m).toFixed(1)}</TableCell>
                     <TableCell className="text-muted-foreground">{Number(track.time_visible_s).toFixed(1)}</TableCell>
                     <TableCell className="text-muted-foreground">{Number(track.avg_speed_kmh).toFixed(1)}</TableCell>
