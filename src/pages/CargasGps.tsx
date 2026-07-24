@@ -12,9 +12,11 @@ import { ChartCard } from '@/components/ui/ChartCard';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { Pagination } from '@/components/ui/Pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Spinner } from '@/components/ui/Spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
+import { usePagedRows } from '@/hooks/usePagedRows';
 import { ImportDialog } from '@/components/import/ImportDialog';
 import { ImportHistory } from '@/components/import/ImportHistory';
 import { colors } from '@/constants/tokens';
@@ -124,6 +126,8 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
   if (players === null) return <Spinner />;
 
   const activeAlerts = alerts.filter((alert) => ALERT_LABELS.includes(alert.label));
+  const sessionsPager = usePagedRows(sessions, 10);
+  const alertsPager = usePagedRows(activeAlerts, 10);
 
   return (
     <div>
@@ -216,7 +220,7 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sessions.map((session) => (
+                  {sessionsPager.paged.map((session) => (
                     <TableRow key={session.id}>
                       <TableCell className="text-muted-foreground">{session.session_date}</TableCell>
                       <TableCell className="text-right">{session.distance_km?.toFixed(2)}</TableCell>
@@ -242,6 +246,7 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
                   ))}
                 </TableBody>
               </Table>
+              <Pagination page={sessionsPager.page} pageCount={sessionsPager.pageCount} onPageChange={sessionsPager.setPage} className="mt-4" />
             </Card>
           )}
 
@@ -276,7 +281,7 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {activeAlerts.map((alert, index) => (
+                  {alertsPager.paged.map((alert, index) => (
                     // eslint-disable-next-line react/no-array-index-key
                     <TableRow key={index}>
                       <TableCell>{TYPE_LABEL[alert.prediction_type] ?? alert.prediction_type}</TableCell>
@@ -291,6 +296,9 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
                   ))}
                 </TableBody>
               </Table>
+            )}
+            {activeAlerts.length > 0 && (
+              <Pagination page={alertsPager.page} pageCount={alertsPager.pageCount} onPageChange={alertsPager.setPage} className="mt-4" />
             )}
           </Card>
         </>

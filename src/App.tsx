@@ -12,11 +12,18 @@ import { useAuth } from './hooks/useAuth';
 import Login from './pages/Login';
 
 const AiIntelligenceCenter = lazy(() => import('./pages/AiIntelligenceCenter'));
+const Alertas = lazy(() => import('./pages/Alertas'));
 const Analisis = lazy(() => import('./pages/Analisis'));
 const Atletas = lazy(() => import('./pages/Atletas'));
 const Competiciones = lazy(() => import('./pages/Competiciones'));
+const Configuracion = lazy(() => import('./pages/Configuracion'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Equipos = lazy(() => import('./pages/Equipos'));
 const ModelosIa = lazy(() => import('./pages/ModelosIa'));
+const PlayerProfile = lazy(() => import('./pages/PlayerProfile'));
+const Scouting = lazy(() => import('./pages/Scouting'));
+const Temporadas = lazy(() => import('./pages/Temporadas'));
+const Usuarios = lazy(() => import('./pages/Usuarios'));
 
 const PLACEHOLDER_ROUTES = new Set(['/pronosticos']);
 
@@ -53,9 +60,16 @@ export default function App() {
           <Route index element={<Dashboard orgId={orgId} />} />
           <Route path="/analisis" element={<Analisis orgId={orgId} role={role} />} />
           <Route path="/atletas" element={<Atletas orgId={orgId} role={role} />} />
+          <Route path="/atletas/:playerId" element={<PlayerProfile orgId={orgId} role={role} />} />
           <Route path="/competiciones" element={<Competiciones orgId={orgId} role={role} />} />
           <Route path="/modelos" element={<ModelosIa orgId={orgId} role={role} />} />
           <Route path="/ai" element={<AiIntelligenceCenter orgId={orgId} />} />
+          <Route path="/equipos" element={<Equipos orgId={orgId} />} />
+          <Route path="/temporadas" element={<Temporadas orgId={orgId} />} />
+          <Route path="/scouting" element={<Scouting orgId={orgId} />} />
+          <Route path="/alertas" element={<Alertas orgId={orgId} />} />
+          <Route path="/configuracion" element={<Configuracion orgId={orgId} role={role} />} />
+          <Route path="/usuarios" element={<Usuarios orgId={orgId} role={role} currentUserId={profile.user_id} />} />
 
           {NAV_ITEMS_FLAT.filter((item) => item.comingSoon || PLACEHOLDER_ROUTES.has(item.to)).map((item) => {
             const preview = MODULE_PREVIEWS[item.to];

@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Download, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -54,9 +54,28 @@ export interface DataTableProps<T> {
   emptyState?: ReactNode;
   /** Agrega una primera columna "#" con el número de fila (1, 2, 3...), respetando orden/filtro/paginación. */
   showRowNumber?: boolean;
+  /** Si se pasa, persiste búsqueda/filtros/orden/página en sessionStorage y los restaura al volver a montar (ej. al navegar a un detalle y regresar). */
+  persistKey?: string;
 }
 
 type SortDirection = 'asc' | 'desc' | false;
+
+interface PersistedTableState {
+  search: string;
+  activeFilters: Record<string, string>;
+  sort: { columnId: string; direction: SortDirection };
+  page: number;
+}
+
+function loadPersistedState(persistKey: string | undefined): Partial<PersistedTableState> {
+  if (!persistKey) return {};
+  try {
+    const raw = sessionStorage.getItem(`datatable:${persistKey}`);
+    return raw ? (JSON.parse(raw) as Partial<PersistedTableState>) : {};
+  } catch {
+    return {};
+  }
+}
 
 function toCsvValue(value: unknown) {
   const raw = value === null || value === undefined ? '' : String(value);
@@ -94,11 +113,24 @@ export function DataTable<T>({
   filters,
   emptyState,
   showRowNumber,
+  persistKey,
 }: DataTableProps<T>) {
-  const [search, setSearch] = useState('');
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
-  const [sort, setSort] = useState<{ columnId: string; direction: SortDirection }>({ columnId: '', direction: false });
-  const [page, setPage] = useState(1);
+  const [initial] = useState(() => loadPersistedState(persistKey));
+  const [search, setSearch] = useState(initial.search ?? '');
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>(initial.activeFilters ?? {});
+  const [sort, setSort] = useState<{ columnId: string; direction: SortDirection }>(
+    initial.sort ?? { columnId: '', direction: false },
+  );
+  const [page, setPage] = useState(initial.page ?? 1);
+
+  useEffect(() => {
+    if (!persistKey) return;
+    try {
+      sessionStorage.setItem(`datatable:${persistKey}`, JSON.stringify({ search, activeFilters, sort, page }));
+    } catch {
+      // sessionStorage puede fallar en modo privado; no es crítico, solo se pierde la persistencia.
+    }
+  }, [persistKey, search, activeFilters, sort, page]);
 
   const filtered = useMemo(() => {
     let rows = data;

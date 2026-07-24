@@ -1,28 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pencil, Power, UserRound } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Pencil, Power, UserRound, UserSearch } from 'lucide-react';
 
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/Dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { Field } from '@/components/ui/Field';
-import { Input } from '@/components/ui/Input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Switch } from '@/components/ui/Switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
 import { DataTable, type DataTableColumn } from '@/components/tables/DataTable';
+import { EditPlayerDialog, type PlayerUpdate } from '@/components/players/EditPlayerDialog';
 import { ImportDialog } from '@/components/import/ImportDialog';
 import { ImportHistory } from '@/components/import/ImportHistory';
+import { useScrollRestoration } from '@/hooks/useScrollRestoration';
 import { supabase } from '@/lib/supabase';
 import { getOrCreatePlayers } from '@/lib/importers/playerLookup';
 import { parseRoster, validateRoster, type ParsedRoster } from '@/lib/importers/roster';
@@ -71,9 +65,25 @@ function buildColumns(
   canEdit: boolean,
   onMarkRecovered: (injury: Injury) => void,
   onDeleteInjury: (injury: Injury) => void,
+  onOpenProfile: (playerId: string) => void,
 ): DataTableColumn<RosterRow>[] {
   return [
-    { id: 'full_name', header: 'Jugador', sortable: true, accessor: (row) => row.full_name, className: 'font-medium text-foreground' },
+    {
+      id: 'full_name',
+      header: 'Jugador',
+      sortable: true,
+      accessor: (row) => row.full_name,
+      className: 'font-medium text-foreground',
+      cell: (row) => (
+        <button
+          type="button"
+          onClick={() => onOpenProfile(row.id)}
+          className="focus-ring rounded-sm text-left font-medium text-foreground hover:text-ai hover:underline"
+        >
+          {row.full_name}
+        </button>
+      ),
+    },
     { id: 'position', header: 'Posición', sortable: true, accessor: (row) => row.position ?? '—' },
     { id: 'height_cm', header: 'Altura (cm)', align: 'right', sortable: true, accessor: (row) => row.height_cm ?? 0, cell: (row) => (row.height_cm ? row.height_cm.toFixed(0) : '—') },
     { id: 'weight_kg', header: 'Peso (kg)', align: 'right', sortable: true, accessor: (row) => row.weight_kg ?? 0, cell: (row) => (row.weight_kg ? row.weight_kg.toFixed(0) : '—') },
@@ -115,6 +125,8 @@ function buildColumns(
 }
 
 export default function Roster({ orgId, role }: { orgId: string; role: string | null }) {
+  const navigate = useNavigate();
+  useScrollRestoration('roster');
   const [players, setPlayers] = useState<Player[]>([]);
   const [injuries, setInjuries] = useState<Injury[]>([]);
   const [leagueAttackers, setLeagueAttackers] = useState<{ player_id: string; goals: number; role_name: string | null }[]>([]);
@@ -228,7 +240,7 @@ export default function Roster({ orgId, role }: { orgId: string; role: string | 
     };
   };
 
-  const handleSavePlayer = async (updated: { position: string | null; height_cm: number | null; weight_kg: number | null; birthdate: string | null }) => {
+  const handleSavePlayer = async (updated: PlayerUpdate) => {
     if (!editingPlayer) return;
     const { error } = await supabase.from('players').update(updated).eq('id', editingPlayer.id);
     if (error) {
@@ -283,8 +295,10 @@ export default function Roster({ orgId, role }: { orgId: string; role: string | 
     setReloadToken((n) => n + 1);
   };
 
+  const handleOpenProfile = (playerId: string) => navigate(`/atletas/${playerId}`);
+
   const columns = useMemo(
-    () => buildColumns(canWrite(role), handleMarkRecovered, handleDeleteInjury),
+    () => buildColumns(canWrite(role), handleMarkRecovered, handleDeleteInjury, handleOpenProfile),
     [role],
   );
 
@@ -358,121 +372,45 @@ export default function Roster({ orgId, role }: { orgId: string; role: string | 
             exportFileName="roster-fisico.csv"
             pageSize={15}
             showRowNumber
-            rowActions={
-              !canWrite(role)
-                ? undefined
-                : showInactive
-                  ? (row) => (
-                      <Button variant="ghost" size="sm" onClick={() => handleReactivate(row)}>
-                        <Power className="size-4" aria-hidden="true" /> Reactivar
+            persistKey="roster"
+            rowActions={(row) => (
+              <div className="flex justify-end gap-1">
+                <Button variant="ghost" size="icon" onClick={() => handleOpenProfile(row.id)}>
+                  <UserSearch className="size-4" aria-hidden="true" />
+                  <span className="sr-only">Ver ficha</span>
+                </Button>
+                {canWrite(role) &&
+                  (showInactive ? (
+                    <Button variant="ghost" size="sm" onClick={() => handleReactivate(row)}>
+                      <Power className="size-4" aria-hidden="true" /> Reactivar
+                    </Button>
+                  ) : (
+                    <>
+                      <Button variant="ghost" size="icon" onClick={() => setEditingPlayer(row)}>
+                        <Pencil className="size-4" aria-hidden="true" />
+                        <span className="sr-only">Editar</span>
                       </Button>
-                    )
-                  : (row) => (
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => setEditingPlayer(row)}>
-                          <Pencil className="size-4" aria-hidden="true" />
-                          <span className="sr-only">Editar</span>
-                        </Button>
-                        <ConfirmDialog
-                          trigger={
-                            <Button variant="ghost" size="icon">
-                              <Power className="size-4" aria-hidden="true" />
-                              <span className="sr-only">Desactivar</span>
-                            </Button>
-                          }
-                          title={`¿Desactivar a ${row.full_name}?`}
-                          description="Deja de aparecer en el roster activo; sus datos históricos (sesiones, stats) no se borran."
-                          confirmLabel="Desactivar"
-                          onConfirm={() => handleDeactivate(row)}
-                        />
-                      </div>
-                    )
-            }
+                      <ConfirmDialog
+                        trigger={
+                          <Button variant="ghost" size="icon">
+                            <Power className="size-4" aria-hidden="true" />
+                            <span className="sr-only">Desactivar</span>
+                          </Button>
+                        }
+                        title={`¿Desactivar a ${row.full_name}?`}
+                        description="Deja de aparecer en el roster activo; sus datos históricos (sesiones, stats) no se borran."
+                        confirmLabel="Desactivar"
+                        onConfirm={() => handleDeactivate(row)}
+                      />
+                    </>
+                  ))}
+              </div>
+            )}
           />
         </Card>
       )}
 
       <EditPlayerDialog player={editingPlayer} onClose={() => setEditingPlayer(null)} onSave={handleSavePlayer} />
     </div>
-  );
-}
-
-function EditPlayerDialog({
-  player,
-  onClose,
-  onSave,
-}: {
-  player: RosterRow | null;
-  onClose: () => void;
-  onSave: (updated: { position: string | null; height_cm: number | null; weight_kg: number | null; birthdate: string | null }) => Promise<void>;
-}) {
-  const [form, setForm] = useState({ position: '', height_cm: '', weight_kg: '', birthdate: '' });
-  const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => {
-    if (player) {
-      setForm({
-        position: player.position ?? '',
-        height_cm: player.height_cm?.toString() ?? '',
-        weight_kg: player.weight_kg?.toString() ?? '',
-        birthdate: player.birthdate ?? '',
-      });
-    }
-  }, [player]);
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    await onSave({
-      position: form.position || null,
-      height_cm: form.height_cm ? Number(form.height_cm) : null,
-      weight_kg: form.weight_kg ? Number(form.weight_kg) : null,
-      birthdate: form.birthdate || null,
-    });
-    setIsSaving(false);
-  };
-
-  return (
-    <Dialog open={!!player} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Editar {player?.full_name}</DialogTitle>
-        </DialogHeader>
-        <Field label="Posición" htmlFor="edit-position">
-          <Input id="edit-position" value={form.position} onChange={(event) => setForm((f) => ({ ...f, position: event.target.value }))} />
-        </Field>
-        <Field label="Altura (cm)" htmlFor="edit-height">
-          <Input
-            id="edit-height"
-            type="number"
-            value={form.height_cm}
-            onChange={(event) => setForm((f) => ({ ...f, height_cm: event.target.value }))}
-          />
-        </Field>
-        <Field label="Peso (kg)" htmlFor="edit-weight">
-          <Input
-            id="edit-weight"
-            type="number"
-            value={form.weight_kg}
-            onChange={(event) => setForm((f) => ({ ...f, weight_kg: event.target.value }))}
-          />
-        </Field>
-        <Field label="Fecha de nacimiento" htmlFor="edit-birthdate">
-          <Input
-            id="edit-birthdate"
-            type="date"
-            value={form.birthdate}
-            onChange={(event) => setForm((f) => ({ ...f, birthdate: event.target.value }))}
-          />
-        </Field>
-        <DialogFooter>
-          <Button variant="secondary" size="sm" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button size="sm" isLoading={isSaving} onClick={handleSave}>
-            Guardar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }

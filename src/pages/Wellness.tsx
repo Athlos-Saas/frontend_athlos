@@ -7,9 +7,11 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Field } from '@/components/ui/Field';
 import { Input, Textarea } from '@/components/ui/Input';
+import { Pagination } from '@/components/ui/Pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Spinner } from '@/components/ui/Spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
+import { usePagedRows } from '@/hooks/usePagedRows';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/store/toastStore';
 import type { Player, WellnessEntry } from '@/types/domain';
@@ -122,6 +124,7 @@ export default function Wellness({ orgId }: { orgId: string }) {
   }
 
   const idToName = Object.fromEntries(players.map((player) => [player.id, player.full_name]));
+  const entriesPager = usePagedRows(entries, 10);
 
   return (
     <div>
@@ -208,7 +211,7 @@ export default function Wellness({ orgId }: { orgId: string }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {entries.map((entry, index) => (
+                {entriesPager.paged.map((entry, index) => (
                   // eslint-disable-next-line react/no-array-index-key
                   <TableRow key={index}>
                     <TableCell className="text-muted-foreground">{entry.entry_date}</TableCell>
@@ -223,6 +226,9 @@ export default function Wellness({ orgId }: { orgId: string }) {
                 ))}
               </TableBody>
             </Table>
+          )}
+          {entries.length > 0 && (
+            <Pagination page={entriesPager.page} pageCount={entriesPager.pageCount} onPageChange={entriesPager.setPage} className="mt-4" />
           )}
         </Card>
       </div>

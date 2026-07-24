@@ -7,7 +7,9 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Ca
 import { ChartCard } from '@/components/ui/ChartCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { Pagination } from '@/components/ui/Pagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableSkeletonRows } from '@/components/ui/Table';
+import { usePagedRows } from '@/hooks/usePagedRows';
 import { colors, profileColors } from '@/constants/tokens';
 import { supabase } from '@/lib/supabase';
 
@@ -62,6 +64,8 @@ export default function PerfilesMl({ orgId }: { orgId: string }) {
   if (state === 'error') return <ErrorState onRetry={() => setReloadToken((n) => n + 1)} />;
 
   const profileNames = [...new Set(profiles.map((row) => row.perfil))];
+  const sortedProfiles = [...profiles].sort((a, b) => (a.perfil > b.perfil ? 1 : -1));
+  const profilesPager = usePagedRows(sortedProfiles, 10);
   const series: ScatterSeries[] = profileNames.map((name) => ({
     name,
     color: profileColors[name] || colors.blue,
@@ -123,9 +127,7 @@ export default function PerfilesMl({ orgId }: { orgId: string }) {
                 {state === 'loading' ? (
                   <TableSkeletonRows columns={6} />
                 ) : (
-                  [...profiles]
-                    .sort((a, b) => (a.perfil > b.perfil ? 1 : -1))
-                    .map((row) => (
+                  profilesPager.paged.map((row) => (
                       <TableRow key={row.jugador}>
                         <TableCell className="font-medium">{row.jugador}</TableCell>
                         <TableCell>
@@ -147,6 +149,7 @@ export default function PerfilesMl({ orgId }: { orgId: string }) {
                 )}
               </TableBody>
             </Table>
+            <Pagination page={profilesPager.page} pageCount={profilesPager.pageCount} onPageChange={profilesPager.setPage} className="mt-4" />
           </Card>
         </>
       )}

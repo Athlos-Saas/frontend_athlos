@@ -21,7 +21,7 @@ export default function Analisis({ orgId, role }: { orgId: string; role: string 
           <CargasGps orgId={orgId} role={role} />
         </TabsContent>
         <TabsContent value="video">
-          <Videos orgId={orgId} />
+          <Videos orgId={orgId} role={role} />
         </TabsContent>
       </Tabs>
     </div>

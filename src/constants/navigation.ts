@@ -41,9 +41,9 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: 'Análisis', to: '/analisis', icon: Activity },
       { label: 'Atletas', to: '/atletas', icon: UserRound },
-      { label: 'Equipos', to: '/equipos', icon: Shield, comingSoon: true },
+      { label: 'Equipos', to: '/equipos', icon: Shield },
       { label: 'Competiciones', to: '/competiciones', icon: Trophy },
-      { label: 'Temporadas', to: '/temporadas', icon: CalendarRange, comingSoon: true },
+      { label: 'Temporadas', to: '/temporadas', icon: CalendarRange },
     ],
   },
   {
@@ -52,7 +52,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: 'AI Intelligence Center', to: '/ai', icon: Sparkles },
       { label: 'Pronósticos IA', to: '/pronosticos', icon: BrainCircuit },
       { label: 'Modelos IA', to: '/modelos', icon: BrainCircuit },
-      { label: 'Scouting', to: '/scouting', icon: Radar, comingSoon: true },
+      { label: 'Scouting', to: '/scouting', icon: Radar },
     ],
   },
   {
@@ -61,15 +61,15 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: 'Reportes', to: '/reportes', icon: FileBarChart2, comingSoon: true },
       { label: 'Dispositivos', to: '/dispositivos', icon: Cpu, comingSoon: true },
       { label: 'Integraciones', to: '/integraciones', icon: Plug, comingSoon: true },
-      { label: 'Alertas', to: '/alertas', icon: Bell, comingSoon: true },
+      { label: 'Alertas', to: '/alertas', icon: Bell },
     ],
   },
   {
     section: 'Cuenta',
     items: [
       { label: 'Clientes', to: '/clientes', icon: Building2, comingSoon: true },
-      { label: 'Usuarios', to: '/usuarios', icon: Users, comingSoon: true },
-      { label: 'Configuración', to: '/configuracion', icon: Settings, comingSoon: true },
+      { label: 'Usuarios', to: '/usuarios', icon: Users },
+      { label: 'Configuración', to: '/configuracion', icon: Settings },
     ],
   },
 ];
