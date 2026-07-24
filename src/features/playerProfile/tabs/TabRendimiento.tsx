@@ -1,6 +1,7 @@
+import { useMemo } from 'react';
 import { Activity } from 'lucide-react';
 
-import { ComparisonBarChart } from '@/components/charts/ComparisonBarChart';
+import { SpeedComparisonChart } from '@/components/charts/SpeedComparisonChart';
 import { TrendLineChart } from '@/components/charts/TrendLineChart';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -12,7 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { usePagedRows } from '@/hooks/usePagedRows';
 import { colors } from '@/constants/tokens';
 import { formatDate, formatDateTime } from '../format';
-import { usePlayerGpsSessions, usePlayerPredictions } from '../queries';
+import { usePlayerGpsSessions, usePlayerPredictions, usePlayerVideoTracks } from '../queries';
+import { buildSpeedTimeline } from '../speedTimeline';
 
 const ALERT_TYPES = ['fatigue_risk', 'anomaly', 'player_load_expected'];
 const ALERT_LABELS = ['alto', 'anomala', 'sobre_esfuerzo'];
@@ -25,30 +27,53 @@ const TYPE_LABEL: Record<string, string> = {
 export default function TabRendimiento({ orgId, playerId }: { orgId: string; playerId: string }) {
   const sessions = usePlayerGpsSessions(orgId, playerId);
   const predictions = usePlayerPredictions(orgId, playerId);
+  const videoTracks = usePlayerVideoTracks(orgId, playerId);
+
+  const sessionRows = sessions.data ?? [];
+  const { timeline: speedTimeline, videosWithoutDate } = useMemo(
+    () => buildSpeedTimeline(sessionRows, videoTracks.data ?? []),
+    [sessionRows, videoTracks.data],
+  );
 
   const alerts = (predictions.data ?? []).filter(
     (prediction) => ALERT_TYPES.includes(prediction.prediction_type) && ALERT_LABELS.includes(prediction.label),
   );
   const alertsPager = usePagedRows(alerts, 10);
 
-  if (sessions.isLoading || predictions.isLoading) return <Skeleton className="h-80 w-full" />;
+  if (sessions.isLoading || predictions.isLoading || videoTracks.isLoading) return <Skeleton className="h-80 w-full" />;
 
-  const sessionRows = sessions.data ?? [];
-
-  if (sessionRows.length === 0) {
-    return <EmptyState icon={Activity} title="Sin sesiones GPS" description="Este jugador todavía no tiene sesiones GPS registradas." />;
+  if (sessionRows.length === 0 && speedTimeline.length === 0) {
+    return (
+      <EmptyState
+        icon={Activity}
+        title="Sin datos de rendimiento"
+        description="Este jugador todavía no tiene sesiones GPS ni video con fecha de partido registrados."
+      />
+    );
   }
 
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <ChartCard title="Player Load por sesión">
-          <TrendLineChart data={sessionRows} xKey="session_date" yKey="player_load" name="Player Load" color={colors.green} />
-        </ChartCard>
-        <ChartCard title="Velocidad máxima (km/h)">
-          <ComparisonBarChart data={sessionRows} xKey="session_date" yKey="top_speed_kmh" name="Vel. máx" color={colors.blue} />
-        </ChartCard>
+        {sessionRows.length > 0 && (
+          <ChartCard title="Player Load por sesión">
+            <TrendLineChart data={sessionRows} xKey="session_date" yKey="player_load" name="Player Load" color={colors.green} />
+          </ChartCard>
+        )}
+        {speedTimeline.length > 0 && (
+          <ChartCard title="Velocidad máxima: GPS vs. video (km/h)">
+            <SpeedComparisonChart data={speedTimeline} />
+          </ChartCard>
+        )}
       </div>
+      {videosWithoutDate > 0 && (
+        <p className="text-xs text-muted-foreground">
+          {videosWithoutDate} lectura{videosWithoutDate === 1 ? '' : 's'} de video de este jugador no tiene
+          {videosWithoutDate === 1 ? '' : 'n'} fecha de partido y no aparece
+          {videosWithoutDate === 1 ? '' : 'n'} en la comparación — se puede agregar la fecha editando el video en
+          Video análisis.
+        </p>
+      )}
 
       <Card>
         <CardHeader>
@@ -87,7 +112,9 @@ export default function TabRendimiento({ orgId, playerId }: { orgId: string; pla
         )}
       </Card>
 
-      <p className="text-xs text-muted-foreground">Última sesión: {formatDate(sessionRows[sessionRows.length - 1]?.session_date)}</p>
+      {sessionRows.length > 0 && (
+        <p className="text-xs text-muted-foreground">Última sesión: {formatDate(sessionRows[sessionRows.length - 1]?.session_date)}</p>
+      )}
     </div>
   );
 }

@@ -42,6 +42,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
   const [videos, setVideos] = useState<VideoAnalysis[] | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [videoTitle, setVideoTitle] = useState('Partido sin título');
+  const [matchDate, setMatchDate] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [selectedVideoId, setSelectedVideoId] = useState('');
@@ -52,13 +53,14 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
   const [isAssigning, setIsAssigning] = useState(false);
   const [editingVideo, setEditingVideo] = useState<VideoAnalysis | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [editMatchDate, setEditMatchDate] = useState('');
   const [isSavingTitle, setIsSavingTitle] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadVideos = () => {
     supabase
       .from('video_analyses')
-      .select('id, title, status, created_at, storage_path, processed_path, error_message')
+      .select('id, title, status, created_at, match_date, storage_path, processed_path, error_message')
       .eq('org_id', orgId)
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
@@ -162,7 +164,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
 
     const { error: insertError } = await supabase
       .from('video_analyses')
-      .insert({ org_id: orgId, title: videoTitle, storage_path: storagePath });
+      .insert({ org_id: orgId, title: videoTitle, match_date: matchDate || null, storage_path: storagePath });
 
     if (insertError) {
       toast({ title: 'Error al registrar el video', description: insertError.message, variant: 'danger' });
@@ -170,6 +172,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
       toast({ title: 'Video subido', description: 'Ahora puedes darle "Analizar" en la tabla.', variant: 'success' });
     }
     setSelectedFile(null);
+    setMatchDate('');
     setIsUploading(false);
     loadVideos();
   };
@@ -212,6 +215,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
   const openRename = (video: VideoAnalysis) => {
     setEditingVideo(video);
     setEditTitle(video.title);
+    setEditMatchDate(video.match_date ?? '');
   };
 
   const handleRenameVideo = async () => {
@@ -220,15 +224,20 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
     if (!trimmed) return;
 
     setIsSavingTitle(true);
-    const { error } = await supabase.from('video_analyses').update({ title: trimmed }).eq('id', editingVideo.id);
+    const { error } = await supabase
+      .from('video_analyses')
+      .update({ title: trimmed, match_date: editMatchDate || null })
+      .eq('id', editingVideo.id);
     setIsSavingTitle(false);
 
     if (error) {
-      toast({ title: 'No se pudo renombrar el video', description: error.message, variant: 'danger' });
+      toast({ title: 'No se pudo guardar los cambios', description: error.message, variant: 'danger' });
       return;
     }
-    setVideos((current) => (current ?? []).map((v) => (v.id === editingVideo.id ? { ...v, title: trimmed } : v)));
-    toast({ title: 'Título actualizado', variant: 'success' });
+    setVideos((current) =>
+      (current ?? []).map((v) => (v.id === editingVideo.id ? { ...v, title: trimmed, match_date: editMatchDate || null } : v)),
+    );
+    toast({ title: 'Video actualizado', variant: 'success' });
     setEditingVideo(null);
   };
 
@@ -269,9 +278,23 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
         <CardHeader>
           <CardTitle>Subir video</CardTitle>
         </CardHeader>
-        <Field label="Título" htmlFor="title">
-          <Input id="title" value={videoTitle} onChange={(event) => setVideoTitle(event.target.value)} />
-        </Field>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label="Título" htmlFor="title">
+            <Input id="title" value={videoTitle} onChange={(event) => setVideoTitle(event.target.value)} />
+          </Field>
+          <Field label="Fecha del partido (opcional)" htmlFor="match-date">
+            <Input
+              id="match-date"
+              type="date"
+              value={matchDate}
+              onChange={(event) => setMatchDate(event.target.value)}
+            />
+          </Field>
+        </div>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Se usa para cruzar las métricas de este video con el historial GPS del jugador en su ficha. Sin fecha, el
+          video no aparece en esa comparación.
+        </p>
         <div className="flex flex-wrap items-center gap-3">
           <input
             type="file"
@@ -455,16 +478,29 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
       <Dialog open={editingVideo !== null} onOpenChange={(open) => !open && setEditingVideo(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar título del video</DialogTitle>
+            <DialogTitle>Editar video</DialogTitle>
           </DialogHeader>
-          <Field label="Título" htmlFor="edit-video-title">
-            <Input
-              id="edit-video-title"
-              value={editTitle}
-              onChange={(event) => setEditTitle(event.target.value)}
-              onKeyDown={(event) => event.key === 'Enter' && handleRenameVideo()}
-            />
-          </Field>
+          <div className="space-y-3">
+            <Field label="Título" htmlFor="edit-video-title">
+              <Input
+                id="edit-video-title"
+                value={editTitle}
+                onChange={(event) => setEditTitle(event.target.value)}
+                onKeyDown={(event) => event.key === 'Enter' && handleRenameVideo()}
+              />
+            </Field>
+            <Field label="Fecha del partido (opcional)" htmlFor="edit-video-match-date">
+              <Input
+                id="edit-video-match-date"
+                type="date"
+                value={editMatchDate}
+                onChange={(event) => setEditMatchDate(event.target.value)}
+              />
+            </Field>
+            <p className="text-xs text-muted-foreground">
+              Se usa para cruzar las métricas de este video con el historial GPS del jugador en su ficha.
+            </p>
+          </div>
           <DialogFooter>
             <Button variant="secondary" size="sm" onClick={() => setEditingVideo(null)}>
               Cancelar
