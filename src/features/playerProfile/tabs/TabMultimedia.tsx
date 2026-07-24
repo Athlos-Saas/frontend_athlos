@@ -54,7 +54,7 @@ export default function TabMultimedia({ orgId, playerId, photoPath }: { orgId: s
                 <TableHead>Fecha</TableHead>
                 <TableHead className="text-right">Distancia (m)</TableHead>
                 <TableHead className="text-right">Vel. media (km/h)</TableHead>
-                <TableHead className="text-right">Vel. máxima (km/h)</TableHead>
+                <TableHead className="text-right">Vel. p95 (km/h)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

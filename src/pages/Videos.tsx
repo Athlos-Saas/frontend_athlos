@@ -390,7 +390,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                   <TableHead>Distancia (m)</TableHead>
                   <TableHead>Tiempo visible (s)</TableHead>
                   <TableHead>Vel. media (km/h)</TableHead>
-                  <TableHead>Vel. máx (km/h)</TableHead>
+                  <TableHead>Vel. p95 (km/h)</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
