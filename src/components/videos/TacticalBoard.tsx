@@ -31,10 +31,71 @@ export interface RosterOption {
 }
 
 const PITCH_BACKGROUND = 'linear-gradient(180deg, #14532d, #0f3d24)';
+const HOLO_BLUE = '#3b82f6';
+const HOLO_GREEN = '#22c55e';
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase();
+}
+
+/**
+ * Figura holográfica de jugador (silueta + base proyectora + líneas de
+ * escaneo). Se dibuja con los pies en (0,0) para poder usarla estática
+ * (translate) o montada en un <animateMotion> recorriendo la trayectoria.
+ */
+function HologramFigure({
+  variant,
+  label,
+  dimmed = false,
+  selected = false,
+}: {
+  variant: 'assigned' | 'unassigned';
+  label: string;
+  dimmed?: boolean;
+  selected?: boolean;
+}) {
+  const color = variant === 'assigned' ? HOLO_GREEN : HOLO_BLUE;
+  return (
+    <g
+      opacity={dimmed ? 0.16 : 1}
+      style={dimmed ? undefined : { filter: `drop-shadow(0 0 1.4px ${color})` }}
+    >
+      {/* Base proyectora */}
+      <ellipse cx={0} cy={0} rx={2.4} ry={0.8} fill={color} opacity={0.3}>
+        {!dimmed && <animate attributeName="opacity" values="0.18;0.45;0.18" dur="2.2s" repeatCount="indefinite" />}
+      </ellipse>
+      <ellipse cx={0} cy={0} rx={1.3} ry={0.42} fill={color} opacity={0.55} />
+
+      {/* Silueta (cabeza + torso + piernas) con gradiente de holograma */}
+      <g fill={`url(#holo-${variant})`}>
+        <circle cx={0} cy={-4.7} r={0.95} />
+        <path d="M -1.35 -3.55 Q 0 -4.2 1.35 -3.55 L 0.95 -1.9 L 0.75 -1.9 L 0.75 0 L 0.25 0 L 0.25 -1.1 L -0.25 -1.1 L -0.25 0 L -0.75 0 L -0.75 -1.9 L -0.95 -1.9 Z" />
+      </g>
+
+      {/* Líneas de escaneo */}
+      {!dimmed && (
+        <g stroke="#ffffff" strokeWidth={0.08} opacity={0.45}>
+          <line x1={-1.2} y1={-3.2} x2={1.2} y2={-3.2} />
+          <line x1={-1.05} y1={-2.4} x2={1.05} y2={-2.4} />
+          <line x1={-0.85} y1={-1.5} x2={0.85} y2={-1.5}>
+            <animate attributeName="y1" values="-1.5;-4.4;-1.5" dur="3s" repeatCount="indefinite" />
+            <animate attributeName="y2" values="-1.5;-4.4;-1.5" dur="3s" repeatCount="indefinite" />
+          </line>
+        </g>
+      )}
+
+      {selected && (
+        <ellipse cx={0} cy={0} rx={3.3} ry={1.15} fill="none" stroke="#ffffff" strokeWidth={0.28} className="animate-pulse" />
+      )}
+
+      {!dimmed && (
+        <text y={1.9} textAnchor="middle" fontSize={1.8} fontWeight={700} fill="#ffffff">
+          {label}
+        </text>
+      )}
+    </g>
+  );
 }
 
 function PanelShell({
@@ -274,6 +335,17 @@ export function TacticalBoard({
             className="w-full rounded-lg border border-border"
             style={{ background: PITCH_BACKGROUND }}
           >
+            <defs>
+              <linearGradient id="holo-unassigned" x1="0" y1="1" x2="0" y2="0">
+                <stop offset="0%" stopColor={HOLO_BLUE} stopOpacity={0.95} />
+                <stop offset="100%" stopColor={HOLO_BLUE} stopOpacity={0.3} />
+              </linearGradient>
+              <linearGradient id="holo-assigned" x1="0" y1="1" x2="0" y2="0">
+                <stop offset="0%" stopColor={HOLO_GREEN} stopOpacity={0.95} />
+                <stop offset="100%" stopColor={HOLO_GREEN} stopOpacity={0.3} />
+              </linearGradient>
+            </defs>
+
             <PitchMarkings />
 
             {activeZone &&
@@ -293,52 +365,58 @@ export function TacticalBoard({
               })()}
 
             {trackPath && (
-              <g>
-                <path d={trackPath.pathD} stroke="#3b82f6" strokeWidth={0.5} fill="none" opacity={0.45} strokeLinecap="round" />
-                <circle r={1.7} fill="#7c3aed" style={{ filter: 'drop-shadow(0 0 3px #7c3aed)' }}>
-                  <animateMotion
-                    path={trackPath.pathD}
-                    dur={`${trackPath.durationS}s`}
-                    repeatCount="indefinite"
-                    keyPoints={trackPath.keyPoints}
-                    keyTimes={trackPath.keyTimes}
-                    calcMode="linear"
-                  />
-                </circle>
-              </g>
+              <path d={trackPath.pathD} stroke={HOLO_BLUE} strokeWidth={0.5} fill="none" opacity={0.45} strokeLinecap="round" />
             )}
 
+            {/* Fichas estáticas: hologramas. Con una identidad seleccionada,
+                las demás quedan como fantasmas para despejar la vista; la
+                seleccionada no se pinta estática porque su holograma viaja
+                por la trayectoria (abajo). */}
             {markers.map((marker) => {
-              const cx = marker.x * FIELD_LENGTH_M;
-              const cy = marker.y * FIELD_WIDTH_M;
               const assigned = marker.matchedPlayerId ? playerById.get(marker.matchedPlayerId) : null;
               const isSelected = marker.trackId === selectedTrackId;
+              if (isSelected && trackPath) return null;
               return (
                 <g
                   key={marker.trackId}
+                  transform={`translate(${marker.x * FIELD_LENGTH_M}, ${marker.y * FIELD_WIDTH_M})`}
                   onClick={() => setSelectedTrackId((current) => (current === marker.trackId ? null : marker.trackId))}
                   className="cursor-pointer"
                   role="button"
                   aria-label={`Identidad J${marker.trackId}${assigned ? ` asignada a ${assigned.full_name}` : ''}`}
                 >
-                  {isSelected && (
-                    <circle cx={cx} cy={cy} r={3.6} fill="none" stroke="#ffffff" strokeWidth={0.4} className="animate-pulse" />
-                  )}
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r={2.4}
-                    fill={assigned ? '#22c55e' : '#3b82f6'}
-                    stroke="#ffffff"
-                    strokeWidth={0.3}
-                    opacity={isSelected ? 1 : 0.85}
+                  <HologramFigure
+                    variant={assigned ? 'assigned' : 'unassigned'}
+                    label={assigned ? initials(assigned.full_name) : String(marker.trackId)}
+                    dimmed={selectedTrackId !== null && !isSelected}
+                    selected={isSelected}
                   />
-                  <text x={cx} y={cy + 0.85} textAnchor="middle" fontSize={2} fontWeight={700} fill="#ffffff">
-                    {assigned ? initials(assigned.full_name) : marker.trackId}
-                  </text>
                 </g>
               );
             })}
+
+            {/* Holograma en movimiento: recorre la trayectoria real a la velocidad del video */}
+            {trackPath && selectedTrackId && (
+              <g>
+                <animateMotion
+                  path={trackPath.pathD}
+                  dur={`${trackPath.durationS}s`}
+                  repeatCount="indefinite"
+                  keyPoints={trackPath.keyPoints}
+                  keyTimes={trackPath.keyTimes}
+                  calcMode="linear"
+                />
+                <HologramFigure
+                  variant={selectedAssignment ? 'assigned' : 'unassigned'}
+                  label={
+                    selectedAssignment
+                      ? initials(playerById.get(selectedAssignment)?.full_name ?? '')
+                      : selectedTrackId
+                  }
+                  selected
+                />
+              </g>
+            )}
           </svg>
         </PanelShell>
       </div>
