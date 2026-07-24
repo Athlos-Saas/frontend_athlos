@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { usePagedRows } from '@/hooks/usePagedRows';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/store/toastStore';
+import { useUiStore } from '@/store/uiStore';
 import type { LeagueAttackerStat, LeagueGoalkeeperStat } from '@/types/domain';
 
 /** Barra de probabilidad inline para celdas de tabla. */
@@ -34,6 +35,7 @@ function ProbabilityCell({ value, gradient }: { value: number | null; gradient: 
  * de league_attacker_stats / league_goalkeeper_stats — nada inventado.
  */
 export default function Scouting({ orgId }: { orgId: string }) {
+  const globalSeason = useUiStore((state) => state.season);
   const [attackers, setAttackers] = useState<LeagueAttackerStat[] | null>(null);
   const [goalkeepers, setGoalkeepers] = useState<LeagueGoalkeeperStat[]>([]);
   const [season, setSeason] = useState('');
@@ -70,6 +72,11 @@ export default function Scouting({ orgId }: { orgId: string }) {
     () => [...new Set((attackers ?? []).map((row) => row.season).filter(Boolean))].sort().reverse() as string[],
     [attackers],
   );
+
+  // La temporada global (topbar) manda si existe en los datos de liga.
+  useEffect(() => {
+    if (globalSeason && seasons.includes(globalSeason)) setSeason(globalSeason);
+  }, [globalSeason, seasons]);
   const roles = useMemo(
     () => [...new Set((attackers ?? []).map((row) => row.role_name).filter(Boolean))] as string[],
     [attackers],

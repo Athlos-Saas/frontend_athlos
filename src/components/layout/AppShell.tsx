@@ -21,6 +21,7 @@ export function AppShell({ profile, onSignOut }: AppShellProps) {
   const isCollapsed = useUiStore((state) => state.isSidebarCollapsed);
   const isCommandPaletteOpen = useUiStore((state) => state.isCommandPaletteOpen);
   const setCommandPaletteOpen = useUiStore((state) => state.setCommandPaletteOpen);
+  const theme = useUiStore((state) => state.theme);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -28,6 +29,10 @@ export function AppShell({ profile, onSignOut }: AppShellProps) {
   useEffect(() => {
     setIsMobileNavOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {

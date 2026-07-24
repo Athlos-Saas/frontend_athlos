@@ -23,6 +23,7 @@ import { parseConferenceStats, validateConferenceStats } from '@/lib/importers/c
 import { downloadConferenceTemplate } from '@/lib/importers/templates';
 import { matchPlayerId } from '@/lib/importers/nameMatching';
 import { toast } from '@/store/toastStore';
+import { useUiStore } from '@/store/uiStore';
 import { canWrite } from '@/utils/permissions';
 import type { ConferenceBenchmark, LeagueAttackerStat, LeagueGoalkeeperStat, Player } from '@/types/domain';
 
@@ -124,7 +125,13 @@ function roleDistribution<T extends { role_name?: string | null; gk_role?: strin
 }
 
 export default function Liga({ orgId, role }: { orgId: string; role: string | null }) {
-  const [season, setSeason] = useState('2025');
+  const globalSeason = useUiStore((state) => state.season);
+  const [season, setSeason] = useState(globalSeason ?? '2025');
+
+  // La temporada global (topbar) manda: si el usuario la cambia arriba, esta vista la sigue.
+  useEffect(() => {
+    if (globalSeason) setSeason(globalSeason);
+  }, [globalSeason]);
   const [competition, setCompetition] = useState('SAC');
   const [homeTeamName, setHomeTeamName] = useState('');
   const [attackers, setAttackers] = useState<LeagueAttackerStat[]>([]);
