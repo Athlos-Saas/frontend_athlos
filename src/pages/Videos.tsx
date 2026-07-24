@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Film, Play, Trash2, Upload } from 'lucide-react';
 
-import { SoccerPitchMap, type TrajectoryPoint } from '@/components/charts/SoccerPitchMap';
-import { PositionBoard, type RosterOption } from '@/components/videos/PositionBoard';
+import { type TrajectoryPoint } from '@/components/charts/SoccerPitchMap';
+import { TacticalBoard, type RosterOption } from '@/components/videos/TacticalBoard';
 import { AnalyzingIndicator } from '@/components/ui/AnalyzingIndicator';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -47,7 +47,6 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
   const [tracks, setTracks] = useState<VideoPlayerTrack[]>([]);
   const [resultVideoUrl, setResultVideoUrl] = useState<string | null>(null);
   const [trajectories, setTrajectories] = useState<Record<string, TrajectoryPoint[]>>({});
-  const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [rosterPlayers, setRosterPlayers] = useState<RosterOption[]>([]);
   const [isAssigning, setIsAssigning] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -108,7 +107,6 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
   };
 
   useEffect(() => {
-    setSelectedTrackId(null);
     if (!selectedVideoId) {
       setTracks([]);
       setResultVideoUrl(null);
@@ -356,75 +354,29 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
             </Select>
           </div>
 
-          {selectedVideoId && (
-            <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {resultVideoUrl ? (
-                <div>
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Video anotado</p>
-                  {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                  <video src={resultVideoUrl} controls playsInline className="w-full rounded-lg border border-border bg-panel" />
-                </div>
-              ) : (
-                <EmptyState title="Sin video anotado" description="Este video procesado no generó un video anotado." />
-              )}
-
-              <div>
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Mapa de cancha</p>
-                  {Object.keys(trajectories).length > 0 && (
-                    <Select
-                      value={selectedTrackId ?? '__density__'}
-                      onValueChange={(value) => setSelectedTrackId(value === '__density__' ? null : value)}
-                    >
-                      <SelectTrigger className="h-7 w-44 text-xs">
-                        <SelectValue placeholder="Vista" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__density__">Densidad (todos)</SelectItem>
-                        {Object.keys(trajectories).map((trackId) => (
-                          <SelectItem key={trackId} value={trackId}>
-                            Jugador J{trackId}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-                {Object.keys(trajectories).length > 0 ? (
-                  <SoccerPitchMap
-                    mode={selectedTrackId ? 'track' : 'density'}
-                    allTrajectories={trajectories}
-                    selectedTrackId={selectedTrackId}
-                  />
-                ) : (
-                  <EmptyState title="Sin datos de posición" description="No se detectaron suficientes posiciones para dibujar el mapa de cancha." />
-                )}
-              </div>
+          {selectedVideoId && resultVideoUrl && (
+            <div className="mb-5">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Video anotado</p>
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <video src={resultVideoUrl} controls playsInline className="mx-auto max-h-[420px] w-full rounded-lg border border-border bg-panel" />
             </div>
           )}
 
-          {selectedVideoId && Object.keys(trajectories).length > 0 && (
-            <div className="mb-5">
-              <div className="mb-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Alineación — asignar lecturas a jugadores</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  El tracking puede partir a un mismo jugador en varias lecturas (J1, J14…). Asígnalas aquí por posición y todos
-                  sus datos quedan ligados a su ficha.
-                </p>
-              </div>
-              {canWrite(role) ? (
-                <PositionBoard
+          {selectedVideoId &&
+            (Object.keys(trajectories).length > 0 ? (
+              <div className="mb-5">
+                <TacticalBoard
                   trajectories={trajectories}
                   tracks={tracks}
                   players={rosterPlayers}
+                  canEdit={canWrite(role)}
                   isSaving={isAssigning}
                   onAssign={handleAssignTracks}
                 />
-              ) : (
-                <EmptyState title="Solo lectura" description="Necesitas rol admin/coach/medical/analyst para asignar lecturas a jugadores." />
-              )}
-            </div>
-          )}
+              </div>
+            ) : (
+              <EmptyState title="Sin datos de posición" description="No se detectaron suficientes posiciones para dibujar el tablero táctico." />
+            ))}
 
           {selectedVideoId && tracks.length === 0 && (
             <EmptyState title="Sin tracks" description="Ese video no tiene tracks registrados." />

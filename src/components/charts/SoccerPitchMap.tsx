@@ -6,15 +6,15 @@ export interface TrajectoryPoint {
   t: number; // segundos desde el inicio del video
 }
 
-const FIELD_LENGTH_M = 105;
-const FIELD_WIDTH_M = 68;
+export const FIELD_LENGTH_M = 105;
+export const FIELD_WIDTH_M = 68;
 
-function toPitch(point: TrajectoryPoint): { x: number; y: number } {
+export function toPitch(point: TrajectoryPoint): { x: number; y: number } {
   return { x: point.x * FIELD_LENGTH_M, y: point.y * FIELD_WIDTH_M };
 }
 
 /** Fracciones acumuladas de distancia real recorrida (para que `keyPoints` de la animación respete el ritmo real, no uniforme). */
-function cumulativeDistanceFractions(points: { x: number; y: number }[]): number[] {
+export function cumulativeDistanceFractions(points: { x: number; y: number }[]): number[] {
   const distances = [0];
   let total = 0;
   for (let i = 1; i < points.length; i += 1) {
