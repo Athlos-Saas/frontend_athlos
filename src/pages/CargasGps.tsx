@@ -122,12 +122,13 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
     setReloadToken((n) => n + 1);
   };
 
-  if (hasError) return <ErrorState onRetry={() => window.location.reload()} />;
-  if (players === null) return <Spinner />;
-
   const activeAlerts = alerts.filter((alert) => ALERT_LABELS.includes(alert.label));
   const sessionsPager = usePagedRows(sessions, 10);
   const alertsPager = usePagedRows(activeAlerts, 10);
+
+  // Ojo: ningún hook puede ir después de estos returns condicionales.
+  if (hasError) return <ErrorState onRetry={() => window.location.reload()} />;
+  if (players === null) return <Spinner />;
 
   return (
     <div>

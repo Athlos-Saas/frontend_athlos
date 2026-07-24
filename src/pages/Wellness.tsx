@@ -118,13 +118,15 @@ export default function Wellness({ orgId }: { orgId: string }) {
     loadEntries();
   };
 
+  const entriesPager = usePagedRows(entries, 10);
+
+  // Ojo: ningún hook puede ir después de estos returns condicionales.
   if (players === null) return <Spinner />;
   if (players.length === 0) {
     return <EmptyState icon={HeartPulse} title="Sin jugadores registrados" />;
   }
 
   const idToName = Object.fromEntries(players.map((player) => [player.id, player.full_name]));
-  const entriesPager = usePagedRows(entries, 10);
 
   return (
     <div>

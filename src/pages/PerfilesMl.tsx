@@ -61,11 +61,13 @@ export default function PerfilesMl({ orgId }: { orgId: string }) {
     };
   }, [orgId, reloadToken]);
 
-  if (state === 'error') return <ErrorState onRetry={() => setReloadToken((n) => n + 1)} />;
-
   const profileNames = [...new Set(profiles.map((row) => row.perfil))];
   const sortedProfiles = [...profiles].sort((a, b) => (a.perfil > b.perfil ? 1 : -1));
   const profilesPager = usePagedRows(sortedProfiles, 10);
+
+  // Ojo: ningún hook puede ir después de este return condicional.
+  if (state === 'error') return <ErrorState onRetry={() => setReloadToken((n) => n + 1)} />;
+
   const series: ScatterSeries[] = profileNames.map((name) => ({
     name,
     color: profileColors[name] || colors.blue,
