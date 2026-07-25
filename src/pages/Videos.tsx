@@ -106,7 +106,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
   const loadTracks = (videoId: string) => {
     supabase
       .from('video_player_tracks')
-      .select('track_id, distance_m, time_visible_s, avg_speed_kmh, max_speed_kmh, matched_player_id')
+      .select('track_id, distance_m, time_visible_s, avg_speed_kmh, max_speed_kmh, matched_player_id, shirt_color')
       .eq('video_id', videoId)
       .order('distance_m', { ascending: false })
       .then(({ data }) => setTracks(data ?? []));

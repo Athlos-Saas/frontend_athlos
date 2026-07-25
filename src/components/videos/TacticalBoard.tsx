@@ -30,6 +30,98 @@ export interface RosterOption {
   position: string | null;
 }
 
+type Rgb = [number, number, number];
+type TeamLabel = 'A' | 'B';
+
+/**
+ * Clasifica la posición libre del roster (texto sin formato fijo — viene de
+ * CSVs reales, "Defender", "CB", "Mediocampista"...) a la misma zona que ya
+ * usa el tablero para las posiciones en cancha. Si el texto no matchea
+ * ningún patrón conocido, devuelve null — nunca se adivina a la fuerza.
+ */
+const ZONE_KEYWORDS: Record<ZoneKey, RegExp> = {
+  portero: /\b(portero|goalkeeper|goalie|keeper|arquero|gk)\b/i,
+  defensa: /\b(defensa|defender|zaguero|back|centre-back|center-back|fullback|cb|lb|rb)\b/i,
+  medio: /\b(medio|mediocampista|mediocampo|volante|midfielder|cm|dm|am)\b/i,
+  delantero: /\b(delantero|forward|striker|atacante|extremo|cf|st)\b/i,
+};
+
+function positionToZone(position: string | null): ZoneKey | null {
+  if (!position) return null;
+  for (const zone of ZONES) {
+    if (ZONE_KEYWORDS[zone.key].test(position)) return zone.key;
+  }
+  return null;
+}
+
+function hexToRgb(hex: string): Rgb | null {
+  const match = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!match) return null;
+  const value = parseInt(match[1], 16);
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+}
+
+function rgbDistance(a: Rgb, b: Rgb): number {
+  return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+}
+
+function meanRgb(colors: Rgb[]): Rgb {
+  const sum = colors.reduce<Rgb>((acc, c) => [acc[0] + c[0], acc[1] + c[1], acc[2] + c[2]], [0, 0, 0]);
+  return [sum[0] / colors.length, sum[1] / colors.length, sum[2] / colors.length];
+}
+
+function rgbToHex([r, g, b]: Rgb): string {
+  const channel = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+  return `#${channel(r)}${channel(g)}${channel(b)}`;
+}
+
+/**
+ * Agrupa las identidades en 2 equipos por color medio de camiseta
+ * (k-means simple, semillas = el par de colores más distantes). Requiere
+ * >= 2 tracks con shirt_color; si el video es muy casero y el modelo no
+ * acumuló color para casi nadie, devuelve un mapa vacío — el tablero
+ * simplemente no muestra el filtro de equipo, no inventa una agrupación
+ * con datos insuficientes.
+ */
+function clusterTeams(tracks: VideoPlayerTrack[]): Map<string, TeamLabel> {
+  const colored = tracks
+    .map((track) => ({ trackId: String(track.track_id), rgb: track.shirt_color ? hexToRgb(track.shirt_color) : null }))
+    .filter((entry): entry is { trackId: string; rgb: Rgb } => entry.rgb !== null);
+
+  if (colored.length < 2) return new Map();
+
+  let seedA = colored[0].rgb;
+  let seedB = colored[1].rgb;
+  let maxDist = -1;
+  for (let i = 0; i < colored.length; i += 1) {
+    for (let j = i + 1; j < colored.length; j += 1) {
+      const d = rgbDistance(colored[i].rgb, colored[j].rgb);
+      if (d > maxDist) {
+        maxDist = d;
+        seedA = colored[i].rgb;
+        seedB = colored[j].rgb;
+      }
+    }
+  }
+
+  let centroidA = seedA;
+  let centroidB = seedB;
+  let labels = new Map<string, TeamLabel>();
+
+  for (let iteration = 0; iteration < 10; iteration += 1) {
+    labels = new Map();
+    for (const entry of colored) {
+      labels.set(entry.trackId, rgbDistance(entry.rgb, centroidA) <= rgbDistance(entry.rgb, centroidB) ? 'A' : 'B');
+    }
+    const groupA = colored.filter((entry) => labels.get(entry.trackId) === 'A').map((entry) => entry.rgb);
+    const groupB = colored.filter((entry) => labels.get(entry.trackId) === 'B').map((entry) => entry.rgb);
+    if (groupA.length > 0) centroidA = meanRgb(groupA);
+    if (groupB.length > 0) centroidB = meanRgb(groupB);
+  }
+
+  return labels;
+}
+
 const PITCH_BACKGROUND = 'linear-gradient(180deg, #14532d, #0f3d24)';
 const HOLO_BLUE = '#3b82f6';
 const HOLO_GREEN = '#22c55e';
@@ -154,12 +246,34 @@ export function TacticalBoard({
   const [selectedPlayerId, setSelectedPlayerId] = useState('');
   const [activeZone, setActiveZone] = useState<ZoneKey | null>(null);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [teamFilter, setTeamFilter] = useState<TeamLabel | null>(null);
 
   const playerById = useMemo(() => new Map(players.map((player) => [player.id, player])), [players]);
   const assignmentByTrack = useMemo(
     () => new Map(tracks.map((track) => [String(track.track_id), track.matched_player_id ?? null])),
     [tracks],
   );
+  const trackColorById = useMemo(
+    () => new Map(tracks.map((track) => [String(track.track_id), track.shirt_color ?? null])),
+    [tracks],
+  );
+
+  /** Agrupación por color de camiseta (sugerencia 1) — vacío si no hay
+   * suficientes tracks con color muestreado; el filtro de equipo no se
+   * muestra en ese caso. */
+  const teamClusters = useMemo(() => clusterTeams(tracks), [tracks]);
+  const teamSwatches = useMemo(() => {
+    const groups: Record<TeamLabel, Rgb[]> = { A: [], B: [] };
+    for (const track of tracks) {
+      const label = teamClusters.get(String(track.track_id));
+      const rgb = track.shirt_color ? hexToRgb(track.shirt_color) : null;
+      if (label && rgb) groups[label].push(rgb);
+    }
+    return {
+      A: groups.A.length > 0 ? rgbToHex(meanRgb(groups.A)) : null,
+      B: groups.B.length > 0 ? rgbToHex(meanRgb(groups.B)) : null,
+    };
+  }, [tracks, teamClusters]);
 
   /** Trayectorias con la inversión de lados aplicada (afecta a ambas canchas por igual). */
   const displayTrajectories = useMemo(() => {
@@ -183,10 +297,21 @@ export function TacticalBoard({
       .filter((marker): marker is NonNullable<typeof marker> => marker !== null);
   }, [displayTrajectories, assignmentByTrack]);
 
+  /** Marcadores visibles en el tablero derecho y base para la asignación por
+   * zona — respeta el filtro de equipo (sugerencia 1) sin afectar el
+   * selector de "Identidad", que siempre lista todas las identidades. */
+  const visibleMarkers = useMemo(() => {
+    if (!teamFilter) return markers;
+    return markers.filter((marker) => teamClusters.get(marker.trackId) === teamFilter);
+  }, [markers, teamFilter, teamClusters]);
+
   const densityPoints = useMemo(() => {
-    const source = selectedTrackId ? { [selectedTrackId]: displayTrajectories[selectedTrackId] ?? [] } : displayTrajectories;
-    return Object.values(source).flatMap((points) => points.map(toPitch));
-  }, [displayTrajectories, selectedTrackId]);
+    if (selectedTrackId) return (displayTrajectories[selectedTrackId] ?? []).map(toPitch);
+    const visibleIds = new Set(visibleMarkers.map((m) => m.trackId));
+    return Object.entries(displayTrajectories)
+      .filter(([trackId]) => !teamFilter || visibleIds.has(trackId))
+      .flatMap(([, points]) => points.map(toPitch));
+  }, [displayTrajectories, selectedTrackId, visibleMarkers, teamFilter]);
 
   const trackPath = useMemo(() => {
     if (!selectedTrackId) return null;
@@ -205,8 +330,8 @@ export function TacticalBoard({
     if (!activeZone) return [];
     const zone = ZONES.find((z) => z.key === activeZone);
     if (!zone) return [];
-    return markers.filter((m) => m.x >= zone.from && m.x < zone.to).map((m) => Number(m.trackId));
-  }, [activeZone, markers]);
+    return visibleMarkers.filter((m) => m.x >= zone.from && m.x < zone.to).map((m) => Number(m.trackId));
+  }, [activeZone, visibleMarkers]);
 
   const assignedGroups = useMemo(() => {
     const groups = new Map<string, string[]>();
@@ -220,6 +345,24 @@ export function TacticalBoard({
   const selectedAssignment = selectedTrackId ? assignmentByTrack.get(selectedTrackId) ?? null : null;
   const selectedPlayer = playerById.get(selectedPlayerId);
   const zoneLabel = ZONES.find((z) => z.key === activeZone)?.label;
+
+  /** Sugerencia 2: zona dominante del track seleccionado (misma franja que
+   * usan los botones de asignación por zona) cruzada con la posición del
+   * roster — solo jugadores sin tracks asignados todavía en este video. */
+  const dominantZone = useMemo(() => {
+    if (!selectedTrackId) return null;
+    const marker = markers.find((m) => m.trackId === selectedTrackId);
+    if (!marker) return null;
+    return ZONES.find((z) => marker.x >= z.from && marker.x < z.to)?.key ?? null;
+  }, [selectedTrackId, markers]);
+
+  const suggestedPlayers = useMemo(() => {
+    if (!dominantZone) return [];
+    const alreadyAssigned = new Set(assignedGroups.map(([playerId]) => playerId));
+    return players.filter(
+      (player) => !alreadyAssigned.has(player.id) && positionToZone(player.position) === dominantZone,
+    );
+  }, [dominantZone, players, assignedGroups]);
 
   return (
     <div>
@@ -236,8 +379,16 @@ export function TacticalBoard({
             <SelectItem value="__all__">Todas las identidades</SelectItem>
             {markers.map((marker) => {
               const assigned = marker.matchedPlayerId ? playerById.get(marker.matchedPlayerId) : null;
+              const color = trackColorById.get(marker.trackId);
               return (
                 <SelectItem key={marker.trackId} value={marker.trackId}>
+                  {color && (
+                    <span
+                      className="mr-1.5 inline-block size-2 rounded-full align-middle"
+                      style={{ backgroundColor: color }}
+                      aria-hidden="true"
+                    />
+                  )}
                   J{marker.trackId}
                   {assigned ? ` · ${assigned.full_name}` : ''}
                 </SelectItem>
@@ -249,6 +400,29 @@ export function TacticalBoard({
         <Button size="sm" variant="ghost" onClick={() => setIsFlipped((v) => !v)}>
           <ArrowLeftRight className="size-4" aria-hidden="true" /> Invertir lados
         </Button>
+
+        {(teamSwatches.A || teamSwatches.B) && (
+          <>
+            <div className="mx-1 h-6 w-px bg-border" aria-hidden="true" />
+            {(['A', 'B'] as const).map((label) =>
+              teamSwatches[label] ? (
+                <Button
+                  key={label}
+                  size="sm"
+                  variant={teamFilter === label ? 'primary' : 'secondary'}
+                  onClick={() => setTeamFilter((current) => (current === label ? null : label))}
+                >
+                  <span
+                    className="size-2.5 rounded-full border border-white/30"
+                    style={{ backgroundColor: teamSwatches[label] ?? undefined }}
+                    aria-hidden="true"
+                  />
+                  Equipo {label}
+                </Button>
+              ) : null,
+            )}
+          </>
+        )}
 
         {canEdit && (
           <>
@@ -297,12 +471,36 @@ export function TacticalBoard({
         )}
       </div>
 
+      {canEdit && selectedTrackId && !selectedAssignment && suggestedPlayers.length > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">
+            Sugerido por posición ({ZONES.find((z) => z.key === dominantZone)?.label?.toLowerCase()}):
+          </span>
+          {suggestedPlayers.map((player) => (
+            <button
+              key={player.id}
+              type="button"
+              className="focus-ring rounded-full border border-ai/40 bg-ai/10 px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-ai/20"
+              onClick={() => setSelectedPlayerId(player.id)}
+            >
+              {player.full_name}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Canchas gemelas — mismo viewBox, misma altura, simetría total */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <PanelShell
           icon={Flame}
           title="Mapa de calor"
-          subtitle={selectedTrackId ? `Densidad de J${selectedTrackId}` : 'Densidad de todas las identidades'}
+          subtitle={
+            selectedTrackId
+              ? `Densidad de J${selectedTrackId}`
+              : teamFilter
+                ? `Densidad del equipo ${teamFilter}`
+                : 'Densidad de todas las identidades'
+          }
           accent="bg-warning/15 text-warning"
         >
           <svg
@@ -326,7 +524,9 @@ export function TacticalBoard({
           subtitle={
             selectedTrackId
               ? `Recorrido real de J${selectedTrackId} a velocidad del video`
-              : 'Toca una identidad para animar su recorrido'
+              : teamFilter
+                ? `Mostrando equipo ${teamFilter} — toca una identidad para animar su recorrido`
+                : 'Toca una identidad para animar su recorrido'
           }
           accent="bg-ai/15 text-ai"
         >
@@ -372,7 +572,7 @@ export function TacticalBoard({
                 las demás quedan como fantasmas para despejar la vista; la
                 seleccionada no se pinta estática porque su holograma viaja
                 por la trayectoria (abajo). */}
-            {markers.map((marker) => {
+            {visibleMarkers.map((marker) => {
               const assigned = marker.matchedPlayerId ? playerById.get(marker.matchedPlayerId) : null;
               const isSelected = marker.trackId === selectedTrackId;
               if (isSelected && trackPath) return null;

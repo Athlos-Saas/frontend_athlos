@@ -140,6 +140,7 @@ export interface VideoPlayerTrack {
   time_visible_s: number;
   avg_speed_kmh: number;
   max_speed_kmh: number;
+  shirt_color?: string | null;
 }
 
 export interface WellnessEntry {
