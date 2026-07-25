@@ -3,6 +3,7 @@ import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 import { cn } from '@/utils/cn';
 import { NAV_SECTIONS } from '@/constants/navigation';
+import { useNavAccessStore } from '@/store/navAccessStore';
 import { useUiStore } from '@/store/uiStore';
 
 export interface SidebarNavContentProps {
@@ -11,6 +12,12 @@ export interface SidebarNavContentProps {
 }
 
 export function SidebarNavContent({ isCollapsed, onNavigate }: SidebarNavContentProps) {
+  const deniedKeys = useNavAccessStore((state) => state.deniedKeys);
+  const visibleSections = NAV_SECTIONS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !deniedKeys.has(item.to)),
+  })).filter((group) => group.items.length > 0);
+
   return (
     <>
       <div className={cn('flex h-16 shrink-0 items-center gap-2.5 border-b border-border px-5', isCollapsed && 'justify-center px-0')}>
@@ -26,7 +33,7 @@ export function SidebarNavContent({ isCollapsed, onNavigate }: SidebarNavContent
       </div>
 
       <nav id="main-navigation" aria-label="Navegación principal" className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
-        {NAV_SECTIONS.map((group) => (
+        {visibleSections.map((group) => (
           <div key={group.section}>
             {!isCollapsed && (
               <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">

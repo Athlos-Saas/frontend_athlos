@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/Input';
 import { Pagination } from '@/components/ui/Pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableSkeletonRows } from '@/components/ui/Table';
+import { ALL_ROLES, ROLE_BADGE, ROLE_LABEL } from '@/constants/roles';
 import { usePagedRows } from '@/hooks/usePagedRows';
 import {
   deleteOrgUser,
@@ -24,24 +25,6 @@ import {
 } from '@/lib/backendApi';
 import { toast } from '@/store/toastStore';
 import { isAdmin } from '@/utils/permissions';
-
-const ROLE_LABEL: Record<OrgUserRole, string> = {
-  admin: 'Administrador',
-  coach: 'Entrenador',
-  medical: 'Médico',
-  analyst: 'Analista',
-  viewer: 'Solo lectura',
-};
-
-const ROLE_BADGE: Record<OrgUserRole, 'purple' | 'ai' | 'success' | 'warning' | 'neutral'> = {
-  admin: 'purple',
-  coach: 'ai',
-  medical: 'success',
-  analyst: 'warning',
-  viewer: 'neutral',
-};
-
-const ALL_ROLES = Object.keys(ROLE_LABEL) as OrgUserRole[];
 
 export default function Usuarios({ orgId, role, currentUserId }: { orgId: string; role: string | null; currentUserId: string }) {
   const [users, setUsers] = useState<OrgUser[] | null>(null);

@@ -5,6 +5,7 @@ export * from './Breadcrumb';
 export * from './Button';
 export * from './Card';
 export * from './ChartCard';
+export * from './Checkbox';
 export * from './Chip';
 export * from './CommandPalette';
 export * from './DatePicker';

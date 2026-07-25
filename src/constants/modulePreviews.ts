@@ -92,15 +92,6 @@ export const MODULE_PREVIEWS: Record<string, ModulePreview> = {
     ],
     kpis: ['Organizaciones activas', 'En prueba', 'Plan promedio'],
   },
-  '/usuarios': {
-    description: 'Miembros del equipo, roles y permisos.',
-    bullets: [
-      'Invitar y remover usuarios de la organización',
-      'Roles y permisos por módulo',
-      'Actividad reciente por usuario',
-    ],
-    kpis: ['Usuarios activos', 'Invitaciones pendientes', 'Roles definidos'],
-  },
   '/configuracion': {
     description: 'Preferencias de la organización, notificaciones y seguridad.',
     bullets: [

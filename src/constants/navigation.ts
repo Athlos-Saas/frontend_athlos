@@ -11,10 +11,10 @@ import {
   Radar,
   Settings,
   Shield,
+  ShieldCheck,
   Sparkles,
   Trophy,
   UserRound,
-  Users,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -68,7 +68,7 @@ export const NAV_SECTIONS: NavSection[] = [
     section: 'Cuenta',
     items: [
       { label: 'Clientes', to: '/clientes', icon: Building2, comingSoon: true },
-      { label: 'Usuarios', to: '/usuarios', icon: Users },
+      { label: 'Administración', to: '/administracion', icon: ShieldCheck },
       { label: 'Configuración', to: '/configuracion', icon: Settings },
     ],
   },
