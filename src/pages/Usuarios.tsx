@@ -23,6 +23,7 @@ import {
   type OrgUserRole,
 } from '@/lib/backendApi';
 import { toast } from '@/store/toastStore';
+import { isAdmin } from '@/utils/permissions';
 
 const ROLE_LABEL: Record<OrgUserRole, string> = {
   admin: 'Administrador',
@@ -50,7 +51,7 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
   const [isInviting, setIsInviting] = useState(false);
   const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
 
-  const isAdmin = role === 'admin';
+  const isAdminUser = isAdmin(role);
   const usersPager = usePagedRows(users ?? [], 10);
 
   const loadUsers = () => {
@@ -61,9 +62,9 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
   };
 
   useEffect(() => {
-    if (isAdmin) loadUsers();
+    if (isAdminUser) loadUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgId, isAdmin]);
+  }, [orgId, isAdminUser]);
 
   const handleInvite = async () => {
     if (!inviteForm.email || !inviteForm.full_name) {
@@ -112,7 +113,7 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
     }
   };
 
-  if (!isAdmin) {
+  if (!isAdminUser) {
     return (
       <EmptyState
         icon={ShieldAlert}

@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/store/toastStore';
 import type { Organization } from '@/types/domain';
+import { isAdmin } from '@/utils/permissions';
 
 const ROLE_LABEL: Record<string, string> = {
   admin: 'Administrador',
@@ -37,7 +38,7 @@ export default function Configuracion({ orgId, role }: { orgId: string; role: st
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  const isAdmin = role === 'admin';
+  const isAdminUser = isAdmin(role);
 
   useEffect(() => {
     Promise.all([
@@ -106,7 +107,7 @@ export default function Configuracion({ orgId, role }: { orgId: string; role: st
                 <Building2 className="size-4 text-ai" aria-hidden="true" /> Organización
               </CardTitle>
               <CardDescription className="mt-1">
-                {isAdmin ? 'Solo los administradores pueden editar estos datos.' : 'Solo lectura — requiere rol de administrador para editar.'}
+                {isAdminUser ? 'Solo los administradores pueden editar estos datos.' : 'Solo lectura — requiere rol de administrador para editar.'}
               </CardDescription>
             </div>
             {org?.plan && <Badge variant="purple">Plan {org.plan}</Badge>}
@@ -115,7 +116,7 @@ export default function Configuracion({ orgId, role }: { orgId: string; role: st
             <Input
               id="org-name"
               value={orgForm.name}
-              disabled={!isAdmin}
+              disabled={!isAdminUser}
               onChange={(event) => setOrgForm((form) => ({ ...form, name: event.target.value }))}
             />
           </Field>
@@ -123,12 +124,12 @@ export default function Configuracion({ orgId, role }: { orgId: string; role: st
             <Input
               id="org-country"
               value={orgForm.country}
-              disabled={!isAdmin}
+              disabled={!isAdminUser}
               placeholder="--"
               onChange={(event) => setOrgForm((form) => ({ ...form, country: event.target.value }))}
             />
           </Field>
-          {isAdmin && (
+          {isAdminUser && (
             <Button size="sm" isLoading={isSavingOrg} onClick={handleSaveOrg}>
               Guardar organización
             </Button>

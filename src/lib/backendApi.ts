@@ -141,3 +141,48 @@ export function updateOrgUserRole(orgId: string, userId: string, role: OrgUserRo
 export function deleteOrgUser(orgId: string, userId: string): Promise<{ deleted: string }> {
   return backendFetch(`/v1/users/${userId}?org_id=${orgId}`, { method: 'DELETE' });
 }
+
+// --- AthlosBot (asistente de IA admin-only) ---
+
+export interface AssistantMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface AssistantProposedAction {
+  action_id: string;
+  action_type: string;
+  description: string;
+  payload: Record<string, unknown>;
+}
+
+export interface AssistantChatResult {
+  reply: string;
+  proposed_action: AssistantProposedAction | null;
+}
+
+export interface AssistantActionResult {
+  action_id: string;
+  status: 'executed' | 'failed' | 'rejected';
+  result?: Record<string, unknown> | null;
+  error?: string | null;
+}
+
+export function sendAssistantMessage(
+  orgId: string,
+  message: string,
+  history: AssistantMessage[],
+): Promise<AssistantChatResult> {
+  return backendFetch(`/v1/assistant/chat?org_id=${orgId}`, {
+    method: 'POST',
+    body: JSON.stringify({ message, history }),
+  });
+}
+
+export function confirmAssistantAction(orgId: string, actionId: string): Promise<AssistantActionResult> {
+  return backendFetch(`/v1/assistant/actions/${actionId}/confirm?org_id=${orgId}`, { method: 'POST' });
+}
+
+export function rejectAssistantAction(orgId: string, actionId: string): Promise<AssistantActionResult> {
+  return backendFetch(`/v1/assistant/actions/${actionId}/reject?org_id=${orgId}`, { method: 'POST' });
+}

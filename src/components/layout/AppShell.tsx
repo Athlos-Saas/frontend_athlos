@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
+import { AthlosBot } from '@/components/ui/AthlosBot';
 import { CommandPalette } from '@/components/ui/CommandPalette';
 import { Drawer, DrawerContent } from '@/components/ui/Drawer';
 import { Toaster } from '@/components/ui/Toast';
@@ -8,6 +9,7 @@ import { TooltipProvider } from '@/components/ui/Tooltip';
 import { NAV_SECTIONS } from '@/constants/navigation';
 import { useUiStore } from '@/store/uiStore';
 import { cn } from '@/utils/cn';
+import { isAdmin } from '@/utils/permissions';
 
 import { Header, type HeaderProfile } from './Header';
 import { Sidebar, SidebarNavContent } from './Sidebar';
@@ -94,6 +96,7 @@ export function AppShell({ profile, onSignOut }: AppShellProps) {
 
       <CommandPalette open={isCommandPaletteOpen} onOpenChange={setCommandPaletteOpen} groups={commandGroups} />
       <Toaster />
+      {isAdmin(profile.role) && profile.org_id && <AthlosBot orgId={profile.org_id} />}
     </TooltipProvider>
   );
 }
