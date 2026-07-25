@@ -1,5 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import CargasGps from './CargasGps';
+import RiesgoLesion from './RiesgoLesion';
 import Videos from './Videos';
 
 export default function Analisis({ orgId, role }: { orgId: string; role: string | null }) {
@@ -16,12 +17,16 @@ export default function Analisis({ orgId, role }: { orgId: string; role: string 
         <TabsList>
           <TabsTrigger value="gps">Cargas GPS</TabsTrigger>
           <TabsTrigger value="video">Video análisis</TabsTrigger>
+          <TabsTrigger value="riesgo">Riesgo de lesión</TabsTrigger>
         </TabsList>
         <TabsContent value="gps">
           <CargasGps orgId={orgId} role={role} />
         </TabsContent>
         <TabsContent value="video">
           <Videos orgId={orgId} role={role} />
+        </TabsContent>
+        <TabsContent value="riesgo">
+          <RiesgoLesion orgId={orgId} role={role} />
         </TabsContent>
       </Tabs>
     </div>
