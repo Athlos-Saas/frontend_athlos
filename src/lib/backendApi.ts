@@ -18,7 +18,7 @@ export interface TrainingResult {
  * caso por defecto (ver VITE_API_URL en .env.example).
  */
 export async function triggerTraining(
-  kind: 'physical' | 'technical',
+  kind: 'physical' | 'technical' | 'injury_risk',
   params: Record<string, string>,
 ): Promise<TrainingResult[]> {
   const backendUrl = getBackendUrl();
@@ -54,7 +54,13 @@ export async function triggerTraining(
  * sesión del propio usuario, igual que triggerTraining. Requiere backend
  * accesible desde el navegador (VITE_API_URL).
  */
-export async function triggerVideoProcessing(orgId: string, videoId: string): Promise<{ video_id: string; status: string }> {
+export type YoloModelKey = 'nano' | 'small';
+
+export async function triggerVideoProcessing(
+  orgId: string,
+  videoId: string,
+  yoloModel: YoloModelKey = 'nano',
+): Promise<{ video_id: string; status: string; yolo_model: string }> {
   const backendUrl = getBackendUrl();
   if (!backendUrl) {
     throw new Error('VITE_API_URL no está configurado: no hay un backend accesible desde el navegador.');
@@ -66,7 +72,7 @@ export async function triggerVideoProcessing(orgId: string, videoId: string): Pr
 
   let response: Response;
   try {
-    response = await fetch(`${backendUrl}/v1/videos/${videoId}/process?org_id=${orgId}`, {
+    response = await fetch(`${backendUrl}/v1/videos/${videoId}/process?org_id=${orgId}&yolo_model=${yoloModel}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     });

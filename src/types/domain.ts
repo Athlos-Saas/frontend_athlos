@@ -129,6 +129,7 @@ export interface VideoAnalysis {
   storage_path?: string | null;
   processed_path?: string | null;
   error_message?: string | null;
+  yolo_model?: string | null;
 }
 
 export interface VideoPlayerTrack {

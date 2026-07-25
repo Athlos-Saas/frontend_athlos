@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Pagination } from '@/components/ui/Pagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableSkeletonRows } from '@/components/ui/Table';
 import { usePagedRows } from '@/hooks/usePagedRows';
-import { triggerVideoProcessing } from '@/lib/backendApi';
+import { triggerVideoProcessing, type YoloModelKey } from '@/lib/backendApi';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/store/toastStore';
 import { canWrite } from '@/utils/permissions';
@@ -38,6 +38,11 @@ const STATUS_LABEL: Record<VideoAnalysis['status'], string> = {
 
 const POLL_INTERVAL_MS = 4000;
 
+const YOLO_MODEL_LABEL: Record<YoloModelKey, string> = {
+  nano: 'Nano (rápido)',
+  small: 'Small (más preciso)',
+};
+
 export default function Videos({ orgId, role }: { orgId: string; role: string | null }) {
   const [videos, setVideos] = useState<VideoAnalysis[] | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -55,12 +60,14 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
   const [editTitle, setEditTitle] = useState('');
   const [editMatchDate, setEditMatchDate] = useState('');
   const [isSavingTitle, setIsSavingTitle] = useState(false);
+  const [analyzeVideo, setAnalyzeVideo] = useState<VideoAnalysis | null>(null);
+  const [selectedYoloModel, setSelectedYoloModel] = useState<YoloModelKey>('nano');
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadVideos = () => {
     supabase
       .from('video_analyses')
-      .select('id, title, status, created_at, match_date, storage_path, processed_path, error_message')
+      .select('id, title, status, created_at, match_date, storage_path, processed_path, error_message, yolo_model')
       .eq('org_id', orgId)
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
@@ -177,11 +184,14 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
     loadVideos();
   };
 
-  const handleAnalyze = async (video: VideoAnalysis) => {
+  const handleAnalyze = async (video: VideoAnalysis, yoloModel: YoloModelKey) => {
     setAnalyzingId(video.id);
     try {
-      await triggerVideoProcessing(orgId, video.id);
-      setVideos((current) => (current ?? []).map((v) => (v.id === video.id ? { ...v, status: 'processing' } : v)));
+      await triggerVideoProcessing(orgId, video.id, yoloModel);
+      setVideos((current) =>
+        (current ?? []).map((v) => (v.id === video.id ? { ...v, status: 'processing', yolo_model: yoloModel } : v)),
+      );
+      setAnalyzeVideo(null);
     } catch (error) {
       toast({
         title: 'No se pudo iniciar el análisis',
@@ -343,6 +353,11 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                       {video.status === 'failed' && video.error_message && (
                         <p className="mt-1 max-w-xs text-xs text-danger">{video.error_message}</p>
                       )}
+                      {video.yolo_model && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {YOLO_MODEL_LABEL[video.yolo_model as YoloModelKey] ?? video.yolo_model}
+                        </p>
+                      )}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {new Date(video.created_at).toLocaleString('es-ES')}
@@ -350,7 +365,15 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         {video.status === 'uploaded' && canWrite(role) && (
-                          <Button size="sm" variant="secondary" isLoading={analyzingId === video.id} onClick={() => handleAnalyze(video)}>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            isLoading={analyzingId === video.id}
+                            onClick={() => {
+                              setSelectedYoloModel('nano');
+                              setAnalyzeVideo(video);
+                            }}
+                          >
                             <Play className="size-4" aria-hidden="true" /> Analizar
                           </Button>
                         )}
@@ -507,6 +530,45 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
             </Button>
             <Button size="sm" isLoading={isSavingTitle} disabled={!editTitle.trim()} onClick={handleRenameVideo}>
               Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={analyzeVideo !== null} onOpenChange={(open) => !open && setAnalyzeVideo(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Elegí el modelo de detección</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Field label="Modelo" htmlFor="analyze-yolo-model">
+              <Select value={selectedYoloModel} onValueChange={(value) => setSelectedYoloModel(value as YoloModelKey)}>
+                <SelectTrigger id="analyze-yolo-model">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nano">Nano (rápido)</SelectItem>
+                  <SelectItem value="small">Small (más preciso)</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <p className="text-xs text-muted-foreground">
+              Nano procesa más rápido y alcanza para video estándar bien encuadrado. Small detecta bastantes
+              más jugadores y la pelota (probado: 4x más detecciones de jugador, 75x más de pelota) — conviene
+              para tomas difíciles (cámara que panea, ángulo elevado, video vertical), a costa de ~30% más
+              tiempo de proceso.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" size="sm" onClick={() => setAnalyzeVideo(null)}>
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              isLoading={analyzingId === analyzeVideo?.id}
+              onClick={() => analyzeVideo && handleAnalyze(analyzeVideo, selectedYoloModel)}
+            >
+              <Play className="size-4" aria-hidden="true" /> Analizar
             </Button>
           </DialogFooter>
         </DialogContent>
