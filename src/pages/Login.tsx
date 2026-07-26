@@ -1,96 +1,71 @@
-import { useState, type FormEvent } from 'react';
-import { Activity, BrainCircuit, ShieldCheck, Sparkles, Video } from 'lucide-react';
+import { useRef } from 'react';
+import { motion } from 'framer-motion';
+import { ShieldCheck } from 'lucide-react';
 
-import { Button } from '@/components/ui/Button';
-import { Field } from '@/components/ui/Field';
-import { Input } from '@/components/ui/Input';
+import { AmbientBackground } from '@/features/loginExperience/AmbientBackground';
+import { CapabilityModules } from '@/features/loginExperience/CapabilityModules';
+import { HudField } from '@/features/loginExperience/HudField';
+import { LoginConsole } from '@/features/loginExperience/LoginConsole';
+import { useMouseParallax } from '@/features/loginExperience/useMouseParallax';
 
 export interface LoginProps {
   onSignIn: (email: string, password: string) => Promise<{ error: { message: string } | null }>;
 }
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const FEATURES = [
-  { icon: BrainCircuit, label: 'Modelos de ML en producción', description: 'Fatiga, clustering y clasificación en tiempo real' },
-  { icon: Activity, label: 'Monitoreo GPS y wellness', description: 'Carga física y prevención de lesiones' },
-  { icon: Video, label: 'Video análisis', description: 'Tracking de jugadores con computer vision' },
-  { icon: Sparkles, label: 'AI Intelligence Center', description: 'Insights y predicciones consolidadas' },
-];
-
+/**
+ * Login Experience V2 — la lógica de autenticación en sí vive intacta en
+ * `LoginConsole.tsx` (mismo `onSignIn`, misma validación). Este archivo
+ * solo compone el layout inmersivo alrededor: fondo en capas, atleta
+ * skeleton-tracking + widgets HUD, capacidades, y la consola de login.
+ */
 export default function Login({ onSignIn }: LoginProps) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
-  const [formError, setFormError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    setFormError('');
-
-    const errors: typeof fieldErrors = {};
-    if (!EMAIL_PATTERN.test(email)) errors.email = 'Ingresa un correo válido.';
-    if (password.length < 6) errors.password = 'Mínimo 6 caracteres.';
-    setFieldErrors(errors);
-    if (Object.keys(errors).length > 0) return;
-
-    setIsSubmitting(true);
-    const { error } = await onSignIn(email, password);
-    if (error) setFormError('Credenciales inválidas.');
-    setIsSubmitting(false);
-  };
+  const stageRef = useRef<HTMLDivElement>(null);
+  const parallax = useMouseParallax(stageRef);
 
   return (
-    <div className="grid min-h-screen grid-cols-1 bg-bg lg:grid-cols-[1.1fr_1fr]">
-      {/* Panel de marca — solo en desktop */}
-      <div className="relative hidden overflow-hidden border-r border-border bg-panel lg:flex lg:flex-col lg:justify-between lg:p-12">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-70"
-          style={{
-            backgroundImage:
-              'linear-gradient(rgba(148,163,184,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.08) 1px, transparent 1px)',
-            backgroundSize: '44px 44px',
-            maskImage: 'radial-gradient(ellipse at 30% 20%, black 0%, transparent 70%)',
-          }}
-          aria-hidden="true"
-        />
-        <div
-          className="motion-safe:animate-pulse pointer-events-none absolute -left-24 -top-24 size-[420px] rounded-full bg-ai/20 blur-3xl [animation-duration:6s]"
-          aria-hidden="true"
-        />
-        <div
-          className="motion-safe:animate-pulse pointer-events-none absolute -bottom-32 -right-16 size-[420px] rounded-full bg-purple/20 blur-3xl [animation-duration:8s]"
-          aria-hidden="true"
-        />
+    <div ref={stageRef} className="relative grid min-h-screen grid-cols-1 overflow-hidden bg-bg lg:grid-cols-[1.65fr_1fr]">
+      {/* Panel inmersivo — solo en desktop */}
+      <div className="relative hidden overflow-hidden border-r border-border lg:flex lg:flex-col lg:justify-between lg:p-12">
+        <AmbientBackground />
 
-        <div className="relative flex items-center gap-3">
+        <motion.div
+          className="relative flex items-center gap-3"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
           <img src="/images/Logo.png" alt="ATHLOS" className="h-20 w-auto mix-blend-screen" />
           <span className="rounded-full border border-purple/30 bg-purple/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-purple">
             AI Platform
           </span>
+        </motion.div>
+
+        {/* Atleta + widgets, centrados, superpuestos al texto en pantallas grandes */}
+        <div className="pointer-events-none absolute inset-y-0 right-[6%] top-1/2 hidden w-[36%] -translate-y-1/2 xl:block">
+          <HudField parallax={parallax} />
         </div>
 
         <div className="relative max-w-md">
-          <h1 className="text-4xl font-bold leading-tight tracking-tight text-foreground">
+          <motion.h1
+            className="text-4xl font-bold leading-tight tracking-tight text-foreground"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
             Inteligencia artificial para el rendimiento deportivo de élite.
-          </h1>
-          <p className="mt-4 text-sm text-muted-foreground">
+          </motion.h1>
+          <motion.p
+            className="mt-4 text-sm text-muted-foreground"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
             Datos, modelos y predicciones en una sola plataforma — construida para equipos que
             compiten con precisión.
-          </p>
+          </motion.p>
 
-          <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {FEATURES.map((feature) => (
-              <div
-                key={feature.label}
-                className="glass rounded-lg border border-border p-4 transition-colors hover:border-ai/30"
-              >
-                <feature.icon className="size-5 text-ai" aria-hidden="true" />
-                <p className="mt-3 text-sm font-semibold text-foreground">{feature.label}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{feature.description}</p>
-              </div>
-            ))}
+          <div className="mt-8">
+            <CapabilityModules />
           </div>
         </div>
 
@@ -100,7 +75,7 @@ export default function Login({ onSignIn }: LoginProps) {
         </div>
       </div>
 
-      {/* Formulario */}
+      {/* Consola de login */}
       <div className="relative flex items-center justify-center overflow-hidden p-6">
         <div
           className="pointer-events-none absolute inset-0 opacity-60 lg:hidden"
@@ -116,46 +91,7 @@ export default function Login({ onSignIn }: LoginProps) {
             <img src="/images/Logo.png" alt="ATHLOS" className="h-16 w-auto mix-blend-screen" />
           </div>
 
-          <h2 className="text-xl font-semibold text-foreground">Bienvenido de nuevo</h2>
-          <p className="mb-7 mt-1 text-sm text-muted-foreground">
-            Ingresa a tu cuenta para continuar con el análisis de tu organización.
-          </p>
-
-          {formError && (
-            <div role="alert" className="mb-4 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
-              {formError}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} noValidate>
-            <Field label="Correo" htmlFor="email" required error={fieldErrors.email}>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </Field>
-            <Field
-              label="Contraseña"
-              htmlFor="password"
-              required
-              error={fieldErrors.password}
-              hint={!fieldErrors.password ? 'Mínimo 6 caracteres.' : undefined}
-            >
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </Field>
-            <Button type="submit" isLoading={isSubmitting} className="w-full">
-              Ingresar
-            </Button>
-          </form>
+          <LoginConsole onSignIn={onSignIn} />
         </div>
       </div>
     </div>
