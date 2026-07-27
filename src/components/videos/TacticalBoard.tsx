@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeftRight, Flame, Route, UserCheck, X } from 'lucide-react';
+import { ArrowLeftRight, Flame, Route, UserCheck, Users, X, Zap } from 'lucide-react';
 
 import {
   buildHeatmapDataUrl,
@@ -193,6 +193,32 @@ function clusterTeams(tracks: VideoPlayerTrack[]): Map<string, TeamLabel> {
   return labels;
 }
 
+type Point2 = { x: number; y: number };
+
+/** Casco convexo (Andrew's monotone chain) — para "Forma del equipo": el
+ * polígono más chico que contiene todas las posiciones registradas de un
+ * equipo, usado como aproximación honesta de la amplitud/compactación. */
+function convexHull(points: Point2[]): Point2[] {
+  if (points.length < 3) return points;
+  const sorted = [...points].sort((a, b) => (a.x === b.x ? a.y - b.y : a.x - b.x));
+  const cross = (o: Point2, a: Point2, b: Point2) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+
+  const lower: Point2[] = [];
+  for (const p of sorted) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  const upper: Point2[] = [];
+  for (let i = sorted.length - 1; i >= 0; i -= 1) {
+    const p = sorted[i];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+    upper.push(p);
+  }
+  lower.pop();
+  upper.pop();
+  return [...lower, ...upper];
+}
+
 const PITCH_BACKGROUND = 'linear-gradient(180deg, #14532d, #0f3d24)';
 const HOLO_BLUE = '#3b82f6';
 const HOLO_GREEN = '#22c55e';
@@ -286,6 +312,67 @@ function PanelShell({
         </div>
       </div>
       {children}
+    </div>
+  );
+}
+
+/** Velocidad instantánea del jugador seleccionado a lo largo del video —
+ * mismo cálculo (distancia/tiempo entre puntos consecutivos de la
+ * trayectoria ya limpiada en el backend) que ya se usaba para el p95 de la
+ * tabla, solo que acá se ve la serie completa en vez de un solo número. */
+function SpeedChart({ series }: { series: { t: number; speedKmh: number }[] }) {
+  if (series.length < 2) {
+    return <p className="py-9 text-center text-xs text-muted-foreground">Sin suficientes datos de velocidad.</p>;
+  }
+  const width = 300;
+  const height = 100;
+  const maxSpeed = Math.max(...series.map((s) => s.speedKmh), 10);
+  const minT = series[0].t;
+  const spanT = Math.max(series[series.length - 1].t - minT, 0.1);
+  const toX = (t: number) => ((t - minT) / spanT) * width;
+  const toY = (speed: number) => height - (speed / maxSpeed) * height;
+  const linePoints = series.map((s) => `${toX(s.t).toFixed(1)},${toY(s.speedKmh).toFixed(1)}`).join(' ');
+  const areaPoints = `0,${height} ${linePoints} ${width},${height}`;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ height: 130 }} preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="speed-area-gradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.55} />
+          <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <polygon points={areaPoints} fill="url(#speed-area-gradient)" />
+      <polyline points={linePoints} fill="none" stroke="#3b82f6" strokeWidth={1.4} strokeLinejoin="round" />
+      <text x={2} y={9} fontSize={8} fill="rgba(255,255,255,0.55)">
+        {maxSpeed.toFixed(0)} km/h
+      </text>
+      <text x={2} y={height - 3} fontSize={8} fill="rgba(255,255,255,0.55)">
+        0
+      </text>
+    </svg>
+  );
+}
+
+/** Distancia recorrida por el jugador seleccionado, desglosada por franja
+ * de cancha (mismas 4 zonas que ya usan los botones de asignación). */
+function ZoneDistanceBars({ zones }: { zones: { key: ZoneKey; label: string; distanceM: number }[] }) {
+  const total = zones.reduce((sum, z) => sum + z.distanceM, 0);
+  if (total === 0) {
+    return <p className="py-9 text-center text-xs text-muted-foreground">Sin suficiente recorrido para desglosar.</p>;
+  }
+  const maxDistance = Math.max(...zones.map((z) => z.distanceM), 1);
+  return (
+    <div className="space-y-2.5 py-1">
+      {zones.map((zone) => (
+        <div key={zone.key} className="flex items-center gap-2 text-xs">
+          <span className="w-16 shrink-0 text-muted-foreground">{zone.label}</span>
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/5">
+            <div className="h-full rounded-full bg-ai" style={{ width: `${(zone.distanceM / maxDistance) * 100}%` }} />
+          </div>
+          <span className="w-14 shrink-0 text-right tabular-nums text-foreground">{zone.distanceM.toFixed(0)}m</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -414,6 +501,66 @@ export function TacticalBoard({
     const keyTimes = raw.map((p) => ((p.t - t0) / span).toFixed(4)).join(';');
     return { pathD, keyPoints, keyTimes, durationS: Math.min(Math.max(span, 3), 14) };
   }, [displayTrajectories, selectedTrackId]);
+
+  /** Velocidad instantánea de la identidad seleccionada, punto a punto —
+   * misma trayectoria ya limpiada por el backend (ver
+   * `_filter_trajectory_jumps`), solo que acá se expone la serie completa
+   * en vez de reducirla a un solo p95. */
+  const speedSeries = useMemo(() => {
+    if (!selectedTrackId) return [];
+    const raw = displayTrajectories[selectedTrackId];
+    if (!raw || raw.length < 2) return [];
+    const points = raw.map(toPitch);
+    const series: { t: number; speedKmh: number }[] = [];
+    for (let i = 1; i < points.length; i += 1) {
+      const dt = raw[i].t - raw[i - 1].t;
+      if (dt <= 0) continue;
+      const dist = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+      series.push({ t: raw[i].t, speedKmh: (dist / dt) * 3.6 });
+    }
+    return series;
+  }, [displayTrajectories, selectedTrackId]);
+
+  /** Distancia recorrida por la identidad seleccionada, atribuida a la zona
+   * donde estaba parada en cada tramo (mismas franjas que ya usan los
+   * botones de asignación por zona). */
+  const zoneDistances = useMemo(() => {
+    const base = ZONES.map((zone) => ({ key: zone.key, label: zone.label, distanceM: 0 }));
+    if (!selectedTrackId) return base;
+    const raw = displayTrajectories[selectedTrackId];
+    if (!raw || raw.length < 2) return base;
+    const points = raw.map(toPitch);
+    const totals = new Map<ZoneKey, number>(ZONES.map((z) => [z.key, 0]));
+    for (let i = 1; i < points.length; i += 1) {
+      const dist = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+      const zone = ZONES.find((z) => raw[i].x >= z.from && raw[i].x < z.to) ?? ZONES[ZONES.length - 1];
+      totals.set(zone.key, (totals.get(zone.key) ?? 0) + dist);
+    }
+    return ZONES.map((zone) => ({ key: zone.key, label: zone.label, distanceM: totals.get(zone.key) ?? 0 }));
+  }, [displayTrajectories, selectedTrackId]);
+
+  /** Forma del equipo: centro de gravedad + casco convexo sobre TODAS las
+   * posiciones registradas de cada equipo en toda la corrida (no depende
+   * de seleccionar una identidad) — requiere que el clustering por color
+   * haya encontrado ambos equipos (ver `clusterTeams`). */
+  const teamShapes = useMemo(() => {
+    if (!teamSwatches.A && !teamSwatches.B) return [];
+    const shapes: { label: TeamLabel; color: string; centroid: Point2; hull: Point2[] }[] = [];
+    for (const label of ['A', 'B'] as const) {
+      const color = teamSwatches[label];
+      if (!color) continue;
+      const points = Object.entries(displayTrajectories)
+        .filter(([trackId]) => trackId !== BALL_TRAJECTORY_KEY && teamClusters.get(trackId) === label)
+        .flatMap(([, pts]) => pts.map(toPitch));
+      if (points.length < 3) continue;
+      const centroid = {
+        x: points.reduce((sum, p) => sum + p.x, 0) / points.length,
+        y: points.reduce((sum, p) => sum + p.y, 0) / points.length,
+      };
+      shapes.push({ label, color, centroid, hull: convexHull(points) });
+    }
+    return shapes;
+  }, [displayTrajectories, teamClusters, teamSwatches]);
 
   const zoneTrackIds = useMemo(() => {
     if (!activeZone) return [];
@@ -743,6 +890,83 @@ export function TacticalBoard({
           </svg>
         </PanelShell>
       </div>
+
+      {/* Forma del equipo — centro de gravedad + amplitud, promedio de toda
+          la corrida. No depende de seleccionar una identidad. */}
+      <div className="mt-4">
+        <PanelShell
+          icon={Users}
+          title="Forma del equipo"
+          subtitle="Centro de gravedad y amplitud — promedio de toda la corrida"
+          accent="bg-purple/15 text-purple"
+        >
+          {teamShapes.length > 0 ? (
+            <svg
+              viewBox={`-2 -2 ${FIELD_LENGTH_M + 4} ${FIELD_WIDTH_M + 4}`}
+              className="w-full rounded-lg border border-border"
+              style={{ background: PITCH_BACKGROUND, maxHeight: 260 }}
+            >
+              <PitchMarkings />
+              {teamShapes.map((shape) => (
+                <g key={shape.label}>
+                  <polygon
+                    points={shape.hull.map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ')}
+                    fill={shape.color}
+                    opacity={0.16}
+                    stroke={shape.color}
+                    strokeWidth={0.4}
+                    strokeOpacity={0.7}
+                  />
+                  <circle
+                    cx={shape.centroid.x}
+                    cy={shape.centroid.y}
+                    r={1.4}
+                    fill={shape.color}
+                    style={{ filter: `drop-shadow(0 0 3px ${shape.color})` }}
+                  />
+                  <text
+                    x={shape.centroid.x}
+                    y={shape.centroid.y - 2.6}
+                    textAnchor="middle"
+                    fontSize={3.2}
+                    fontWeight={700}
+                    fill={shape.color}
+                  >
+                    Equipo {shape.label}
+                  </text>
+                </g>
+              ))}
+            </svg>
+          ) : (
+            <p className="py-9 text-center text-xs text-muted-foreground">
+              Todavía no hay suficientes camisetas identificadas para agrupar los dos equipos.
+            </p>
+          )}
+        </PanelShell>
+      </div>
+
+      {/* Velocidad en el tiempo + distancia por zona — solo tienen sentido
+          para una identidad puntual, no para "todas". */}
+      {selectedTrackId && (
+        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <PanelShell
+            icon={Zap}
+            title="Velocidad en el tiempo"
+            subtitle={`Velocidad instantánea de J${selectedTrackId} a lo largo del video`}
+            accent="bg-ai/15 text-ai"
+          >
+            <SpeedChart series={speedSeries} />
+          </PanelShell>
+          <PanelShell
+            icon={Route}
+            title="Distancia por zona"
+            subtitle={`Dónde recorrió sus metros J${selectedTrackId}`}
+            accent="bg-success/15 text-success"
+          >
+            <ZoneDistanceBars zones={zoneDistances} />
+          </PanelShell>
+        </div>
+      )}
 
       {assignedGroups.length > 0 && (
         <div className="mt-3 space-y-1.5">
