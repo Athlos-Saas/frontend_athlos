@@ -67,46 +67,64 @@ function PermissionFolder({ group, isOpen, onToggle, isNavGroup, overrides, savi
               </TableRow>
             </TableHeader>
             <TableBody>
-              {group.rows.map((row) => (
-                <TableRow key={row.key}>
-                  <TableCell className="align-top">
-                    <p className="font-medium">{row.label}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{row.comoSeGatea}</p>
-                    {row.gap && (
-                      <p className="mt-1.5 flex items-start gap-1.5 text-xs text-warning">
-                        <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-                        <span>{row.gap}</span>
-                      </p>
-                    )}
-                  </TableCell>
-                  {ALL_ROLES.map((role) => {
-                    const key = cellKey(row.key, role);
-                    const checked = overrides.get(key) ?? row.defaultRoles.includes(role);
-                    const locked = isNavGroup && row.key === ADMIN_LOCKED_NAV_KEY && role === 'admin';
-                    const box = (
-                      <Checkbox
-                        checked={checked}
-                        disabled={locked || savingKeys.has(key)}
-                        onCheckedChange={(value) => onCheck(row, role, value === true)}
-                      />
-                    );
-                    return (
-                      <TableCell key={role} className="text-center align-top">
-                        {locked ? (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="inline-flex">{box}</span>
-                            </TooltipTrigger>
-                            <TooltipContent>Los administradores siempre pueden acceder a Administración.</TooltipContent>
-                          </Tooltip>
-                        ) : (
-                          box
-                        )}
-                      </TableCell>
-                    );
-                  })}
-                </TableRow>
-              ))}
+              {group.rows.map((row) => {
+                const keys = row.enforcementKeys?.length ? row.enforcementKeys : [row.key];
+                return (
+                  <TableRow key={row.key}>
+                    <TableCell className="align-top">
+                      <p className="font-medium">{row.label}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{row.comoSeGatea}</p>
+                      {row.gap && (
+                        <p className="mt-1.5 flex items-start gap-1.5 text-xs text-warning">
+                          <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                          <span>{row.gap}</span>
+                        </p>
+                      )}
+                    </TableCell>
+                    {ALL_ROLES.map((role) => {
+                      // Cuando varias filas comparten enforcementKeys (misma policy real en
+                      // la base), el checkbox refleja el AND de esas claves — no puede
+                      // mostrarse "permitido" acá y "bloqueado" en la fila hermana si
+                      // ambas son, en los hechos, el mismo candado.
+                      const checked = keys.every((k) => overrides.get(cellKey(k, role)) ?? row.defaultRoles.includes(role));
+                      const savingKey = keys.find((k) => savingKeys.has(cellKey(k, role)));
+                      const navLocked = isNavGroup && row.key === ADMIN_LOCKED_NAV_KEY && role === 'admin';
+                      const enforcedAdminLocked = !isNavGroup && row.enforced && role === 'admin';
+                      const locked = navLocked || enforcedAdminLocked;
+                      const box = (
+                        <Checkbox
+                          checked={checked}
+                          disabled={locked || Boolean(savingKey)}
+                          onCheckedChange={(value) => onCheck(row, role, value === true)}
+                        />
+                      );
+                      return (
+                        <TableCell key={role} className="text-center align-top">
+                          {navLocked ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex">{box}</span>
+                              </TooltipTrigger>
+                              <TooltipContent>Los administradores siempre pueden acceder a Administración.</TooltipContent>
+                            </Tooltip>
+                          ) : enforcedAdminLocked ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex">{box}</span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                Un admin siempre puede hacer esto — evita que la org se quede sin nadie que pueda.
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            box
+                          )}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
@@ -150,18 +168,34 @@ export default function MatrizPermisos({ orgId, viewerRole }: { orgId: string; v
   };
 
   const handleCheckPermission = async (row: PermissionRow, role: OrgUserRole, checked: boolean) => {
-    const key = cellKey(row.key, role);
-    setSavingKeys((prev) => new Set(prev).add(key));
-    setPermOverrides((prev) => new Map(prev).set(key, checked));
+    // Filas con enforcementKeys controlan más de una policy real a la vez
+    // (ej. "Importar roster" toca players.update E injuries.insert) — se
+    // escriben todas juntas para que el checkbox nunca quede a mitad de camino.
+    const keys = row.enforcementKeys?.length ? row.enforcementKeys : [row.key];
+    const cellKeys = keys.map((k) => cellKey(k, role));
+    setSavingKeys((prev) => {
+      const next = new Set(prev);
+      cellKeys.forEach((k) => next.add(k));
+      return next;
+    });
+    setPermOverrides((prev) => {
+      const next = new Map(prev);
+      cellKeys.forEach((k) => next.set(k, checked));
+      return next;
+    });
     try {
-      await upsertPermissionSetting(orgId, row.key, role, checked);
+      await Promise.all(keys.map((k) => upsertPermissionSetting(orgId, k, role, checked)));
     } catch (error) {
-      setPermOverrides((prev) => new Map(prev).set(key, !checked));
+      setPermOverrides((prev) => {
+        const next = new Map(prev);
+        cellKeys.forEach((k) => next.set(k, !checked));
+        return next;
+      });
       toast({ title: 'No se pudo guardar el permiso', description: error instanceof Error ? error.message : undefined, variant: 'danger' });
     } finally {
       setSavingKeys((prev) => {
         const next = new Set(prev);
-        next.delete(key);
+        cellKeys.forEach((k) => next.delete(k));
         return next;
       });
     }
@@ -203,13 +237,19 @@ export default function MatrizPermisos({ orgId, viewerRole }: { orgId: string; v
             <CardTitle>Matriz de permisos</CardTitle>
             <CardDescription className="mt-1.5 space-y-1">
               <span className="block">
-                <strong className="text-foreground">Navegación:</strong> el checkbox sí controla en vivo qué módulos
-                del menú ve cada rol y bloquea el acceso directo por URL.
+                <strong className="text-foreground">Navegación:</strong> el checkbox controla en vivo qué módulos del
+                menú ve cada rol y bloquea el acceso directo por URL.
               </span>
               <span className="block">
-                <strong className="text-foreground">Resto de carpetas:</strong> guardan una configuración objetivo
-                real (se persiste), pero todavía NO cambian el comportamiento de la base de datos — conectarlas a
-                las políticas reales es una fase futura separada.
+                <strong className="text-foreground">Resto de carpetas:</strong> la mayoría de los checkboxes ya
+                cambian el comportamiento real (RLS o backend) — se marcan con su propia nota en "cómo se gatea".
+                Las pocas filas que todavía son solo configuración objetivo lo dicen explícitamente (perfil propio,
+                invitar/cambiar rol/eliminar usuario).
+              </span>
+              <span className="block">
+                <strong className="text-foreground">Columna "Administrador":</strong> queda bloqueada en las filas
+                conectadas, para que ningún admin pueda dejar a su propia organización sin nadie que pueda ejercer
+                esa acción.
               </span>
             </CardDescription>
           </div>

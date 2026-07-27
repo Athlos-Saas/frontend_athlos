@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { HeartPulse, RefreshCw } from 'lucide-react';
+import { AlertTriangle, HeartPulse, RefreshCw } from 'lucide-react';
 
 import { DataTable, type DataTableColumn } from '@/components/tables/DataTable';
 import { Badge } from '@/components/ui/Badge';
@@ -16,6 +16,7 @@ import type { MlPrediction } from '@/types/domain';
 type LoadState = 'loading' | 'error' | 'ready';
 
 type RiskLevel = 'bajo' | 'medio' | 'alto';
+type Confidence = 'alta' | 'baja';
 
 const RISK_BADGE: Record<RiskLevel, 'success' | 'warning' | 'danger'> = {
   bajo: 'success',
@@ -31,6 +32,7 @@ interface RiskRow {
   acwr: number | null;
   dias_desde_ultima_lesion: number | null;
   lesiones_ultimos_365_dias: number | null;
+  confianza: Confidence | null;
 }
 
 export default function RiesgoLesion({ orgId, role }: { orgId: string; role: string | null }) {
@@ -38,6 +40,7 @@ export default function RiesgoLesion({ orgId, role }: { orgId: string; role: str
   const [state, setState] = useState<LoadState>('loading');
   const [reloadToken, setReloadToken] = useState(0);
   const [isTraining, setIsTraining] = useState(false);
+  const [warning, setWarning] = useState<string | null>(null);
   const backendUrl = getBackendUrl();
 
   useEffect(() => {
@@ -50,7 +53,14 @@ export default function RiesgoLesion({ orgId, role }: { orgId: string; role: str
         .eq('org_id', orgId)
         .eq('prediction_type', 'injury_risk'),
       supabase.from('players').select('id, full_name').eq('org_id', orgId),
-    ]).then(([predictionsRes, playersRes]) => {
+      supabase
+        .from('ml_models')
+        .select('metrics')
+        .eq('org_id', orgId)
+        .eq('name', 'injury_risk_acwr_heuristic')
+        .order('trained_at', { ascending: false })
+        .limit(1),
+    ]).then(([predictionsRes, playersRes, modelsRes]) => {
       if (!isMounted) return;
       if (predictionsRes.error || playersRes.error) {
         setState('error');
@@ -60,19 +70,22 @@ export default function RiesgoLesion({ orgId, role }: { orgId: string; role: str
       const nextRows: RiskRow[] = ((predictionsRes.data ?? []) as MlPrediction[])
         .filter((p) => p.player_id)
         .map((p) => {
-          const features = (p.features ?? {}) as Record<string, number | null>;
+          const features = (p.features ?? {}) as Record<string, number | string | null>;
           return {
             player_id: p.player_id!,
             full_name: nameById.get(p.player_id!) ?? 'Jugador desconocido',
             label: p.label,
             score: p.score ?? null,
-            acwr: features.acwr ?? null,
-            dias_desde_ultima_lesion: features.dias_desde_ultima_lesion ?? null,
-            lesiones_ultimos_365_dias: features.lesiones_ultimos_365_dias ?? null,
+            acwr: (features.acwr as number | null) ?? null,
+            dias_desde_ultima_lesion: (features.dias_desde_ultima_lesion as number | null) ?? null,
+            lesiones_ultimos_365_dias: (features.lesiones_ultimos_365_dias as number | null) ?? null,
+            confianza: (features.confianza as Confidence | null) ?? null,
           };
         })
         .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
       setRows(nextRows);
+      const metrics = modelsRes.data?.[0]?.metrics as Record<string, unknown> | undefined;
+      setWarning(typeof metrics?.advertencia === 'string' ? metrics.advertencia : null);
       setState('ready');
     });
     return () => {
@@ -85,6 +98,8 @@ export default function RiesgoLesion({ orgId, role }: { orgId: string; role: str
     try {
       const results = await triggerTraining('injury_risk', { org_id: orgId });
       const written = results[0]?.predictions_written ?? 0;
+      const metrics = results[0]?.metrics as Record<string, unknown> | undefined;
+      setWarning(typeof metrics?.advertencia === 'string' ? metrics.advertencia : null);
       toast({ title: 'Evaluación actualizada', description: `${written} jugadores evaluados.`, variant: 'success' });
       setReloadToken((n) => n + 1);
     } catch (error) {
@@ -123,6 +138,18 @@ export default function RiesgoLesion({ orgId, role }: { orgId: string; role: str
       sortable: true,
       accessor: (row) => row.lesiones_ultimos_365_dias ?? 0,
     },
+    {
+      id: 'confianza',
+      header: 'Confianza',
+      sortable: true,
+      accessor: (row) => row.confianza ?? '',
+      cell: (row) =>
+        row.confianza ? (
+          <Badge variant={row.confianza === 'alta' ? 'success' : 'warning'}>{row.confianza}</Badge>
+        ) : (
+          '—'
+        ),
+    },
   ];
 
   if (state === 'error') return <ErrorState onRetry={() => setReloadToken((n) => n + 1)} />;
@@ -150,6 +177,13 @@ export default function RiesgoLesion({ orgId, role }: { orgId: string; role: str
           </Button>
         )}
       </div>
+
+      {warning && (
+        <div className="mb-4 flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <span>{warning}</span>
+        </div>
+      )}
 
       <Card>
         <CardHeader>
