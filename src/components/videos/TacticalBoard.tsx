@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ArrowLeftRight, Flame, Route, UserCheck, X } from 'lucide-react';
 
 import {
+  buildHeatmapDataUrl,
   cumulativeDistanceFractions,
   FIELD_LENGTH_M,
   FIELD_WIDTH_M,
@@ -313,6 +314,10 @@ export function TacticalBoard({
       .flatMap(([, points]) => points.map(toPitch));
   }, [displayTrajectories, selectedTrackId, visibleMarkers, teamFilter]);
 
+  /** Densidad real (blobs acumulados + colorización por intensidad), no
+   * puntos sueltos superpuestos — ver `buildHeatmapDataUrl`. */
+  const heatmapDataUrl = useMemo(() => buildHeatmapDataUrl(densityPoints), [densityPoints]);
+
   const trackPath = useMemo(() => {
     if (!selectedTrackId) return null;
     const raw = displayTrajectories[selectedTrackId];
@@ -509,12 +514,21 @@ export function TacticalBoard({
             style={{ background: PITCH_BACKGROUND }}
           >
             <PitchMarkings />
-            <g style={{ mixBlendMode: 'screen' }}>
-              {densityPoints.map((point, index) => (
-                // eslint-disable-next-line react/no-array-index-key
-                <circle key={index} cx={point.x} cy={point.y} r={1.1} fill="#f59e0b" opacity={0.14} />
-              ))}
-            </g>
+            {heatmapDataUrl ? (
+              <image
+                href={heatmapDataUrl}
+                x={0}
+                y={0}
+                width={FIELD_LENGTH_M}
+                height={FIELD_WIDTH_M}
+                style={{ mixBlendMode: 'screen' }}
+                preserveAspectRatio="none"
+              />
+            ) : (
+              <text x={FIELD_LENGTH_M / 2} y={FIELD_WIDTH_M / 2} textAnchor="middle" fontSize={4} fill="rgba(255,255,255,0.5)">
+                Sin datos suficientes para el mapa de calor
+              </text>
+            )}
           </svg>
         </PanelShell>
 

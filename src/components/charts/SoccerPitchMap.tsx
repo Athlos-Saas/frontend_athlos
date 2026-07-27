@@ -25,6 +25,98 @@ export function cumulativeDistanceFractions(points: { x: number; y: number }[]):
   return distances.map((d) => d / total);
 }
 
+// --- Mapa de calor real (densidad por acumulación de "blobs" gaussianos) ---
+// Antes esto era solo puntos translúcidos superpuestos (sin ningún cálculo
+// de densidad) — con pocas identidades o posiciones ruidosas se veía como
+// una nube de puntos, no como un mapa de calor. Esta versión acumula un
+// blob suave por punto en un canvas offscreen (composite "lighter", el
+// mismo truco que usa heatmap.js) y despues coloriza por intensidad
+// relativa al pico real de esta corrida — nunca un valor hardcodeado.
+const HEATMAP_CANVAS_SCALE = 6; // px por metro de cancha
+const HEATMAP_BLOB_RADIUS_M = 3.2; // "radio de influencia" de cada posición, en metros
+const HEATMAP_COLOR_STOPS: Array<[number, [number, number, number, number]]> = [
+  [0.0, [0, 0, 0, 0]],
+  [0.25, [37, 99, 235, 140]], // azul
+  [0.5, [34, 197, 94, 190]], // verde
+  [0.75, [250, 204, 21, 215]], // amarillo
+  [1.0, [239, 68, 68, 240]], // rojo
+];
+
+function buildHeatmapColorRamp(): Uint8ClampedArray {
+  const ramp = new Uint8ClampedArray(256 * 4);
+  for (let i = 0; i < 256; i += 1) {
+    const t = i / 255;
+    let lower = HEATMAP_COLOR_STOPS[0];
+    let upper = HEATMAP_COLOR_STOPS[HEATMAP_COLOR_STOPS.length - 1];
+    for (let s = 0; s < HEATMAP_COLOR_STOPS.length - 1; s += 1) {
+      if (t >= HEATMAP_COLOR_STOPS[s][0] && t <= HEATMAP_COLOR_STOPS[s + 1][0]) {
+        lower = HEATMAP_COLOR_STOPS[s];
+        upper = HEATMAP_COLOR_STOPS[s + 1];
+        break;
+      }
+    }
+    const span = upper[0] - lower[0] || 1;
+    const localT = (t - lower[0]) / span;
+    for (let c = 0; c < 4; c += 1) {
+      ramp[i * 4 + c] = lower[1][c] + (upper[1][c] - lower[1][c]) * localT;
+    }
+  }
+  return ramp;
+}
+
+/**
+ * Genera un data URL PNG con el mapa de calor real de `points` (ya en
+ * metros de cancha, ver `toPitch`). Devuelve `null` si no hay puntos —
+ * nunca dibuja un heatmap vacío como si hubiera datos.
+ */
+export function buildHeatmapDataUrl(points: Array<{ x: number; y: number }>): string | null {
+  if (points.length === 0) return null;
+  if (typeof document === 'undefined') return null;
+
+  const width = Math.round(FIELD_LENGTH_M * HEATMAP_CANVAS_SCALE);
+  const height = Math.round(FIELD_WIDTH_M * HEATMAP_CANVAS_SCALE);
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  const radiusPx = HEATMAP_BLOB_RADIUS_M * HEATMAP_CANVAS_SCALE;
+  ctx.globalCompositeOperation = 'lighter';
+  for (const point of points) {
+    const cx = point.x * HEATMAP_CANVAS_SCALE;
+    const cy = point.y * HEATMAP_CANVAS_SCALE;
+    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radiusPx);
+    gradient.addColorStop(0, 'rgba(255,255,255,0.30)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radiusPx, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const data = imageData.data;
+  let max = 0;
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] > max) max = data[i];
+  }
+  if (max === 0) return null;
+
+  const ramp = buildHeatmapColorRamp();
+  for (let i = 0; i < data.length; i += 4) {
+    const intensity = data[i + 3];
+    if (intensity === 0) continue;
+    const bucket = Math.min(255, Math.round((intensity / max) * 255));
+    data[i] = ramp[bucket * 4];
+    data[i + 1] = ramp[bucket * 4 + 1];
+    data[i + 2] = ramp[bucket * 4 + 2];
+    data[i + 3] = ramp[bucket * 4 + 3];
+  }
+  ctx.putImageData(imageData, 0, 0);
+  return canvas.toDataURL('image/png');
+}
+
 export function PitchMarkings() {
   return (
     <g stroke="rgba(255,255,255,0.35)" strokeWidth={0.35} fill="none">
