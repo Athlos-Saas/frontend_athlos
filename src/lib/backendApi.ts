@@ -4,6 +4,19 @@ export function getBackendUrl(): string | null {
   return import.meta.env.VITE_API_URL ?? null;
 }
 
+/**
+ * Ping best-effort a /health — no autentica, no revienta si falla. Se usa
+ * mientras hay un video "processing" para evitar que el plan free de Render
+ * duerma el backend a mitad de un análisis en curso (se duerme por falta de
+ * tráfico HTTP entrante, sin importar que el worker siga corriendo adentro).
+ * No es una garantía total: si el usuario cierra la pestaña, deja de pinguear.
+ */
+export function pingBackend(): void {
+  const backendUrl = getBackendUrl();
+  if (!backendUrl) return;
+  fetch(`${backendUrl}/health`).catch(() => {});
+}
+
 export interface TrainingResult {
   model_name: string;
   model_version: string;

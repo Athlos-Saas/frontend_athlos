@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Pagination } from '@/components/ui/Pagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableSkeletonRows } from '@/components/ui/Table';
 import { usePagedRows } from '@/hooks/usePagedRows';
-import { triggerVideoProcessing, type YoloModelKey } from '@/lib/backendApi';
+import { pingBackend, triggerVideoProcessing, type YoloModelKey } from '@/lib/backendApi';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/store/toastStore';
 import { canWrite } from '@/utils/permissions';
@@ -93,10 +93,17 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
 
   // Mientras haya algún video "processing", refresca solo — para que el estado
   // avance a "done"/"failed" sin que el usuario tenga que recargar la página.
+  // De paso, pinguea /health en cada tick: el plan free de Render duerme el
+  // backend por falta de tráfico HTTP entrante (no le importa que el worker
+  // de video siga corriendo adentro) — esto lo mantiene despierto mientras
+  // esta pestaña siga abierta con un análisis en curso.
   useEffect(() => {
     const hasProcessing = (videos ?? []).some((video) => video.status === 'processing');
     if (hasProcessing && !pollRef.current) {
-      pollRef.current = setInterval(loadVideos, POLL_INTERVAL_MS);
+      pollRef.current = setInterval(() => {
+        loadVideos();
+        pingBackend();
+      }, POLL_INTERVAL_MS);
     } else if (!hasProcessing && pollRef.current) {
       clearInterval(pollRef.current);
       pollRef.current = null;
@@ -364,17 +371,18 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        {video.status === 'uploaded' && canWrite(role) && (
+                        {(video.status === 'uploaded' || video.status === 'failed') && canWrite(role) && (
                           <Button
                             size="sm"
                             variant="secondary"
                             isLoading={analyzingId === video.id}
                             onClick={() => {
-                              setSelectedYoloModel('nano');
+                              setSelectedYoloModel((video.yolo_model as YoloModelKey) ?? 'nano');
                               setAnalyzeVideo(video);
                             }}
                           >
-                            <Play className="size-4" aria-hidden="true" /> Analizar
+                            <Play className="size-4" aria-hidden="true" />
+                            {video.status === 'failed' ? 'Reintentar' : 'Analizar'}
                           </Button>
                         )}
                         {video.status === 'done' && (
