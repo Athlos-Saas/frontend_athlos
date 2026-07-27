@@ -9,6 +9,8 @@ import { cn } from '@/utils/cn';
 
 export interface LoginConsoleProps {
   onSignIn: (email: string, password: string) => Promise<{ error: { message: string } | null }>;
+  /** Se llama al entrar/salir de `isSubmitting`, para que el resto de la experiencia (partículas, holograma, ticker) pueda "reaccionar" mientras la autenticación real está en vuelo. */
+  onSubmittingChange?: (value: boolean) => void;
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -29,7 +31,7 @@ const IconInput = forwardRef<HTMLInputElement, IconInputProps>(({ icon: Icon, cl
     <Icon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
     <Input
       ref={ref}
-      className={cn('h-12 pl-10 text-base focus-visible:shadow-[0_0_0_4px_rgba(59,130,246,0.15)]', className)}
+      className={cn('h-12 pl-10 text-base caret-ai focus-visible:shadow-[0_0_0_4px_rgba(59,130,246,0.15)]', className)}
       {...props}
     />
   </div>
@@ -41,7 +43,7 @@ IconInput.displayName = 'IconInput';
  * estados, `onSignIn`) — NO se toca nada de eso, solo cambia el vestido
  * visual (glass, borde en gradiente, inputs grandes, botón premium).
  */
-export function LoginConsole({ onSignIn }: LoginConsoleProps) {
+export function LoginConsole({ onSignIn, onSubmittingChange }: LoginConsoleProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
@@ -59,9 +61,11 @@ export function LoginConsole({ onSignIn }: LoginConsoleProps) {
     if (Object.keys(errors).length > 0) return;
 
     setIsSubmitting(true);
+    onSubmittingChange?.(true);
     const { error } = await onSignIn(email, password);
     if (error) setFormError('Credenciales inválidas.');
     setIsSubmitting(false);
+    onSubmittingChange?.(false);
   };
 
   return (
@@ -69,8 +73,17 @@ export function LoginConsole({ onSignIn }: LoginConsoleProps) {
       initial={{ opacity: 0, x: 24 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
-      className="border-gradient glass w-full max-w-sm rounded-2xl p-8 shadow-elevated sm:p-10"
+      className="border-gradient border-gradient-live glass group relative w-full max-w-sm overflow-hidden rounded-2xl p-8 shadow-elevated sm:p-10"
     >
+      {/* Sheen — solo visible en hover, recorre el panel en diagonal */}
+      <div
+        className="motion-safe:animate-sheen-sweep pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+        style={{
+          backgroundImage: 'linear-gradient(115deg, transparent 42%, rgba(255,255,255,0.12) 50%, transparent 58%)',
+          backgroundSize: '250% 100%',
+        }}
+      />
+
       <h2 className="text-2xl font-bold text-foreground">Bienvenido de nuevo</h2>
       <p className="mb-8 mt-2 text-sm text-muted-foreground">
         Ingresa a tu cuenta para continuar con el análisis de tu organización.
@@ -114,8 +127,17 @@ export function LoginConsole({ onSignIn }: LoginConsoleProps) {
           <Button
             type="submit"
             isLoading={isSubmitting}
-            className="h-12 w-full bg-[length:200%_100%] bg-gradient-to-r from-ai via-purple to-ai bg-[position:0%_0%] text-base shadow-[0_8px_30px_-8px_rgba(59,130,246,0.6)] transition-[background-position] duration-500 hover:bg-[position:100%_0%]"
+            className="relative h-12 w-full overflow-hidden bg-[length:200%_100%] bg-gradient-to-r from-ai via-purple to-ai bg-[position:0%_0%] text-base shadow-[0_8px_30px_-8px_rgba(59,130,246,0.6)] transition-[background-position] duration-500 hover:bg-[position:100%_0%]"
           >
+            {/* Brillo continuo, independiente del hover — "el botón nunca está del todo quieto" */}
+            <span
+              aria-hidden="true"
+              className="motion-safe:animate-sheen-sweep pointer-events-none absolute inset-0"
+              style={{
+                backgroundImage: 'linear-gradient(115deg, transparent 44%, rgba(255,255,255,0.35) 50%, transparent 56%)',
+                backgroundSize: '250% 100%',
+              }}
+            />
             Ingresar
             {!isSubmitting && <ArrowRight className="size-4" aria-hidden="true" />}
           </Button>

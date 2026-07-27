@@ -13,17 +13,23 @@ interface Particle {
 const MAX_LINE_DISTANCE = 140;
 const SWEEP_INTERVAL_MS = 9000;
 const SWEEP_DURATION_MS = 2200;
+const BASE_MAX_SPEED = 0.15;
 
 /**
  * Canvas 2D: partículas flotando + líneas de conexión entre las cercanas +
- * un barrido horizontal periódico ("escaneo"). Sin librerías — vanilla
- * canvas + requestAnimationFrame, más liviano que cualquier lib de
- * partículas para este volumen. Con prefers-reduced-motion dibuja un solo
+ * un barrido horizontal periódico ("escaneo") + turbulencia cuando el mouse
+ * se mueve rápido (decae sola cuando se detiene). Sin librerías — vanilla
+ * canvas + requestAnimationFrame. Con prefers-reduced-motion dibuja un solo
  * frame estático (partículas quietas) y no arranca el loop.
  */
-export function ParticleField({ className }: { className?: string }) {
+export function ParticleField({ className, mouseVelocity = 0 }: { className?: string; mouseVelocity?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
+  // Se lee dentro del loop de render vía ref: así `mouseVelocity` puede
+  // cambiar en cada mousemove sin reiniciar el efecto (que reconstruiría
+  // las partículas desde cero en cada movimiento del mouse).
+  const velocityRef = useRef(mouseVelocity);
+  velocityRef.current = mouseVelocity;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -36,7 +42,7 @@ export function ParticleField({ className }: { className?: string }) {
     let animationFrame = 0;
     let lastSweepAt = -SWEEP_INTERVAL_MS + 2000; // primer barrido a los ~2s
 
-    const countForWidth = (w: number) => Math.max(24, Math.min(90, Math.round(w / 16)));
+    const countForWidth = (w: number) => Math.max(30, Math.min(130, Math.round(w / 13)));
 
     const resize = () => {
       const rect = canvas.parentElement?.getBoundingClientRect();
@@ -89,8 +95,24 @@ export function ParticleField({ className }: { className?: string }) {
         ctx.fillRect(0, 0, width, height);
       }
 
+      // Turbulencia: movimientos rápidos del mouse agitan las partículas;
+      // al quedar quieto, `velocityRef` decae solo a 0 (ver useMouseParallax)
+      // y esto vuelve a la deriva normal sin ningún manejo especial acá.
+      const turbulence = Math.min(1, velocityRef.current / 1.8);
+      const jitter = turbulence * 0.05;
+      const maxSpeed = BASE_MAX_SPEED + turbulence * 0.55;
+
       for (let i = 0; i < particles.length; i += 1) {
         const p = particles[i];
+        if (jitter > 0) {
+          p.vx += (Math.random() - 0.5) * jitter;
+          p.vy += (Math.random() - 0.5) * jitter;
+        }
+        const speed = Math.hypot(p.vx, p.vy);
+        if (speed > maxSpeed) {
+          p.vx = (p.vx / speed) * maxSpeed;
+          p.vy = (p.vy / speed) * maxSpeed;
+        }
         p.x += p.vx;
         p.y += p.vy;
         if (p.x < 0 || p.x > width) p.vx *= -1;
