@@ -27,6 +27,7 @@ import { downloadCatapultTemplate } from '@/lib/importers/templates';
 import { getOrCreatePlayers } from '@/lib/importers/playerLookup';
 import { useTeamSelection } from '@/lib/importers/useTeamSelection';
 import { toast } from '@/store/toastStore';
+import { getDateLocale } from '@/utils/dateLocale';
 import { canWrite } from '@/utils/permissions';
 import type { GpsSession, MlPrediction, Player } from '@/types/domain';
 
@@ -297,7 +298,7 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
                       </TableCell>
                       <TableCell className="text-muted-foreground">{Number(alert.score).toFixed(3)}</TableCell>
                       <TableCell className="text-muted-foreground">
-                        {new Date(alert.created_at).toLocaleDateString('es-ES')}
+                        {new Date(alert.created_at).toLocaleDateString(getDateLocale())}
                       </TableCell>
                     </TableRow>
                   ))}

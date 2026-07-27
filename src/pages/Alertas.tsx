@@ -13,6 +13,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/store/toastStore';
+import { getDateLocale } from '@/utils/dateLocale';
 
 /** Tipos de predicción que constituyen una alerta accionable (mismo criterio que la ficha del jugador). */
 const ALERT_FILTER: Record<string, { types: string[]; labels: string[] }> = {
@@ -182,7 +183,7 @@ export default function Alertas({ orgId }: { orgId: string }) {
                     {playerNames[injury.player_id] ?? t('alertas.fallback.player', 'Jugador')}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {t('alertas.activeInjuries.since', 'Desde')} {new Date(injury.injury_date).toLocaleDateString('es-ES')}
+                    {t('alertas.activeInjuries.since', 'Desde')} {new Date(injury.injury_date).toLocaleDateString(getDateLocale())}
                     {injury.notes ? ` · ${injury.notes}` : ''}
                   </p>
                 </div>
@@ -248,7 +249,7 @@ export default function Alertas({ orgId }: { orgId: string }) {
                   </div>
                   <div className="text-right">
                     {alert.score !== null && <p className="text-sm font-semibold text-foreground">{alert.score.toFixed(2)}</p>}
-                    <p className="text-xs text-muted-foreground">{new Date(alert.created_at).toLocaleDateString('es-ES')}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(alert.created_at).toLocaleDateString(getDateLocale())}</p>
                   </div>
                 </button>
               );

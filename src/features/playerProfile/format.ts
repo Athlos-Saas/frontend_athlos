@@ -1,3 +1,5 @@
+import { getDateLocale } from '@/utils/dateLocale';
+
 /** Helpers de formato para la ficha de jugador. Siempre devuelven `null` si falta el dato de origen — nunca inventan un valor. */
 
 export function calculateAge(birthdate?: string | null): number | null {
@@ -26,14 +28,14 @@ export function formatDate(dateStr?: string | null): string {
   if (!dateStr) return '--';
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return '--';
-  return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+  return date.toLocaleDateString(getDateLocale(), { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export function formatDateTime(dateStr?: string | null): string {
   if (!dateStr) return '--';
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return '--';
-  return date.toLocaleString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleString(getDateLocale(), { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 /** Muestra un número con `decimals` decimales, o "--" si es null/undefined. Nunca redondea a 0 por defecto. */

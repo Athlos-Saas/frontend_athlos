@@ -25,6 +25,7 @@ import {
   type OrgUserRole,
 } from '@/lib/backendApi';
 import { toast } from '@/store/toastStore';
+import { getDateLocale } from '@/utils/dateLocale';
 import { isAdmin } from '@/utils/permissions';
 
 export default function Usuarios({ orgId, role, currentUserId }: { orgId: string; role: string | null; currentUserId: string }) {
@@ -216,7 +217,7 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
                         )}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {new Date(user.created_at).toLocaleDateString('es-ES')}
+                        {new Date(user.created_at).toLocaleDateString(getDateLocale())}
                       </TableCell>
                       <TableCell className="text-right">
                         {!isSelf && (

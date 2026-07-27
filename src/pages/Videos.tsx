@@ -21,6 +21,7 @@ import { usePagedRows } from '@/hooks/usePagedRows';
 import { pingBackend, triggerVideoProcessing, type YoloModelKey } from '@/lib/backendApi';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/store/toastStore';
+import { getDateLocale } from '@/utils/dateLocale';
 import { canWrite } from '@/utils/permissions';
 import type { VideoAnalysis, VideoPlayerTrack } from '@/types/domain';
 
@@ -404,7 +405,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {new Date(video.created_at).toLocaleString('es-ES')}
+                      {new Date(video.created_at).toLocaleString(getDateLocale())}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">

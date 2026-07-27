@@ -13,6 +13,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { StatCard } from '@/components/ui/StatCard';
 import { colors } from '@/constants/tokens';
 import { supabase } from '@/lib/supabase';
+import { getDateLocale } from '@/utils/dateLocale';
 import type { MlModel, MlPrediction } from '@/types/domain';
 
 type LoadState = 'loading' | 'error' | 'ready';
@@ -37,7 +38,7 @@ function normalize(value: number, max: number) {
 }
 
 export default function AiIntelligenceCenter({ orgId }: { orgId: string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [state, setState] = useState<LoadState>('loading');
   const [models, setModels] = useState<MlModel[]>([]);
   const [predictions, setPredictions] = useState<MlPrediction[]>([]);
@@ -134,10 +135,10 @@ export default function AiIntelligenceCenter({ orgId }: { orgId: string }) {
           </>
         ),
         description: <Badge variant="ai">{model.task}</Badge>,
-        timestamp: new Date(model.trained_at).toLocaleString('es-ES'),
+        timestamp: new Date(model.trained_at).toLocaleString(getDateLocale()),
         accent: 'purple',
       })),
-    [models],
+    [models, i18n.language],
   );
 
   const predictionTypes = useMemo(() => [...new Set(predictions.map((p) => p.prediction_type))], [predictions]);
@@ -164,7 +165,7 @@ export default function AiIntelligenceCenter({ orgId }: { orgId: string }) {
         header: t('aiIntelligenceCenter.col.date', 'Fecha'),
         sortable: true,
         accessor: (row) => row.created_at,
-        cell: (row) => new Date(row.created_at).toLocaleString('es-ES'),
+        cell: (row) => new Date(row.created_at).toLocaleString(getDateLocale()),
       },
     ],
     [t],

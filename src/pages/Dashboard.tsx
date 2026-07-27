@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/Table';
 import { chartSeriesPalette, colors } from '@/constants/tokens';
 import { supabase } from '@/lib/supabase';
+import { getDateLocale } from '@/utils/dateLocale';
 import type { MlModel, MlPrediction } from '@/types/domain';
 
 type LoadState = 'loading' | 'error' | 'ready';
@@ -313,7 +314,7 @@ export default function Dashboard({ orgId }: { orgId: string }) {
                         <span className="text-muted-foreground">→ {prediction.label}</span>
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(prediction.created_at).toLocaleString('es-ES')}
+                        {new Date(prediction.created_at).toLocaleString(getDateLocale())}
                       </p>
                     </div>
                   </li>

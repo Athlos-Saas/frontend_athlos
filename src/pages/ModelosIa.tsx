@@ -14,6 +14,7 @@ import { DataTable, type DataTableColumn } from '@/components/tables/DataTable';
 import { getBackendUrl, triggerTraining } from '@/lib/backendApi';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/store/toastStore';
+import { getDateLocale } from '@/utils/dateLocale';
 import { canWrite } from '@/utils/permissions';
 import type { MlModel } from '@/types/domain';
 
@@ -43,7 +44,7 @@ function buildColumns(t: TFunction): DataTableColumn<MlModel>[] {
       header: t('modelosIa.col.trained', 'Entrenado'),
       sortable: true,
       accessor: (row) => row.trained_at,
-      cell: (row) => new Date(row.trained_at).toLocaleDateString('es-ES'),
+      cell: (row) => new Date(row.trained_at).toLocaleDateString(getDateLocale()),
     },
   ];
 }

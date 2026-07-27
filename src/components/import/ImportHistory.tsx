@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
 import { supabase } from '@/lib/supabase';
+import { getDateLocale } from '@/utils/dateLocale';
 import type { ImportKind } from '@/lib/importers/types';
 
 interface ImportLogRow {
@@ -57,7 +58,7 @@ export function ImportHistory({ orgId, kind, reloadToken }: { orgId: string; kin
               <TableCell className="font-medium">{log.file_name}</TableCell>
               <TableCell className="text-right text-muted-foreground">{log.written}</TableCell>
               <TableCell className="text-right text-muted-foreground">{log.skipped}</TableCell>
-              <TableCell className="text-muted-foreground">{new Date(log.created_at).toLocaleString('es-ES')}</TableCell>
+              <TableCell className="text-muted-foreground">{new Date(log.created_at).toLocaleString(getDateLocale())}</TableCell>
             </TableRow>
           ))}
         </TableBody>
