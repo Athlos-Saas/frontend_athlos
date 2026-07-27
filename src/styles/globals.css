@@ -143,6 +143,14 @@
       filter: hue-rotate(360deg);
     }
   }
+  @keyframes hue-drift {
+    from {
+      filter: hue-rotate(-25deg);
+    }
+    to {
+      filter: hue-rotate(25deg);
+    }
+  }
   @keyframes sheen-sweep {
     0%,
     20% {
@@ -237,10 +245,10 @@
     pointer-events: none;
   }
 
-  /* Variante "viva" del borde en gradiente — mismo anillo, con un giro de matiz lentísimo (bordes que nunca se sienten estáticos). */
+  /* Variante "viva" del borde en gradiente — mismo anillo, con un vaivén de matiz lentísimo (bordes que nunca se sienten estáticos). Oscila ±25° alrededor del azul/violeta base en vez de rotar 360°: la vuelta completa pasaba por rojo varios segundos por ciclo y sobre un formulario se leía como estado de error. */
   .border-gradient-live::before {
     @media (prefers-reduced-motion: no-preference) {
-      animation: hue-cycle 14s linear infinite;
+      animation: hue-drift 7s ease-in-out infinite alternate;
     }
   }
 }
