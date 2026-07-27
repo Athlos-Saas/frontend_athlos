@@ -42,7 +42,7 @@ export default function Login({ onSignIn }: LoginProps) {
         <AmbientBackground parallax={parallax} isActive={isAuthenticating} />
 
         {isDesktop && !prefersReducedMotion && (
-          <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0">
             <Suspense fallback={null}>
               <NeuralNetworkScene parallax={parallax} isActive={isAuthenticating} />
             </Suspense>
