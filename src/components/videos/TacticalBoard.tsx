@@ -25,14 +25,90 @@ const ZONES = [
 
 type ZoneKey = (typeof ZONES)[number]['key'];
 
+/** Misma clave que `BALL_TRAJECTORY_KEY` en video_service.py — la pelota
+ * viaja en el mismo `trajectories` que los jugadores, pero no es una
+ * identidad asignable: se excluye de marcadores/densidad/roster. */
+const BALL_TRAJECTORY_KEY = 'ball';
+
 export interface RosterOption {
   id: string;
   full_name: string;
   position: string | null;
 }
 
-type Rgb = [number, number, number];
 type TeamLabel = 'A' | 'B';
+
+/**
+ * Embedding cilíndrico de HSV para agrupar por color (no RGB euclídeo): el
+ * matiz (H) se proyecta a un plano (S·cos H, S·sin H) — así la distancia
+ * respeta que el matiz es circular (rojo cerca de rojo-violeta) y el propio
+ * peso de la saturación hace que un matiz ruidoso en colores casi grises
+ * (poca saturación: blanco/negro/gris) no domine la distancia. El brillo
+ * (V) pesa menos (`VALUE_WEIGHT`) a propósito: sombras/iluminación distinta
+ * entre cámaras afectan sobre todo a V, no deberían separar dos camisetas
+ * del mismo color real. Antes esto se hacía con distancia euclídea directa
+ * en RGB, más sensible a esos cambios de luz.
+ */
+type ColorVec = [number, number, number];
+const VALUE_WEIGHT = 0.5;
+
+function hexToRgbBytes(hex: string): [number, number, number] | null {
+  const match = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!match) return null;
+  const value = parseInt(match[1], 16);
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+}
+
+function rgbToHsv(r: number, g: number, b: number): [number, number, number] {
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const delta = max - min;
+  let h = 0;
+  if (delta !== 0) {
+    if (max === rn) h = 60 * (((gn - bn) / delta) % 6);
+    else if (max === gn) h = 60 * ((bn - rn) / delta + 2);
+    else h = 60 * ((rn - gn) / delta + 4);
+  }
+  if (h < 0) h += 360;
+  const s = max === 0 ? 0 : delta / max;
+  return [h, s, max];
+}
+
+function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
+  const c = v * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = v - c;
+  let rp = 0;
+  let gp = 0;
+  let bp = 0;
+  if (h < 60) [rp, gp, bp] = [c, x, 0];
+  else if (h < 120) [rp, gp, bp] = [x, c, 0];
+  else if (h < 180) [rp, gp, bp] = [0, c, x];
+  else if (h < 240) [rp, gp, bp] = [0, x, c];
+  else if (h < 300) [rp, gp, bp] = [x, 0, c];
+  else [rp, gp, bp] = [c, 0, x];
+  return [(rp + m) * 255, (gp + m) * 255, (bp + m) * 255];
+}
+
+function hexToColorVec(hex: string): ColorVec | null {
+  const rgb = hexToRgbBytes(hex);
+  if (!rgb) return null;
+  const [h, s, v] = rgbToHsv(...rgb);
+  const angle = (h * Math.PI) / 180;
+  return [s * Math.cos(angle), s * Math.sin(angle), v * VALUE_WEIGHT];
+}
+
+function colorVecToHex([x, y, vw]: ColorVec): string {
+  const s = Math.min(1, Math.hypot(x, y));
+  const h = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+  const v = Math.min(1, Math.max(0, vw / VALUE_WEIGHT));
+  const [r, g, b] = hsvToRgb(h, s, v);
+  const channel = (value: number) => Math.max(0, Math.min(255, Math.round(value))).toString(16).padStart(2, '0');
+  return `#${channel(r)}${channel(g)}${channel(b)}`;
+}
 
 /**
  * Clasifica la posición libre del roster (texto sin formato fijo — viene de
@@ -55,52 +131,43 @@ function positionToZone(position: string | null): ZoneKey | null {
   return null;
 }
 
-function hexToRgb(hex: string): Rgb | null {
-  const match = /^#([0-9a-f]{6})$/i.exec(hex);
-  if (!match) return null;
-  const value = parseInt(match[1], 16);
-  return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
-}
-
-function rgbDistance(a: Rgb, b: Rgb): number {
+function colorVecDistance(a: ColorVec, b: ColorVec): number {
   return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 }
 
-function meanRgb(colors: Rgb[]): Rgb {
-  const sum = colors.reduce<Rgb>((acc, c) => [acc[0] + c[0], acc[1] + c[1], acc[2] + c[2]], [0, 0, 0]);
+function meanColorVec(colors: ColorVec[]): ColorVec {
+  const sum = colors.reduce<ColorVec>((acc, c) => [acc[0] + c[0], acc[1] + c[1], acc[2] + c[2]], [0, 0, 0]);
   return [sum[0] / colors.length, sum[1] / colors.length, sum[2] / colors.length];
 }
 
-function rgbToHex([r, g, b]: Rgb): string {
-  const channel = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
-  return `#${channel(r)}${channel(g)}${channel(b)}`;
-}
-
 /**
- * Agrupa las identidades en 2 equipos por color medio de camiseta
- * (k-means simple, semillas = el par de colores más distantes). Requiere
- * >= 2 tracks con shirt_color; si el video es muy casero y el modelo no
- * acumuló color para casi nadie, devuelve un mapa vacío — el tablero
- * simplemente no muestra el filtro de equipo, no inventa una agrupación
- * con datos insuficientes.
+ * Agrupa las identidades en 2 equipos por color medio de camiseta (k-means
+ * simple en el espacio HSV de arriba, semillas = el par de colores más
+ * distantes). Requiere >= 2 tracks con shirt_color; si el video es muy
+ * casero y el modelo no acumuló color para casi nadie, devuelve un mapa
+ * vacío — el tablero simplemente no muestra el filtro de equipo, no
+ * inventa una agrupación con datos insuficientes.
  */
 function clusterTeams(tracks: VideoPlayerTrack[]): Map<string, TeamLabel> {
   const colored = tracks
-    .map((track) => ({ trackId: String(track.track_id), rgb: track.shirt_color ? hexToRgb(track.shirt_color) : null }))
-    .filter((entry): entry is { trackId: string; rgb: Rgb } => entry.rgb !== null);
+    .map((track) => ({
+      trackId: String(track.track_id),
+      color: track.shirt_color ? hexToColorVec(track.shirt_color) : null,
+    }))
+    .filter((entry): entry is { trackId: string; color: ColorVec } => entry.color !== null);
 
   if (colored.length < 2) return new Map();
 
-  let seedA = colored[0].rgb;
-  let seedB = colored[1].rgb;
+  let seedA = colored[0].color;
+  let seedB = colored[1].color;
   let maxDist = -1;
   for (let i = 0; i < colored.length; i += 1) {
     for (let j = i + 1; j < colored.length; j += 1) {
-      const d = rgbDistance(colored[i].rgb, colored[j].rgb);
+      const d = colorVecDistance(colored[i].color, colored[j].color);
       if (d > maxDist) {
         maxDist = d;
-        seedA = colored[i].rgb;
-        seedB = colored[j].rgb;
+        seedA = colored[i].color;
+        seedB = colored[j].color;
       }
     }
   }
@@ -112,12 +179,15 @@ function clusterTeams(tracks: VideoPlayerTrack[]): Map<string, TeamLabel> {
   for (let iteration = 0; iteration < 10; iteration += 1) {
     labels = new Map();
     for (const entry of colored) {
-      labels.set(entry.trackId, rgbDistance(entry.rgb, centroidA) <= rgbDistance(entry.rgb, centroidB) ? 'A' : 'B');
+      labels.set(
+        entry.trackId,
+        colorVecDistance(entry.color, centroidA) <= colorVecDistance(entry.color, centroidB) ? 'A' : 'B',
+      );
     }
-    const groupA = colored.filter((entry) => labels.get(entry.trackId) === 'A').map((entry) => entry.rgb);
-    const groupB = colored.filter((entry) => labels.get(entry.trackId) === 'B').map((entry) => entry.rgb);
-    if (groupA.length > 0) centroidA = meanRgb(groupA);
-    if (groupB.length > 0) centroidB = meanRgb(groupB);
+    const groupA = colored.filter((entry) => labels.get(entry.trackId) === 'A').map((entry) => entry.color);
+    const groupB = colored.filter((entry) => labels.get(entry.trackId) === 'B').map((entry) => entry.color);
+    if (groupA.length > 0) centroidA = meanColorVec(groupA);
+    if (groupB.length > 0) centroidB = meanColorVec(groupB);
   }
 
   return labels;
@@ -264,15 +334,15 @@ export function TacticalBoard({
    * muestra en ese caso. */
   const teamClusters = useMemo(() => clusterTeams(tracks), [tracks]);
   const teamSwatches = useMemo(() => {
-    const groups: Record<TeamLabel, Rgb[]> = { A: [], B: [] };
+    const groups: Record<TeamLabel, ColorVec[]> = { A: [], B: [] };
     for (const track of tracks) {
       const label = teamClusters.get(String(track.track_id));
-      const rgb = track.shirt_color ? hexToRgb(track.shirt_color) : null;
-      if (label && rgb) groups[label].push(rgb);
+      const color = track.shirt_color ? hexToColorVec(track.shirt_color) : null;
+      if (label && color) groups[label].push(color);
     }
     return {
-      A: groups.A.length > 0 ? rgbToHex(meanRgb(groups.A)) : null,
-      B: groups.B.length > 0 ? rgbToHex(meanRgb(groups.B)) : null,
+      A: groups.A.length > 0 ? colorVecToHex(meanColorVec(groups.A)) : null,
+      B: groups.B.length > 0 ? colorVecToHex(meanColorVec(groups.B)) : null,
     };
   }, [tracks, teamClusters]);
 
@@ -289,6 +359,7 @@ export function TacticalBoard({
 
   const markers = useMemo(() => {
     return Object.entries(displayTrajectories)
+      .filter(([trackId]) => trackId !== BALL_TRAJECTORY_KEY)
       .map(([trackId, points]) => {
         if (points.length === 0) return null;
         const avgX = points.reduce((sum, p) => sum + p.x, 0) / points.length;
@@ -310,13 +381,26 @@ export function TacticalBoard({
     if (selectedTrackId) return (displayTrajectories[selectedTrackId] ?? []).map(toPitch);
     const visibleIds = new Set(visibleMarkers.map((m) => m.trackId));
     return Object.entries(displayTrajectories)
-      .filter(([trackId]) => !teamFilter || visibleIds.has(trackId))
+      .filter(([trackId]) => trackId !== BALL_TRAJECTORY_KEY && (!teamFilter || visibleIds.has(trackId)))
       .flatMap(([, points]) => points.map(toPitch));
   }, [displayTrajectories, selectedTrackId, visibleMarkers, teamFilter]);
 
   /** Densidad real (blobs acumulados + colorización por intensidad), no
-   * puntos sueltos superpuestos — ver `buildHeatmapDataUrl`. */
+   * puntos sueltos superpuestos — ver `buildHeatmapDataUrl`. Es densidad de
+   * JUGADORES, la pelota queda afuera a propósito (es otro concepto). */
   const heatmapDataUrl = useMemo(() => buildHeatmapDataUrl(densityPoints), [densityPoints]);
+
+  /** Recorrido de la pelota — siempre visible en "Movimiento capturado"
+   * (no depende de seleccionar una identidad), con huecos ya interpolados
+   * por el backend cuando eran cortos (ver `_interpolate_ball_positions`). */
+  const ballPath = useMemo(() => {
+    const raw = displayTrajectories[BALL_TRAJECTORY_KEY];
+    if (!raw || raw.length < 2) return null;
+    const points = raw.map(toPitch);
+    const pathD = `M ${points.map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' L ')}`;
+    const last = points[points.length - 1];
+    return { pathD, last };
+  }, [displayTrajectories]);
 
   const trackPath = useMemo(() => {
     if (!selectedTrackId) return null;
@@ -561,6 +645,31 @@ export function TacticalBoard({
             </defs>
 
             <PitchMarkings />
+
+            {/* Recorrido de la pelota — siempre visible, no es una identidad
+                asignable (ver BALL_TRAJECTORY_KEY). Huecos cortos ya
+                interpolados por el backend. */}
+            {ballPath && (
+              <>
+                <path
+                  d={ballPath.pathD}
+                  stroke="#ffffff"
+                  strokeWidth={0.35}
+                  strokeDasharray="1.2 1"
+                  fill="none"
+                  opacity={0.55}
+                  strokeLinecap="round"
+                />
+                <circle
+                  cx={ballPath.last.x}
+                  cy={ballPath.last.y}
+                  r={0.9}
+                  fill="#ffffff"
+                  opacity={0.9}
+                  style={{ filter: 'drop-shadow(0 0 2px rgba(255,255,255,0.8))' }}
+                />
+              </>
+            )}
 
             {activeZone &&
               (() => {
