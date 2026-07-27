@@ -137,14 +137,14 @@ export function usePlayerLeagueStats(orgId: string, playerId: string) {
         supabase
           .from('league_attacker_stats')
           .select(
-            'id, player_id, season, competition, player_name, team_name, gp, goals, assists, points, shots, shots_on_goal, goals_per_game, assists_per_game, points_per_game, proba_top_scorer, role_name',
+            'id, player_id, season, competition, player_name, team_name, gp, goals, assists, points, shots, shots_on_goal, goals_per_game, assists_per_game, points_per_game, proba_top_scorer, role_name, similar_players',
           )
           .eq('org_id', orgId)
           .eq('player_id', playerId),
         supabase
           .from('league_goalkeeper_stats')
           .select(
-            'id, player_id, season, competition, player_name, team_name, gp, gaa, ga_per_game, saves_per_game, goals_against, saves, save_pct, gk_role',
+            'id, player_id, season, competition, player_name, team_name, gp, gaa, ga_per_game, saves_per_game, goals_against, saves, save_pct, gk_role, similar_players',
           )
           .eq('org_id', orgId)
           .eq('player_id', playerId),

@@ -28,6 +28,7 @@ export default function TabScouting({ orgId, playerId }: { orgId: string; player
   if (leagueStats.isLoading) return <Skeleton className="h-72 w-full" />;
 
   const roleLabel = attackerRow?.role_name ?? goalkeeperRow?.gk_role ?? null;
+  const similarPlayers = attackerRow?.similar_players ?? goalkeeperRow?.similar_players ?? [];
   const hasScoutingSignals = Boolean(roleLabel) || attackerRow?.proba_top_scorer !== undefined;
 
   if (!hasScoutingSignals && !positionGroup) {
@@ -54,6 +55,27 @@ export default function TabScouting({ orgId, playerId }: { orgId: string; player
                 Prob. goleador élite: {(attackerRow.proba_top_scorer * 100).toFixed(0)}%
               </Badge>
             )}
+          </div>
+        </Card>
+      )}
+
+      {similarPlayers.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div>
+              <CardTitle>Jugadores similares</CardTitle>
+              <CardDescription className="mt-1">
+                Por distancia estadística en la misma temporada/competición — no es un match de posición, es
+                similitud de perfil (goles, asistencias, tiros por partido).
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <div className="flex flex-wrap gap-2">
+            {similarPlayers.map((similar) => (
+              <Badge key={`${similar.player_name}-${similar.team_name}`} variant="neutral">
+                {similar.player_name} · {similar.team_name}
+              </Badge>
+            ))}
           </div>
         </Card>
       )}

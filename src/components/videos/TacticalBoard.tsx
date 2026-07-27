@@ -30,6 +30,40 @@ type ZoneKey = (typeof ZONES)[number]['key'];
  * identidad asignable: se excluye de marcadores/densidad/roster. */
 const BALL_TRAJECTORY_KEY = 'ball';
 
+/**
+ * Media móvil chica sobre la velocidad ya derivada — mismo objetivo que el
+ * filtro Savitzky-Golay que usa `LaurieOnTracking` (no confundir jitter de
+ * detección/homografía con aceleración real).
+ *
+ * IMPORTANTE — no alcanza para detección de sprints: se probó con datos
+ * reales (dos videos ya procesados, ~16 y ~47 tracks) clasificar tramos
+ * como "sprint" por umbral de velocidad (>=25.2 km/h sostenido) y el
+ * resultado fue que 65-100% de la distancia de CASI TODOS los tracks
+ * caía en esa banda — fisiológicamente imposible. Ni resampleando a
+ * ventanas de hasta 5 segundos (mucho más agresivo que este suavizado)
+ * bajó de ~16-21%. Conclusión: la precisión posicional actual del
+ * pipeline (homografía + detección YOLO sobre video casero) no alcanza
+ * para clasificar movimiento por banda de velocidad de forma confiable —
+ * no es un problema de suavizado, es un techo de precisión de los datos
+ * de entrada. Por eso NO se construyó una feature de "sprints"/"distancia
+ * por intensidad" sobre esto — mostrar esos números sería fabricar una
+ * confianza que los datos no tienen. Este suavizado se mantiene solo
+ * porque mejora un poco al gráfico de velocidad existente, no porque
+ * resuelva el problema de fondo.
+ */
+function smoothSpeedSeries(
+  series: { t: number; speedKmh: number }[],
+  halfWindow = 1,
+): { t: number; speedKmh: number }[] {
+  return series.map((point, i) => {
+    const lo = Math.max(0, i - halfWindow);
+    const hi = Math.min(series.length, i + halfWindow + 1);
+    const window = series.slice(lo, hi);
+    const avg = window.reduce((sum, p) => sum + p.speedKmh, 0) / window.length;
+    return { t: point.t, speedKmh: avg };
+  });
+}
+
 export interface RosterOption {
   id: string;
   full_name: string;
@@ -319,7 +353,9 @@ function PanelShell({
 /** Velocidad instantánea del jugador seleccionado a lo largo del video —
  * mismo cálculo (distancia/tiempo entre puntos consecutivos de la
  * trayectoria ya limpiada en el backend) que ya se usaba para el p95 de la
- * tabla, solo que acá se ve la serie completa en vez de un solo número. */
+ * tabla, suavizada con una media móvil chica — ver `smoothSpeedSeries` para
+ * el límite real de esto (no alcanza para clasificar por banda de
+ * velocidad de forma confiable, solo para aliviar el gráfico). */
 function SpeedChart({ series }: { series: { t: number; speedKmh: number }[] }) {
   if (series.length < 2) {
     return <p className="py-9 text-center text-xs text-muted-foreground">Sin suficientes datos de velocidad.</p>;
@@ -354,9 +390,9 @@ function SpeedChart({ series }: { series: { t: number; speedKmh: number }[] }) {
   );
 }
 
-/** Distancia recorrida por el jugador seleccionado, desglosada por franja
- * de cancha (mismas 4 zonas que ya usan los botones de asignación). */
-function ZoneDistanceBars({ zones }: { zones: { key: ZoneKey; label: string; distanceM: number }[] }) {
+/** Distancia recorrida por el jugador seleccionado, desglosada por zona
+ * (de cancha o de intensidad, según qué lista de zonas se le pase). */
+function ZoneDistanceBars({ zones }: { zones: { key: string; label: string; distanceM: number }[] }) {
   const total = zones.reduce((sum, z) => sum + z.distanceM, 0);
   if (total === 0) {
     return <p className="py-9 text-center text-xs text-muted-foreground">Sin suficiente recorrido para desglosar.</p>;
@@ -504,8 +540,9 @@ export function TacticalBoard({
 
   /** Velocidad instantánea de la identidad seleccionada, punto a punto —
    * misma trayectoria ya limpiada por el backend (ver
-   * `_filter_trajectory_jumps`), solo que acá se expone la serie completa
-   * en vez de reducirla a un solo p95. */
+   * `_filter_trajectory_jumps`), suavizada con una media móvil chica para
+   * no confundir jitter residual con aceleración real (ver
+   * `smoothSpeedSeries`) antes de exponerla como serie de tiempo. */
   const speedSeries = useMemo(() => {
     if (!selectedTrackId) return [];
     const raw = displayTrajectories[selectedTrackId];
@@ -518,7 +555,7 @@ export function TacticalBoard({
       const dist = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
       series.push({ t: raw[i].t, speedKmh: (dist / dt) * 3.6 });
     }
-    return series;
+    return smoothSpeedSeries(series);
   }, [displayTrajectories, selectedTrackId]);
 
   /** Distancia recorrida por la identidad seleccionada, atribuida a la zona
@@ -945,14 +982,14 @@ export function TacticalBoard({
         </PanelShell>
       </div>
 
-      {/* Velocidad en el tiempo + distancia por zona — solo tienen sentido
-          para una identidad puntual, no para "todas". */}
+      {/* Velocidad en el tiempo + distancia por zona/intensidad — solo
+          tienen sentido para una identidad puntual, no para "todas". */}
       {selectedTrackId && (
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <PanelShell
             icon={Zap}
             title="Velocidad en el tiempo"
-            subtitle={`Velocidad instantánea de J${selectedTrackId} a lo largo del video`}
+            subtitle={`Velocidad instantánea de J${selectedTrackId}`}
             accent="bg-ai/15 text-ai"
           >
             <SpeedChart series={speedSeries} />

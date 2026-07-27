@@ -62,6 +62,14 @@ export interface GpsSession {
   work_ratio?: number | null;
 }
 
+/** Jugador similar por distancia euclídea en el espacio estandarizado del
+ * clustering de roles — ver `_nearest_neighbors` en technical_ml_service.py. */
+export interface SimilarPlayer {
+  player_name: string;
+  team_name: string;
+  distance: number;
+}
+
 export interface LeagueAttackerStat {
   id: string;
   player_id?: string | null;
@@ -80,6 +88,7 @@ export interface LeagueAttackerStat {
   points_per_game?: number | null;
   proba_top_scorer: number | null;
   role_name: string | null;
+  similar_players?: SimilarPlayer[];
 }
 
 export interface LeagueGoalkeeperStat {
@@ -97,6 +106,7 @@ export interface LeagueGoalkeeperStat {
   saves?: number | null;
   save_pct: number | null;
   gk_role: string | null;
+  similar_players?: SimilarPlayer[];
 }
 
 export interface ConferenceBenchmark {
