@@ -42,41 +42,6 @@ export function formatNumber(value: number | null | undefined, decimals = 1): st
   return value.toFixed(decimals);
 }
 
-/**
- * Redimensiona/comprime una imagen en el navegador y la devuelve como Blob
- * JPEG, lista para subir al bucket `player-media`.
- */
-export function resizeImageToBlob(file: File, maxSize = 640, quality = 0.85): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const objectUrl = URL.createObjectURL(file);
-    img.onload = () => {
-      const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        URL.revokeObjectURL(objectUrl);
-        reject(new Error('No se pudo procesar la imagen en este navegador.'));
-        return;
-      }
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(objectUrl);
-      canvas.toBlob(
-        (blob) => (blob ? resolve(blob) : reject(new Error('No se pudo generar la imagen comprimida.'))),
-        'image/jpeg',
-        quality,
-      );
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      reject(new Error('El archivo seleccionado no es una imagen válida.'));
-    };
-    img.src = objectUrl;
-  });
-}
-
 export type Model3DExtension = 'glb' | 'gltf' | 'obj' | 'fbx';
 
 /** Devuelve el formato 3D soportado a partir de la extensión, o null si no se reconoce/soporta (p. ej. usdz). */

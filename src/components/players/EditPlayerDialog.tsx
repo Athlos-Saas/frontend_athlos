@@ -5,9 +5,9 @@ import { Camera, ShieldCheck, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Field } from '@/components/ui/Field';
+import { ImageCropDialog } from '@/components/ui/ImageCropDialog';
 import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { resizeImageToBlob } from '@/features/playerProfile/format';
 import { usePlayerMediaUrl } from '@/features/playerProfile/queries';
 import { toast } from '@/store/toastStore';
 import type { Player } from '@/types/domain';
@@ -41,6 +41,7 @@ export function EditPlayerDialog({
   const [form, setForm] = useState({ position: '', height_cm: '', weight_kg: '', birthdate: '' });
   const [isSaving, setIsSaving] = useState(false);
   const [pendingPhoto, setPendingPhoto] = useState<{ blob: Blob; previewUrl: string } | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const [isSavingPhoto, setIsSavingPhoto] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -73,23 +74,18 @@ export function EditPlayerDialog({
     setIsSaving(false);
   };
 
-  const handlePhotoSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
-    if (!file) return;
-    try {
-      const blob = await resizeImageToBlob(file);
-      setPendingPhoto((previous) => {
-        if (previous) URL.revokeObjectURL(previous.previewUrl);
-        return { blob, previewUrl: URL.createObjectURL(blob) };
-      });
-    } catch (error) {
-      toast({
-        title: t('editPlayerDialog.toast.photoProcessError', 'No se pudo procesar la imagen'),
-        description: error instanceof Error ? error.message : undefined,
-        variant: 'danger',
-      });
-    }
+    if (file) setCropFile(file);
+  };
+
+  const handleCropConfirm = (blob: Blob) => {
+    setPendingPhoto((previous) => {
+      if (previous) URL.revokeObjectURL(previous.previewUrl);
+      return { blob, previewUrl: URL.createObjectURL(blob) };
+    });
+    setCropFile(null);
   };
 
   const cancelPendingPhoto = () => {
@@ -223,6 +219,8 @@ export function EditPlayerDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <ImageCropDialog file={cropFile} onCancel={() => setCropFile(null)} onConfirm={handleCropConfirm} />
     </Dialog>
   );
 }

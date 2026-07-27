@@ -3,10 +3,11 @@ import { Box, ImagePlus, Maximize2, RotateCw, UserRound, X, ZoomIn } from 'lucid
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
+import { ImageCropDialog } from '@/components/ui/ImageCropDialog';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
 import { toast } from '@/store/toastStore';
-import { detectModel3DFormat, resizeImageToBlob, type Model3DExtension } from '../format';
+import { detectModel3DFormat, type Model3DExtension } from '../format';
 import { usePlayerMediaUrl } from '../queries';
 import type { Player3DViewerHandle } from './Player3DViewer';
 
@@ -57,6 +58,7 @@ export function PlayerMedia({
   const [localModel, setLocalModel] = useState<ActiveModel | null>(null);
   const [showGeneric, setShowGeneric] = useState(false);
   const [autoRotate, setAutoRotate] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const [isSavingPhoto, setIsSavingPhoto] = useState(false);
   const [isSavingModel, setIsSavingModel] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -92,13 +94,17 @@ export function PlayerMedia({
     setShowGeneric(false);
   };
 
-  const handlePhotoSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
-    if (!file || !onPhotoChange) return;
+    if (file && onPhotoChange) setCropFile(file);
+  };
+
+  const handleCropConfirm = async (blob: Blob) => {
+    setCropFile(null);
+    if (!onPhotoChange) return;
     setIsSavingPhoto(true);
     try {
-      const blob = await resizeImageToBlob(file);
       await onPhotoChange(blob);
       toast({ title: t('playerMedia.photoUpdated', 'Foto actualizada'), variant: 'success' });
     } catch (error) {
@@ -281,6 +287,8 @@ export function PlayerMedia({
           fullWidth
         />
       </TooltipProvider>
+
+      <ImageCropDialog file={cropFile} onCancel={() => setCropFile(null)} onConfirm={handleCropConfirm} />
     </div>
   );
 }

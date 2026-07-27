@@ -4,6 +4,13 @@
     "smartSearch": "Buscador inteligente",
     "noResults": "Sin resultados."
   },
+  "imageCropDialog": {
+    "title": "Ajustar foto",
+    "hint": "Arrastra para mover la imagen y usa el control de zoom para elegir qué parte se va a mostrar.",
+    "zoomLabel": "Zoom",
+    "cancel": "Cancelar",
+    "confirm": "Usar esta foto"
+  },
   "nav": {
     "section": {
       "general": "General",
