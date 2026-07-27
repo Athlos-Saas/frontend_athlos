@@ -1,24 +1,26 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
-import { usePrefersReducedMotion } from './usePrefersReducedMotion';
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { cn } from '@/utils/cn';
 
-const MESSAGES = ['Analizando movimiento…', 'Procesando métricas…', 'Predicción completada', 'Nuevo entrenamiento disponible'];
+const MESSAGE_KEYS = ['login.ticker.analyzing', 'login.ticker.processing', 'login.ticker.predictionDone', 'login.ticker.newTraining'];
 const INTERVAL_MS = 4000;
 
 /** Ticker de estado tipo "consola de IA en vivo" — cicla mensajes cortos; durante `isActive` (login en vuelo) se fija en "Autenticando…" y el punto pulsa más rápido. */
 export function AiTicker({ className, isActive = false }: { className?: string; isActive?: boolean }) {
+  const { t } = useTranslation();
   const prefersReducedMotion = usePrefersReducedMotion();
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
     if (prefersReducedMotion || isActive) return;
-    const id = setInterval(() => setIndex((i) => (i + 1) % MESSAGES.length), INTERVAL_MS);
+    const id = setInterval(() => setIndex((i) => (i + 1) % MESSAGE_KEYS.length), INTERVAL_MS);
     return () => clearInterval(id);
   }, [prefersReducedMotion, isActive]);
 
-  const message = isActive ? 'Autenticando…' : MESSAGES[index];
+  const message = isActive ? t('login.ticker.authenticating') : t(MESSAGE_KEYS[index]);
   const messageKey = isActive ? 'active' : index;
 
   return (

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { AthlosBot } from '@/components/ui/AthlosBot';
 import { CommandPalette } from '@/components/ui/CommandPalette';
@@ -20,6 +21,7 @@ export interface AppShellProps {
 }
 
 export function AppShell({ profile, onSignOut }: AppShellProps) {
+  const { t } = useTranslation();
   const isCollapsed = useUiStore((state) => state.isSidebarCollapsed);
   const isCommandPaletteOpen = useUiStore((state) => state.isCommandPaletteOpen);
   const setCommandPaletteOpen = useUiStore((state) => state.setCommandPaletteOpen);
@@ -50,15 +52,15 @@ export function AppShell({ profile, onSignOut }: AppShellProps) {
   const commandGroups = useMemo(
     () =>
       NAV_SECTIONS.map((group) => ({
-        heading: group.section,
+        heading: t(group.sectionKey, group.section),
         items: group.items.map((item) => ({
           id: item.to,
-          label: item.label,
+          label: t(item.labelKey, item.label),
           icon: item.icon,
           onSelect: () => navigate(item.to),
         })),
       })),
-    [navigate],
+    [navigate, t],
   );
 
   return (
@@ -67,7 +69,7 @@ export function AppShell({ profile, onSignOut }: AppShellProps) {
         href="#main-content"
         className="focus-ring fixed left-3 top-3 z-50 -translate-y-16 rounded-md bg-ai px-4 py-2 text-sm font-medium text-white transition-transform focus:translate-y-0"
       >
-        Saltar al contenido principal
+        {t('common.skipToContent')}
       </a>
       <div className="min-h-screen bg-bg">
         <Sidebar />
@@ -94,7 +96,12 @@ export function AppShell({ profile, onSignOut }: AppShellProps) {
         </DrawerContent>
       </Drawer>
 
-      <CommandPalette open={isCommandPaletteOpen} onOpenChange={setCommandPaletteOpen} groups={commandGroups} />
+      <CommandPalette
+        open={isCommandPaletteOpen}
+        onOpenChange={setCommandPaletteOpen}
+        groups={commandGroups}
+        placeholder={t('header.searchPlaceholder')}
+      />
       <Toaster />
       {isAdmin(profile.role) && profile.org_id && <AthlosBot orgId={profile.org_id} />}
     </TooltipProvider>

@@ -1,6 +1,7 @@
 import { forwardRef, useState, type FormEvent } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Lock, Mail, type LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
@@ -44,6 +45,7 @@ IconInput.displayName = 'IconInput';
  * visual (glass, borde en gradiente, inputs grandes, botón premium).
  */
 export function LoginConsole({ onSignIn, onSubmittingChange }: LoginConsoleProps) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
@@ -55,15 +57,15 @@ export function LoginConsole({ onSignIn, onSubmittingChange }: LoginConsoleProps
     setFormError('');
 
     const errors: typeof fieldErrors = {};
-    if (!EMAIL_PATTERN.test(email)) errors.email = 'Ingresa un correo válido.';
-    if (password.length < 6) errors.password = 'Mínimo 6 caracteres.';
+    if (!EMAIL_PATTERN.test(email)) errors.email = t('login.invalidEmail');
+    if (password.length < 6) errors.password = t('login.invalidPassword');
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
     setIsSubmitting(true);
     onSubmittingChange?.(true);
     const { error } = await onSignIn(email, password);
-    if (error) setFormError('Credenciales inválidas.');
+    if (error) setFormError(t('login.invalidCredentials'));
     setIsSubmitting(false);
     onSubmittingChange?.(false);
   };
@@ -84,10 +86,8 @@ export function LoginConsole({ onSignIn, onSubmittingChange }: LoginConsoleProps
         }}
       />
 
-      <h2 className="text-2xl font-bold text-foreground">Bienvenido de nuevo</h2>
-      <p className="mb-8 mt-2 text-sm text-muted-foreground">
-        Ingresa a tu cuenta para continuar con el análisis de tu organización.
-      </p>
+      <h2 className="text-2xl font-bold text-foreground">{t('login.welcomeBack')}</h2>
+      <p className="mb-8 mt-2 text-sm text-muted-foreground">{t('login.subtitle')}</p>
 
       {formError && (
         <div role="alert" className="mb-4 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
@@ -96,7 +96,7 @@ export function LoginConsole({ onSignIn, onSubmittingChange }: LoginConsoleProps
       )}
 
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
-        <Field label="Correo" htmlFor="email" required error={fieldErrors.email}>
+        <Field label={t('login.email')} htmlFor="email" required error={fieldErrors.email}>
           <IconInput
             icon={Mail}
             id="email"
@@ -107,11 +107,11 @@ export function LoginConsole({ onSignIn, onSubmittingChange }: LoginConsoleProps
           />
         </Field>
         <Field
-          label="Contraseña"
+          label={t('login.password')}
           htmlFor="password"
           required
           error={fieldErrors.password}
-          hint={!fieldErrors.password ? 'Mínimo 6 caracteres.' : undefined}
+          hint={!fieldErrors.password ? t('login.passwordHint') : undefined}
         >
           <IconInput
             icon={Lock}
@@ -138,7 +138,7 @@ export function LoginConsole({ onSignIn, onSubmittingChange }: LoginConsoleProps
                 backgroundSize: '250% 100%',
               }}
             />
-            Ingresar
+            {t('login.signIn')}
             {!isSubmitting && <ArrowRight className="size-4" aria-hidden="true" />}
           </Button>
         </motion.div>

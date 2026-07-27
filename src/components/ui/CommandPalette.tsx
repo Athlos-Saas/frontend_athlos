@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Command } from 'cmdk';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/utils/cn';
 
@@ -23,7 +24,9 @@ export interface CommandPaletteProps {
   placeholder?: string;
 }
 
-export function CommandPalette({ open, onOpenChange, groups, placeholder = 'Buscar módulos, atletas, equipos…' }: CommandPaletteProps) {
+export function CommandPalette({ open, onOpenChange, groups, placeholder }: CommandPaletteProps) {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t('header.searchPlaceholder');
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
@@ -32,7 +35,7 @@ export function CommandPalette({ open, onOpenChange, groups, placeholder = 'Busc
           className="animate-slide-up glass fixed left-1/2 top-24 z-50 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 overflow-hidden rounded-lg border border-border shadow-elevated focus:outline-none"
           aria-describedby={undefined}
         >
-          <DialogPrimitive.Title className="sr-only">Buscador inteligente</DialogPrimitive.Title>
+          <DialogPrimitive.Title className="sr-only">{t('common.smartSearch')}</DialogPrimitive.Title>
           <Command
             className="flex flex-col"
             filter={(value, search) => (value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0)}
@@ -41,13 +44,13 @@ export function CommandPalette({ open, onOpenChange, groups, placeholder = 'Busc
               <Search className="size-4 text-muted-foreground" aria-hidden="true" />
               <Command.Input
                 autoFocus
-                placeholder={placeholder}
+                placeholder={resolvedPlaceholder}
                 className="focus-ring h-12 w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
               />
             </div>
             <Command.List className="max-h-80 overflow-y-auto p-2">
               <Command.Empty className="py-8 text-center text-sm text-muted-foreground">
-                Sin resultados.
+                {t('common.noResults')}
               </Command.Empty>
               {groups.map((group) => (
                 <Command.Group

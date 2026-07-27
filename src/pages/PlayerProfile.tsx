@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
 import { EditPlayerDialog, type PlayerUpdate } from '@/components/players/EditPlayerDialog';
+import { HoloAvatarFrame } from '@/components/ui/HoloAvatarFrame';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/store/toastStore';
 import { canWrite } from '@/utils/permissions';
@@ -96,13 +97,15 @@ export default function PlayerProfile({ orgId, role }: { orgId: string; role: st
         <>
           <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-6 shadow-subtle sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-panel">
-                {headerPhoto.data ? (
-                  <img src={headerPhoto.data} alt={core.data.full_name} className="size-full object-cover" />
-                ) : (
-                  <UserRound className="size-8 text-muted-foreground" aria-hidden="true" />
-                )}
-              </div>
+              <HoloAvatarFrame>
+                <div className="flex size-16 items-center justify-center overflow-hidden rounded-full border border-border bg-panel">
+                  {headerPhoto.data ? (
+                    <img src={headerPhoto.data} alt={core.data.full_name} className="size-full object-cover" />
+                  ) : (
+                    <UserRound className="size-8 text-muted-foreground" aria-hidden="true" />
+                  )}
+                </div>
+              </HoloAvatarFrame>
               <div className="space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-2xl font-bold tracking-tight text-foreground">{core.data.full_name}</h1>

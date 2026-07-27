@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Film, Pencil, Play, Trash2, Upload } from 'lucide-react';
 
 import { type TrajectoryPoint } from '@/components/charts/SoccerPitchMap';
 import { TacticalBoard, type RosterOption } from '@/components/videos/TacticalBoard';
-import { AnalyzingIndicator } from '@/components/ui/AnalyzingIndicator';
+import { AnalyzingIndicator, VIDEO_PROCESSING_STAGE_KEYS } from '@/components/ui/AnalyzingIndicator';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -352,11 +353,21 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                   <TableRow key={video.id}>
                     <TableCell className="font-medium">{video.title}</TableCell>
                     <TableCell>
-                      {video.status === 'processing' ? (
-                        <AnalyzingIndicator label="Analizando video…" />
-                      ) : (
-                        <Badge variant={STATUS_BADGE[video.status]}>{STATUS_LABEL[video.status]}</Badge>
-                      )}
+                      <AnimatePresence mode="wait" initial={false}>
+                        <motion.div
+                          key={video.status}
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -4 }}
+                          transition={{ duration: 0.25 }}
+                        >
+                          {video.status === 'processing' ? (
+                            <AnalyzingIndicator label="Analizando video…" stageKeys={VIDEO_PROCESSING_STAGE_KEYS} />
+                          ) : (
+                            <Badge variant={STATUS_BADGE[video.status]}>{STATUS_LABEL[video.status]}</Badge>
+                          )}
+                        </motion.div>
+                      </AnimatePresence>
                       {video.status === 'failed' && video.error_message && (
                         <p className="mt-1 max-w-xs text-xs text-danger">{video.error_message}</p>
                       )}
@@ -422,6 +433,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
       </Card>
 
       {doneVideos.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
         <Card>
           <CardHeader>
             <CardTitle>Resultado del análisis</CardTitle>
@@ -504,6 +516,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
             <Pagination page={tracksPager.page} pageCount={tracksPager.pageCount} onPageChange={tracksPager.setPage} className="mt-4" />
           )}
         </Card>
+        </motion.div>
       )}
 
       <Dialog open={editingVideo !== null} onOpenChange={(open) => !open && setEditingVideo(null)}>

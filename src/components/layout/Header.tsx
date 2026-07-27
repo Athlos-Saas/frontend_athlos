@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Bell, ChevronDown, Globe, HeartPulse, LogOut, Menu, Moon, Search, Settings, Sun, User } from 'lucide-react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/Avatar';
@@ -16,6 +17,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import { supabase } from '@/lib/supabase';
 import { useUiStore } from '@/store/uiStore';
+import { cn } from '@/utils/cn';
+import { type SupportedLanguage } from '@/i18n/config';
+
+const LANGUAGE_LABEL: Record<SupportedLanguage, string> = { es: 'Español', en: 'English' };
 
 export interface HeaderProfile {
   full_name?: string | null;
@@ -52,6 +57,7 @@ function initials(name?: string | null) {
 }
 
 export function Header({ profile, onSignOut, onOpenMobileNav }: HeaderProps) {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const setCommandPaletteOpen = useUiStore((state) => state.setCommandPaletteOpen);
   const season = useUiStore((state) => state.season);
@@ -116,19 +122,20 @@ export function Header({ profile, onSignOut, onOpenMobileNav }: HeaderProps) {
         ...injuries.map((injury) => ({
           id: `injury-${injury.id}`,
           kind: 'injury' as const,
-          title: names.get(injury.player_id) ?? 'Jugador',
-          detail: `Lesión activa (${injury.severity})`,
+          title: names.get(injury.player_id) ?? t('header.player'),
+          detail: t('header.activeInjury', { severity: injury.severity }),
           playerId: injury.player_id,
         })),
         ...alerts.map((alert) => ({
           id: `ml-${alert.id}`,
           kind: 'ml' as const,
-          title: alert.player_id ? names.get(alert.player_id) ?? 'Jugador' : 'Plantel',
-          detail: alert.prediction_type === 'fatigue_risk' ? 'Riesgo de fatiga alto' : 'Sobre-esfuerzo detectado',
+          title: alert.player_id ? names.get(alert.player_id) ?? t('header.player') : t('header.squad'),
+          detail: alert.prediction_type === 'fatigue_risk' ? t('header.fatigueRisk') : t('header.overload'),
           playerId: alert.player_id,
         })),
       ]);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgId]);
 
   const notificationCount = notifications.length;
@@ -148,11 +155,11 @@ export function Header({ profile, onSignOut, onOpenMobileNav }: HeaderProps) {
       <button
         type="button"
         onClick={() => setCommandPaletteOpen(true)}
-        aria-label="Buscar módulos, atletas, equipos"
+        aria-label={t('header.searchLabel')}
         className="focus-ring flex h-9 w-full max-w-sm items-center gap-2 rounded-md border border-border bg-panel px-3 text-left text-sm text-muted-foreground transition-colors hover:border-ai/30 hover:text-foreground"
       >
         <Search className="size-4 shrink-0" aria-hidden="true" />
-        <span className="hidden flex-1 truncate sm:block">Buscar módulos, atletas, equipos…</span>
+        <span className="hidden flex-1 truncate sm:block">{t('header.searchPlaceholder')}</span>
         <kbd className="hidden rounded border border-border bg-bg px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground sm:block">
           ⌘K
         </kbd>
@@ -161,8 +168,8 @@ export function Header({ profile, onSignOut, onOpenMobileNav }: HeaderProps) {
       <div className="ml-auto flex items-center gap-1 sm:gap-2">
         {seasons.length > 0 && (
           <Select value={season ?? seasons[0]} onValueChange={setSeason}>
-            <SelectTrigger aria-label="Temporada" className="hidden h-9 w-[92px] md:flex">
-              <SelectValue placeholder="Temporada" />
+            <SelectTrigger aria-label={t('header.season')} className="hidden h-9 w-[92px] md:flex">
+              <SelectValue placeholder={t('header.season')} />
             </SelectTrigger>
             <SelectContent>
               {seasons.map((seasonOption) => (
@@ -176,8 +183,8 @@ export function Header({ profile, onSignOut, onOpenMobileNav }: HeaderProps) {
 
         {sports.length > 0 && (
           <Select defaultValue={sports[0]}>
-            <SelectTrigger aria-label="Deporte" className="hidden h-9 w-[130px] md:flex">
-              <SelectValue placeholder="Deporte" />
+            <SelectTrigger aria-label={t('header.sport')} className="hidden h-9 w-[130px] md:flex">
+              <SelectValue placeholder={t('header.sport')} />
             </SelectTrigger>
             <SelectContent>
               {sports.map((sport) => (
@@ -195,7 +202,7 @@ export function Header({ profile, onSignOut, onOpenMobileNav }: HeaderProps) {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              aria-label={notificationCount > 0 ? `${notificationCount} notificaciones` : 'Notificaciones'}
+              aria-label={notificationCount > 0 ? t('header.notificationsCount', { count: notificationCount }) : t('header.notifications')}
               className="focus-ring relative flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-panel hover:text-foreground"
             >
               <Bell className="size-4" aria-hidden="true" />
@@ -207,12 +214,10 @@ export function Header({ profile, onSignOut, onOpenMobileNav }: HeaderProps) {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Notificaciones</DropdownMenuLabel>
+            <DropdownMenuLabel>{t('header.notifications')}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {visibleNotifications.length === 0 ? (
-              <div className="px-2 py-6 text-center text-xs text-muted-foreground">
-                Sin lesiones activas ni alertas recientes de los modelos.
-              </div>
+              <div className="px-2 py-6 text-center text-xs text-muted-foreground">{t('header.noNotifications')}</div>
             ) : (
               <>
                 {visibleNotifications.map((notification) => (
@@ -233,7 +238,7 @@ export function Header({ profile, onSignOut, onOpenMobileNav }: HeaderProps) {
                 ))}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => navigate('/alertas')} className="justify-center text-ai">
-                  Ver todas las alertas
+                  {t('header.viewAllAlerts')}
                 </DropdownMenuItem>
               </>
             )}
@@ -245,28 +250,40 @@ export function Header({ profile, onSignOut, onOpenMobileNav }: HeaderProps) {
             <button
               type="button"
               onClick={toggleTheme}
-              aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+              aria-label={theme === 'dark' ? t('header.lightMode') : t('header.darkMode')}
               className="focus-ring hidden size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-panel hover:text-foreground sm:flex"
             >
               {theme === 'dark' ? <Sun className="size-4" aria-hidden="true" /> : <Moon className="size-4" aria-hidden="true" />}
             </button>
           </TooltipTrigger>
-          <TooltipContent>{theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}</TooltipContent>
+          <TooltipContent>{theme === 'dark' ? t('header.lightMode') : t('header.darkMode')}</TooltipContent>
         </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label="Idioma (Español)"
-              disabled
-              className="focus-ring hidden size-9 items-center justify-center rounded-md text-muted-foreground opacity-50 sm:flex"
-            >
-              <Globe className="size-4" aria-hidden="true" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>Español — más idiomas próximamente</TooltipContent>
-        </Tooltip>
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={t('header.language')}
+                  className="focus-ring hidden size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-panel hover:text-foreground sm:flex"
+                >
+                  <Globe className="size-4" aria-hidden="true" />
+                </button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent>{LANGUAGE_LABEL[(i18n.resolvedLanguage as SupportedLanguage) ?? 'es']}</TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuLabel>{t('header.language')}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {(Object.keys(LANGUAGE_LABEL) as SupportedLanguage[]).map((lng) => (
+              <DropdownMenuItem key={lng} onSelect={() => i18n.changeLanguage(lng)}>
+                <span className={cn(i18n.resolvedLanguage === lng && 'font-semibold text-ai')}>{LANGUAGE_LABEL[lng]}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <div className="mx-1 hidden h-6 w-px bg-border sm:block" aria-hidden="true" />
 
@@ -281,25 +298,25 @@ export function Header({ profile, onSignOut, onOpenMobileNav }: HeaderProps) {
               </Avatar>
               <span className="hidden text-left leading-tight sm:block">
                 <span className="block text-xs font-semibold text-foreground">{profile.full_name || 'Usuario'}</span>
-                <span className="block text-[10px] text-muted-foreground">{profile.role || 'Miembro'}</span>
+                <span className="block text-[10px] text-muted-foreground">{profile.role || t('header.member')}</span>
               </span>
               <ChevronDown className="size-3.5 text-muted-foreground" aria-hidden="true" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="flex items-center gap-2 normal-case tracking-normal text-foreground">
-              <Badge variant="ai">{profile.role || 'Miembro'}</Badge>
+              <Badge variant="ai">{profile.role || t('header.member')}</Badge>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => navigate('/configuracion')}>
-              <User className="size-4" aria-hidden="true" /> Mi perfil
+              <User className="size-4" aria-hidden="true" /> {t('header.myProfile')}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => navigate('/configuracion')}>
-              <Settings className="size-4" aria-hidden="true" /> Configuración
+              <Settings className="size-4" aria-hidden="true" /> {t('header.settings')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem destructive onSelect={onSignOut}>
-              <LogOut className="size-4" aria-hidden="true" /> Cerrar sesión
+              <LogOut className="size-4" aria-hidden="true" /> {t('header.signOut')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

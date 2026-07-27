@@ -1,13 +1,14 @@
 import { lazy, Suspense, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ShieldCheck } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { AiTicker } from '@/features/loginExperience/AiTicker';
 import { AmbientBackground, useIsDesktop } from '@/features/loginExperience/AmbientBackground';
 import { CapabilityModules } from '@/features/loginExperience/CapabilityModules';
 import { LoginConsole } from '@/features/loginExperience/LoginConsole';
 import { useMouseParallax } from '@/features/loginExperience/useMouseParallax';
-import { usePrefersReducedMotion } from '@/features/loginExperience/usePrefersReducedMotion';
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 
 // Three.js + drei pesan ~600kB — se carga perezoso, mismo criterio que
 // `Player3DViewer.tsx`, y ni siquiera se pide en mobile/reduced-motion.
@@ -27,6 +28,7 @@ export interface LoginProps {
  * es la propia espera de red la que se aprovecha.
  */
 export default function Login({ onSignIn }: LoginProps) {
+  const { t } = useTranslation();
   const stageRef = useRef<HTMLDivElement>(null);
   const parallax = useMouseParallax(stageRef);
   const isDesktop = useIsDesktop();
@@ -66,7 +68,7 @@ export default function Login({ onSignIn }: LoginProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
           >
-            Inteligencia artificial para el rendimiento deportivo de élite.
+            {t('login.heroTitle')}
           </motion.h1>
           <motion.p
             className="mt-4 text-sm text-muted-foreground"
@@ -74,8 +76,7 @@ export default function Login({ onSignIn }: LoginProps) {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            Datos, modelos y predicciones en una sola plataforma — construida para equipos que
-            compiten con precisión.
+            {t('login.heroSubtitle')}
           </motion.p>
 
           <div className="mt-8">
@@ -86,7 +87,7 @@ export default function Login({ onSignIn }: LoginProps) {
         <div className="relative flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <ShieldCheck className="size-4 text-success" aria-hidden="true" />
-            Row Level Security por organización — tus datos, aislados y protegidos.
+            {t('login.rls')}
           </div>
           <AiTicker isActive={isAuthenticating} />
         </div>

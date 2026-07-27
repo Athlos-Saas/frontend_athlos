@@ -1,0 +1,95 @@
+{
+  "common": {
+    "skipToContent": "Saltar al contenido principal",
+    "smartSearch": "Buscador inteligente",
+    "noResults": "Sin resultados."
+  },
+  "nav": {
+    "section": {
+      "general": "General",
+      "rendimiento": "Rendimiento",
+      "ia": "Inteligencia artificial",
+      "operaciones": "Operaciones",
+      "cuenta": "Cuenta"
+    },
+    "dashboard": "Dashboard",
+    "analisis": "Análisis",
+    "atletas": "Atletas",
+    "equipos": "Equipos",
+    "competiciones": "Competiciones",
+    "temporadas": "Temporadas",
+    "aiCenter": "AI Intelligence Center",
+    "pronosticos": "Pronósticos IA",
+    "modelosIa": "Modelos IA",
+    "scouting": "Scouting",
+    "reportes": "Reportes",
+    "dispositivos": "Dispositivos",
+    "integraciones": "Integraciones",
+    "alertas": "Alertas",
+    "clientes": "Clientes",
+    "administracion": "Administración",
+    "configuracion": "Configuración",
+    "comingSoon": "Pronto",
+    "collapse": "Colapsar",
+    "expandMenu": "Expandir menú",
+    "collapseMenu": "Colapsar menú"
+  },
+  "header": {
+    "searchPlaceholder": "Buscar módulos, atletas, equipos…",
+    "searchLabel": "Buscar módulos, atletas, equipos",
+    "season": "Temporada",
+    "sport": "Deporte",
+    "notifications": "Notificaciones",
+    "notificationsCount_one": "{{count}} notificación",
+    "notificationsCount_other": "{{count}} notificaciones",
+    "noNotifications": "Sin lesiones activas ni alertas recientes de los modelos.",
+    "viewAllAlerts": "Ver todas las alertas",
+    "activeInjury": "Lesión activa ({{severity}})",
+    "fatigueRisk": "Riesgo de fatiga alto",
+    "overload": "Sobre-esfuerzo detectado",
+    "player": "Jugador",
+    "squad": "Plantel",
+    "lightMode": "Cambiar a modo claro",
+    "darkMode": "Cambiar a modo oscuro",
+    "language": "Idioma",
+    "myProfile": "Mi perfil",
+    "settings": "Configuración",
+    "signOut": "Cerrar sesión",
+    "member": "Miembro"
+  },
+  "login": {
+    "welcomeBack": "Bienvenido de nuevo",
+    "subtitle": "Ingresa a tu cuenta para continuar con el análisis de tu organización.",
+    "email": "Correo",
+    "password": "Contraseña",
+    "passwordHint": "Mínimo 6 caracteres.",
+    "signIn": "Ingresar",
+    "invalidEmail": "Ingresa un correo válido.",
+    "invalidPassword": "Mínimo 6 caracteres.",
+    "invalidCredentials": "Credenciales inválidas.",
+    "heroTitle": "Inteligencia artificial para el rendimiento deportivo de élite.",
+    "heroSubtitle": "Datos, modelos y predicciones en una sola plataforma — construida para equipos que compiten con precisión.",
+    "rls": "Row Level Security por organización — tus datos, aislados y protegidos.",
+    "ticker": {
+      "analyzing": "Analizando movimiento…",
+      "processing": "Procesando métricas…",
+      "predictionDone": "Predicción completada",
+      "newTraining": "Nuevo entrenamiento disponible",
+      "authenticating": "Autenticando…"
+    },
+    "capabilities": {
+      "ml": { "label": "Modelos de ML en producción", "description": "Fatiga, clustering y clasificación en tiempo real" },
+      "gps": { "label": "Monitoreo GPS y wellness", "description": "Carga física y prevención de lesiones" },
+      "video": { "label": "Video análisis", "description": "Tracking de jugadores con computer vision" },
+      "ai": { "label": "AI Intelligence Center", "description": "Insights y predicciones consolidadas" }
+    }
+  },
+  "processing": {
+    "detectingPlayers": "Detectando jugadores…",
+    "trackingMovement": "Siguiendo movimiento cuadro a cuadro…",
+    "calibratingPitch": "Calibrando la cancha…",
+    "computingTrajectories": "Calculando trayectorias…",
+    "almostDone": "Casi listo…",
+    "stillWorking": "Seguimos procesando, esto puede tardar unos minutos…"
+  }
+}

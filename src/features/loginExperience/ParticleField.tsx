@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-import { usePrefersReducedMotion } from './usePrefersReducedMotion';
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 
 interface Particle {
   x: number;

@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 import { cn } from '@/utils/cn';
@@ -12,6 +13,7 @@ export interface SidebarNavContentProps {
 }
 
 export function SidebarNavContent({ isCollapsed, onNavigate }: SidebarNavContentProps) {
+  const { t } = useTranslation();
   const deniedKeys = useNavAccessStore((state) => state.deniedKeys);
   const visibleSections = NAV_SECTIONS.map((group) => ({
     ...group,
@@ -37,40 +39,41 @@ export function SidebarNavContent({ isCollapsed, onNavigate }: SidebarNavContent
           <div key={group.section}>
             {!isCollapsed && (
               <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-                {group.section}
+                {t(group.sectionKey, group.section)}
               </p>
             )}
             <ul className="space-y-0.5">
-              {group.items.map((item) => (
-                <li key={item.to}>
-                  <NavLink
-                    to={item.to}
-                    end={item.to === '/'}
-                    title={isCollapsed ? item.label : undefined}
-                    aria-label={isCollapsed ? item.label : undefined}
-                    onClick={onNavigate}
-                    className={({ isActive }) =>
-                      cn(
-                        'focus-ring group flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors',
-                        isCollapsed && 'justify-center px-0',
-                        isActive
-                          ? 'bg-ai/10 text-ai'
-                          : 'text-muted-foreground hover:bg-card hover:text-foreground',
-                      )
-                    }
-                  >
-                    <item.icon className="size-4 shrink-0" aria-hidden="true" />
-                    {!isCollapsed && (
-                      <span className="flex-1 truncate">{item.label}</span>
-                    )}
-                    {!isCollapsed && item.comingSoon && (
-                      <span className="rounded-full bg-border/60 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        Pronto
-                      </span>
-                    )}
-                  </NavLink>
-                </li>
-              ))}
+              {group.items.map((item) => {
+                const label = t(item.labelKey, item.label);
+                return (
+                  <li key={item.to}>
+                    <NavLink
+                      to={item.to}
+                      end={item.to === '/'}
+                      title={isCollapsed ? label : undefined}
+                      aria-label={isCollapsed ? label : undefined}
+                      onClick={onNavigate}
+                      className={({ isActive }) =>
+                        cn(
+                          'focus-ring group flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors',
+                          isCollapsed && 'justify-center px-0',
+                          isActive
+                            ? 'bg-ai/10 text-ai'
+                            : 'text-muted-foreground hover:bg-card hover:text-foreground',
+                        )
+                      }
+                    >
+                      <item.icon className="size-4 shrink-0" aria-hidden="true" />
+                      {!isCollapsed && <span className="flex-1 truncate">{label}</span>}
+                      {!isCollapsed && item.comingSoon && (
+                        <span className="rounded-full bg-border/60 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          {t('nav.comingSoon')}
+                        </span>
+                      )}
+                    </NavLink>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ))}
@@ -80,6 +83,7 @@ export function SidebarNavContent({ isCollapsed, onNavigate }: SidebarNavContent
 }
 
 export function Sidebar() {
+  const { t } = useTranslation();
   const isCollapsed = useUiStore((state) => state.isSidebarCollapsed);
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
 
@@ -97,11 +101,11 @@ export function Sidebar() {
         <button
           type="button"
           onClick={toggleSidebar}
-          aria-label={isCollapsed ? 'Expandir menú' : 'Colapsar menú'}
+          aria-label={isCollapsed ? t('nav.expandMenu') : t('nav.collapseMenu')}
           className="focus-ring flex w-full items-center justify-center gap-2 rounded-md py-2 text-xs font-medium text-muted-foreground hover:bg-card hover:text-foreground"
         >
           {isCollapsed ? <ChevronsRight className="size-4" aria-hidden="true" /> : <ChevronsLeft className="size-4" aria-hidden="true" />}
-          {!isCollapsed && 'Colapsar'}
+          {!isCollapsed && t('nav.collapse')}
         </button>
       </div>
     </aside>
