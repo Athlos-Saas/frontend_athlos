@@ -50,6 +50,7 @@
     "notificationsCount_one": "{{count}} notification",
     "notificationsCount_other": "{{count}} notifications",
     "noNotifications": "No active injuries or recent model alerts.",
+    "notificationGoTo": "View",
     "viewAllAlerts": "View all alerts",
     "activeInjury": "Active injury ({{severity}})",
     "fatigueRisk": "High fatigue risk",

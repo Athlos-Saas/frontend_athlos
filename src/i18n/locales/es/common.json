@@ -50,6 +50,7 @@
     "notificationsCount_one": "{{count}} notificación",
     "notificationsCount_other": "{{count}} notificaciones",
     "noNotifications": "Sin lesiones activas ni alertas recientes de los modelos.",
+    "notificationGoTo": "Ir",
     "viewAllAlerts": "Ver todas las alertas",
     "activeInjury": "Lesión activa ({{severity}})",
     "fatigueRisk": "Riesgo de fatiga alto",

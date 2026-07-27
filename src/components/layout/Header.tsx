@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Bell, ChevronDown, Globe, HeartPulse, LogOut, Menu, Moon, Search, Settings, Sun, User } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Bell, ChevronDown, Globe, HeartPulse, LogOut, Menu, Moon, Search, Settings, Sun, User } from 'lucide-react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
@@ -16,6 +16,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import { supabase } from '@/lib/supabase';
+import { useNavAccessStore } from '@/store/navAccessStore';
+import { useNotificationsStore } from '@/store/notificationsStore';
 import { useUiStore } from '@/store/uiStore';
 import { cn } from '@/utils/cn';
 import { type SupportedLanguage } from '@/i18n/config';
@@ -48,6 +50,8 @@ interface HeaderNotification {
   title: string;
   detail: string;
   playerId: string | null;
+  /** Ruta a la que navega "Ir" — también la clave usada para filtrar por permiso de navegación (mismo mecanismo real que ya oculta ítems del menú lateral, ver NavGate/useNavAccessStore). */
+  navKey: '/atletas' | '/alertas';
 }
 
 function initials(name?: string | null) {
@@ -64,6 +68,10 @@ export function Header({ profile, onSignOut, onOpenMobileNav }: HeaderProps) {
   const setSeason = useUiStore((state) => state.setSeason);
   const theme = useUiStore((state) => state.theme);
   const toggleTheme = useUiStore((state) => state.toggleTheme);
+
+  const deniedKeys = useNavAccessStore((state) => state.deniedKeys);
+  const readIds = useNotificationsStore((state) => state.readIds);
+  const markRead = useNotificationsStore((state) => state.markRead);
 
   const [seasons, setSeasons] = useState<string[]>([]);
   const [sports, setSports] = useState<string[]>([]);
@@ -125,6 +133,7 @@ export function Header({ profile, onSignOut, onOpenMobileNav }: HeaderProps) {
           title: names.get(injury.player_id) ?? t('header.player'),
           detail: t('header.activeInjury', { severity: injury.severity }),
           playerId: injury.player_id,
+          navKey: '/atletas' as const,
         })),
         ...alerts.map((alert) => ({
           id: `ml-${alert.id}`,
@@ -132,14 +141,31 @@ export function Header({ profile, onSignOut, onOpenMobileNav }: HeaderProps) {
           title: alert.player_id ? names.get(alert.player_id) ?? t('header.player') : t('header.squad'),
           detail: alert.prediction_type === 'fatigue_risk' ? t('header.fatigueRisk') : t('header.overload'),
           playerId: alert.player_id,
+          navKey: '/alertas' as const,
         })),
       ]);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgId]);
 
-  const notificationCount = notifications.length;
-  const visibleNotifications = useMemo(() => notifications.slice(0, 6), [notifications]);
+  // Solo se muestran (y cuentan) notificaciones cuyo destino ("Ir") el rol
+  // actual puede visitar — mismo mecanismo real que ya oculta ítems del
+  // menú lateral (useNavAccessStore/deniedKeys), no un permiso inventado
+  // aparte para notificaciones.
+  const permittedNotifications = useMemo(
+    () => notifications.filter((notification) => !deniedKeys.has(notification.navKey)),
+    [notifications, deniedKeys],
+  );
+  const visibleNotifications = useMemo(() => permittedNotifications.slice(0, 6), [permittedNotifications]);
+  const notificationCount = useMemo(
+    () => permittedNotifications.filter((notification) => !readIds.includes(notification.id)).length,
+    [permittedNotifications, readIds],
+  );
+
+  const handleNotificationSelect = (notification: HeaderNotification) => {
+    markRead(notification.id);
+    navigate(notification.playerId ? `/atletas/${notification.playerId}` : '/alertas');
+  };
 
   return (
     <header className="glass sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-border px-4 sm:gap-3 sm:px-6">
@@ -220,22 +246,33 @@ export function Header({ profile, onSignOut, onOpenMobileNav }: HeaderProps) {
               <div className="px-2 py-6 text-center text-xs text-muted-foreground">{t('header.noNotifications')}</div>
             ) : (
               <>
-                {visibleNotifications.map((notification) => (
-                  <DropdownMenuItem
-                    key={notification.id}
-                    onSelect={() => (notification.playerId ? navigate(`/atletas/${notification.playerId}`) : navigate('/alertas'))}
-                  >
-                    {notification.kind === 'injury' ? (
-                      <HeartPulse className="size-4 shrink-0 text-danger" aria-hidden="true" />
-                    ) : (
-                      <AlertTriangle className="size-4 shrink-0 text-warning" aria-hidden="true" />
-                    )}
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-medium">{notification.title}</span>
-                      <span className="block truncate text-xs text-muted-foreground">{notification.detail}</span>
-                    </span>
-                  </DropdownMenuItem>
-                ))}
+                {visibleNotifications.map((notification) => {
+                  const isRead = readIds.includes(notification.id);
+                  return (
+                    <DropdownMenuItem
+                      key={notification.id}
+                      onSelect={() => handleNotificationSelect(notification)}
+                      className={cn(isRead && 'opacity-60')}
+                    >
+                      <span className={cn('size-1.5 shrink-0 rounded-full', isRead ? 'bg-transparent' : 'bg-ai')} aria-hidden="true" />
+                      {notification.kind === 'injury' ? (
+                        <HeartPulse className={cn('size-4 shrink-0', isRead ? 'text-muted-foreground' : 'text-danger')} aria-hidden="true" />
+                      ) : (
+                        <AlertTriangle className={cn('size-4 shrink-0', isRead ? 'text-muted-foreground' : 'text-warning')} aria-hidden="true" />
+                      )}
+                      <span className="min-w-0 flex-1">
+                        <span className={cn('block truncate text-sm', isRead ? 'text-muted-foreground' : 'font-medium')}>
+                          {notification.title}
+                        </span>
+                        <span className="block truncate text-xs text-muted-foreground">{notification.detail}</span>
+                      </span>
+                      <span className="flex shrink-0 items-center gap-0.5 text-xs font-medium text-ai">
+                        {t('header.notificationGoTo', 'Ir')}
+                        <ArrowRight className="size-3" aria-hidden="true" />
+                      </span>
+                    </DropdownMenuItem>
+                  );
+                })}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => navigate('/alertas')} className="justify-center text-ai">
                   {t('header.viewAllAlerts')}
