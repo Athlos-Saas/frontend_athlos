@@ -1,0 +1,124 @@
+{
+  "roster": {
+    "title": "Roster físico",
+    "subtitle": "Posición, altura, peso y estado de lesión por jugador",
+    "showInactive": "Ver inactivos",
+    "teamPlaceholder": "Equipo",
+    "searchPlaceholder": "Buscar jugador…",
+    "col": {
+      "fullName": "Jugador",
+      "position": "Posición",
+      "height": "Altura (cm)",
+      "weight": "Peso (kg)",
+      "age": "Edad",
+      "league": "Liga",
+      "status": "Estado"
+    },
+    "league": {
+      "attackerSummary": "{{goals}} goles · {{role}}",
+      "goalkeeperSummary": "GAA {{gaa}} · {{role}}"
+    },
+    "status": {
+      "available": "Disponible",
+      "injured": "Lesionado",
+      "noDetail": "Sin detalle",
+      "markRecovered": "Marcar recuperado",
+      "deleteRecord": "Eliminar registro"
+    },
+    "import": {
+      "triggerLabel": "Importar roster (Excel)",
+      "title": "Importar roster físico",
+      "description": "Sube el Excel con columnas Name/Position/Weight/Height/Age/Recent injuries.",
+      "preview": "Detecté {{players}} jugadores y {{injuries}} lesiones.",
+      "injuriesRegistered": "{{count}} lesiones registradas."
+    },
+    "empty": {
+      "title": "Sin roster todavía",
+      "description": "Corre el seed con --roster en el backend."
+    },
+    "playersCard": {
+      "title": "Jugadores",
+      "description": "{{count}} jugadores registrados"
+    },
+    "action": {
+      "viewProfile": "Ver ficha",
+      "reactivate": "Reactivar",
+      "edit": "Editar",
+      "deactivate": "Desactivar"
+    },
+    "confirmDeactivate": {
+      "title": "¿Desactivar a {{name}}?",
+      "description": "Deja de aparecer en el roster activo; sus datos históricos (sesiones, stats) no se borran.",
+      "confirmLabel": "Desactivar"
+    },
+    "toast": {
+      "saveError": "No se pudo guardar",
+      "playerUpdated": "Jugador actualizado",
+      "deactivateError": "No se pudo desactivar",
+      "deactivated": "{{name}} desactivado",
+      "reactivateError": "No se pudo reactivar",
+      "reactivated": "{{name}} reactivado",
+      "updateError": "No se pudo actualizar",
+      "injuryRecovered": "Lesión marcada como recuperada",
+      "deleteError": "No se pudo eliminar",
+      "injuryDeleted": "Registro de lesión eliminado"
+    }
+  },
+  "editPlayerDialog": {
+    "title": "Editar {{name}}",
+    "photoPreviewAlt": "Vista previa",
+    "photo": {
+      "replaceNotice": "Vas a reemplazar la foto actual.",
+      "saveNotice": "Vas a guardar esta foto.",
+      "confirm": "Confirmar",
+      "cancel": "Cancelar",
+      "change": "Cambiar foto",
+      "privacyNote": "Se guarda en el almacenamiento privado de tu organización (se comprime automáticamente) — solo el staff con acceso puede verla."
+    },
+    "field": {
+      "position": "Posición",
+      "height": "Altura (cm)",
+      "weight": "Peso (kg)",
+      "birthdate": "Fecha de nacimiento"
+    },
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "toast": {
+      "photoProcessError": "No se pudo procesar la imagen",
+      "photoUpdated": "Foto actualizada",
+      "photoSaveError": "No se pudo guardar la foto"
+    }
+  },
+  "importDialog": {
+    "kind": {
+      "roster": "roster físico",
+      "catapult": "sesiones GPS de Catapult",
+      "conference": "stats de conferencia",
+      "unknown": "desconocido"
+    },
+    "kindMismatch": "Detecté un archivo de {{detected}}, pero esta sección espera {{expected}}.",
+    "readError": "No pude leer el archivo.",
+    "downloadTemplate": "Descargar plantilla",
+    "fileLabel": "Archivo:",
+    "analyzing": "Analizando…",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar e importar",
+    "toast": {
+      "completeTitle": "Importación completa",
+      "completeDescription": "{{written}} filas escritas{{skipped}}.{{warnings}}",
+      "skippedFragment": ", {{skipped}} omitidas",
+      "errorTitle": "Error al importar",
+      "unexpectedError": "Ocurrió un error inesperado."
+    }
+  },
+  "importHistory": {
+    "title": "Últimos imports",
+    "subtitle": "Últimas 5 cargas de este tipo",
+    "col": {
+      "file": "Archivo",
+      "written": "Escritas",
+      "skipped": "Omitidas",
+      "date": "Fecha"
+    }
+  }
+}

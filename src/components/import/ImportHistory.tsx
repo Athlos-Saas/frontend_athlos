@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
@@ -14,6 +15,7 @@ interface ImportLogRow {
 
 /** Card compacta con los últimos imports de un tipo, para ver qué se cargó y cuándo. */
 export function ImportHistory({ orgId, kind, reloadToken }: { orgId: string; kind: ImportKind; reloadToken: number }) {
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<ImportLogRow[]>([]);
 
   useEffect(() => {
@@ -33,17 +35,19 @@ export function ImportHistory({ orgId, kind, reloadToken }: { orgId: string; kin
     <Card className="mb-5">
       <CardHeader>
         <div>
-          <CardTitle>Últimos imports</CardTitle>
-          <CardDescription className="mt-1">Últimas 5 cargas de este tipo</CardDescription>
+          <CardTitle>{t('importHistory.title', 'Últimos imports')}</CardTitle>
+          <CardDescription className="mt-1">
+            {t('importHistory.subtitle', 'Últimas 5 cargas de este tipo')}
+          </CardDescription>
         </div>
       </CardHeader>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Archivo</TableHead>
-            <TableHead className="text-right">Escritas</TableHead>
-            <TableHead className="text-right">Omitidas</TableHead>
-            <TableHead>Fecha</TableHead>
+            <TableHead>{t('importHistory.col.file', 'Archivo')}</TableHead>
+            <TableHead className="text-right">{t('importHistory.col.written', 'Escritas')}</TableHead>
+            <TableHead className="text-right">{t('importHistory.col.skipped', 'Omitidas')}</TableHead>
+            <TableHead>{t('importHistory.col.date', 'Fecha')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

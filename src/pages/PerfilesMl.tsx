@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { UserRound } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { ProfileScatterChart, type ScatterSeries } from '@/components/charts/ProfileScatterChart';
 import { Badge } from '@/components/ui/Badge';
@@ -27,6 +28,7 @@ interface ProfileRow {
 type LoadState = 'loading' | 'error' | 'ready';
 
 export default function PerfilesMl({ orgId }: { orgId: string }) {
+  const { t } = useTranslation();
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [state, setState] = useState<LoadState>('loading');
   const [reloadToken, setReloadToken] = useState(0);
@@ -77,52 +79,60 @@ export default function PerfilesMl({ orgId }: { orgId: string }) {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Perfiles físicos</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('perfilesMl.title', 'Perfiles físicos')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Clusters K-Means sobre medias por jugador (distancia, sprint, velocidad, Player Load)
+          {t('perfilesMl.subtitle', 'Clusters K-Means sobre medias por jugador (distancia, sprint, velocidad, Player Load)')}
         </p>
       </div>
 
       {state === 'ready' && profiles.length === 0 ? (
         <EmptyState
           icon={UserRound}
-          title="Sin perfiles todavía"
+          title={t('perfilesMl.emptyTitle', 'Sin perfiles todavía')}
           description={
             <>
-              Corre <code>run_training.py</code> en el backend.
+              {t('perfilesMl.emptyDescriptionPrefix', 'Corre ')}
+              <code>run_training.py</code>
+              {t('perfilesMl.emptyDescriptionSuffix', ' en el backend.')}
             </>
           }
         />
       ) : (
         <>
-          <ChartCard title="Sprint vs Player Load" description="Tamaño del punto = velocidad máxima" isLoading={state === 'loading'} height={340} className="mb-5">
+          <ChartCard
+            title={t('perfilesMl.chartTitle', 'Sprint vs Player Load')}
+            description={t('perfilesMl.chartDescription', 'Tamaño del punto = velocidad máxima')}
+            isLoading={state === 'loading'}
+            height={340}
+            className="mb-5"
+          >
             <ProfileScatterChart
               series={series}
               xKey="sprint_distance_m"
-              xLabel="Sprint (m)"
+              xLabel={t('perfilesMl.axis.sprint', 'Sprint (m)')}
               yKey="player_load"
               yLabel="Player Load"
               zKey="top_speed_kmh"
-              zLabel="Vel. máx"
+              zLabel={t('perfilesMl.axis.topSpeed', 'Vel. máx')}
             />
           </ChartCard>
 
           <Card>
             <CardHeader>
               <div>
-                <CardTitle>Jugadores por perfil</CardTitle>
-                <CardDescription className="mt-1">Promedios de carga física por jugador</CardDescription>
+                <CardTitle>{t('perfilesMl.tableTitle', 'Jugadores por perfil')}</CardTitle>
+                <CardDescription className="mt-1">{t('perfilesMl.tableDescription', 'Promedios de carga física por jugador')}</CardDescription>
               </div>
             </CardHeader>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Jugador</TableHead>
-                  <TableHead>Perfil</TableHead>
-                  <TableHead>Dist. media (km)</TableHead>
-                  <TableHead>Sprint medio (m)</TableHead>
-                  <TableHead>Vel. máx media</TableHead>
-                  <TableHead>Player Load medio</TableHead>
+                  <TableHead>{t('perfilesMl.col.player', 'Jugador')}</TableHead>
+                  <TableHead>{t('perfilesMl.col.profile', 'Perfil')}</TableHead>
+                  <TableHead>{t('perfilesMl.col.avgDistance', 'Dist. media (km)')}</TableHead>
+                  <TableHead>{t('perfilesMl.col.avgSprint', 'Sprint medio (m)')}</TableHead>
+                  <TableHead>{t('perfilesMl.col.avgTopSpeed', 'Vel. máx media')}</TableHead>
+                  <TableHead>{t('perfilesMl.col.avgPlayerLoad', 'Player Load medio')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

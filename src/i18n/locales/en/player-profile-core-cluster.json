@@ -1,0 +1,110 @@
+{
+  "playerProfile": {
+    "backToRoster": "Back to roster",
+    "playerNotSpecified": "Player not specified",
+    "loadError": "Could not load the player",
+    "playerNotFound": "Player not found",
+    "playerNotFoundDescription": "It may not exist or may not belong to your organization.",
+    "inactive": "Inactive",
+    "noTeamAssigned": "No team assigned",
+    "years": "years old",
+    "lastUpdated": "Last updated: {{date}}",
+    "editPlayer": "Edit player",
+    "moreActions": "More actions",
+    "shareRecord": "Share profile",
+    "exportPdf": "Export PDF",
+    "notImplemented": "Not implemented yet: no export/sharing library is installed in the project.",
+    "saveError": "Could not save the player",
+    "playerUpdated": "Player updated",
+    "tabs": {
+      "resumen": "Summary",
+      "estadisticas": "Statistics",
+      "rendimiento": "Performance",
+      "historial": "History",
+      "salud": "Health",
+      "scouting": "Scouting",
+      "documentos": "Documents",
+      "multimedia": "Media"
+    }
+  },
+  "tabResumen": {
+    "feature": {
+      "distance": "Distance",
+      "sprint": "Sprint",
+      "topSpeed": "Top speed",
+      "playerLoad": "Player Load"
+    },
+    "stat": {
+      "physicalProfile": "Physical profile",
+      "fatigueRisk": "Fatigue risk",
+      "availability": "Availability",
+      "gamesPlayed": "Games played"
+    },
+    "strengths": "Strengths",
+    "weaknesses": "Areas for improvement"
+  },
+  "tabEstadisticas": {
+    "empty": {
+      "title": "No league statistics",
+      "description": "This player has not been reconciled with any row in league_attacker_stats/league_goalkeeper_stats yet (it is linked by name when importing conference stats)."
+    },
+    "bySeasonCompetition": "By season/competition",
+    "offensive": { "title": "Offensive stats" },
+    "goalkeeper": { "title": "Goalkeeper stats" },
+    "col": {
+      "season": "Season",
+      "competition": "Competition",
+      "gp": "GP",
+      "goals": "Goals",
+      "assists": "Assists",
+      "points": "Points",
+      "role": "Role",
+      "gaa": "GAA",
+      "saves": "Saves",
+      "savePct": "Save %"
+    }
+  },
+  "tabRendimiento": {
+    "type": {
+      "fatigue": "Fatigue",
+      "anomaly": "Anomaly",
+      "overexertion": "Overexertion"
+    },
+    "empty": {
+      "title": "No performance data",
+      "description": "This player does not have any GPS sessions or video with a registered match date yet."
+    },
+    "chart": {
+      "playerLoad": "Player Load per session",
+      "playerLoadSeriesName": "Player Load",
+      "speedComparison": "Top speed: GPS vs. video (km/h)"
+    },
+    "videosWithoutDate_one": "{{count}} video reading for this player has no match date and does not appear in the comparison — you can add the date by editing the video in Video Analysis.",
+    "videosWithoutDate_other": "{{count}} video readings for this player have no match date and do not appear in the comparison — you can add the date by editing the video in Video Analysis.",
+    "alerts": {
+      "title": "Model alerts",
+      "totalCount_one": "{{count}} total",
+      "totalCount_other": "{{count}} total",
+      "empty": {
+        "title": "No alerts",
+        "description": "No fatigue, overexertion, or anomalous sessions registered for this player."
+      }
+    },
+    "col": {
+      "type": "Type",
+      "label": "Label",
+      "score": "Score",
+      "date": "Date"
+    },
+    "lastSession": "Last session: {{date}}"
+  },
+  "tabHistorial": {
+    "empty": {
+      "title": "No history",
+      "description": "This player has no registered injuries."
+    },
+    "title": "Injury history",
+    "recordsCount_one": "{{count}} record",
+    "recordsCount_other": "{{count}} records"
+  }
+}

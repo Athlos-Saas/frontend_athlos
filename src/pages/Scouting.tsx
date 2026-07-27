@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Radar, ShieldHalf, Target } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -35,6 +36,7 @@ function ProbabilityCell({ value, gradient }: { value: number | null; gradient: 
  * de league_attacker_stats / league_goalkeeper_stats — nada inventado.
  */
 export default function Scouting({ orgId }: { orgId: string }) {
+  const { t } = useTranslation();
   const globalSeason = useUiStore((state) => state.season);
   const [attackers, setAttackers] = useState<LeagueAttackerStat[] | null>(null);
   const [goalkeepers, setGoalkeepers] = useState<LeagueGoalkeeperStat[]>([]);
@@ -56,7 +58,7 @@ export default function Scouting({ orgId }: { orgId: string }) {
         .order('save_pct', { ascending: false, nullsFirst: false }),
     ]).then(([attackersRes, goalkeepersRes]) => {
       if (attackersRes.error) {
-        toast({ title: 'No se pudo cargar scouting', description: attackersRes.error.message, variant: 'danger' });
+        toast({ title: t('scoutingPage.toast.loadErrorTitle', 'No se pudo cargar scouting'), description: attackersRes.error.message, variant: 'danger' });
         setAttackers([]);
         return;
       }
@@ -110,8 +112,11 @@ export default function Scouting({ orgId }: { orgId: string }) {
     return (
       <EmptyState
         icon={Radar}
-        title="Sin datos de scouting"
-        description="Importa estadísticas de conferencia y reentrena los modelos técnicos para generar los rankings."
+        title={t('scoutingPage.emptyTitle', 'Sin datos de scouting')}
+        description={t(
+          'scoutingPage.emptyDescription',
+          'Importa estadísticas de conferencia y reentrena los modelos técnicos para generar los rankings.',
+        )}
       />
     );
   }
@@ -120,16 +125,16 @@ export default function Scouting({ orgId }: { orgId: string }) {
     <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Scouting</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('scoutingPage.title', 'Scouting')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Prospectos de la liga rankeados por los modelos de IA (probabilidad de goleador élite y roles)
+            {t('scoutingPage.subtitle', 'Prospectos de la liga rankeados por los modelos de IA (probabilidad de goleador élite y roles)')}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {seasons.length > 0 && (
             <Select value={season} onValueChange={setSeason}>
               <SelectTrigger className="h-9 w-32">
-                <SelectValue placeholder="Temporada" />
+                <SelectValue placeholder={t('scoutingPage.seasonPlaceholder', 'Temporada')} />
               </SelectTrigger>
               <SelectContent>
                 {seasons.map((s) => (
@@ -143,10 +148,10 @@ export default function Scouting({ orgId }: { orgId: string }) {
           {roles.length > 0 && (
             <Select value={roleFilter} onValueChange={setRoleFilter}>
               <SelectTrigger className="h-9 w-44">
-                <SelectValue placeholder="Rol" />
+                <SelectValue placeholder={t('scoutingPage.rolePlaceholder', 'Rol')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos los roles</SelectItem>
+                <SelectItem value="all">{t('scoutingPage.allRoles', 'Todos los roles')}</SelectItem>
                 {roles.map((role) => (
                   <SelectItem key={role} value={role}>
                     {role}
@@ -158,7 +163,7 @@ export default function Scouting({ orgId }: { orgId: string }) {
           <Input
             value={teamSearch}
             onChange={(event) => setTeamSearch(event.target.value)}
-            placeholder="Filtrar por equipo…"
+            placeholder={t('scoutingPage.teamSearchPlaceholder', 'Filtrar por equipo…')}
             className="h-9 w-44"
           />
         </div>
@@ -168,28 +173,28 @@ export default function Scouting({ orgId }: { orgId: string }) {
         <CardHeader>
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Target className="size-4 text-ai" aria-hidden="true" /> Prospectos ofensivos
+              <Target className="size-4 text-ai" aria-hidden="true" /> {t('scoutingPage.attackersTitle', 'Prospectos ofensivos')}
             </CardTitle>
             <CardDescription className="mt-1">
-              {prospects.length} jugadores · ordenados por probabilidad de goleador élite (clasificador entrenado con datos de la liga)
+              {t('scoutingPage.attackersDescription', '{{count}} jugadores · ordenados por probabilidad de goleador élite (clasificador entrenado con datos de la liga)', { count: prospects.length })}
             </CardDescription>
           </div>
         </CardHeader>
         {prospects.length === 0 ? (
-          <EmptyState title="Sin resultados" description="Ningún jugador coincide con los filtros actuales." />
+          <EmptyState title={t('scoutingPage.noResultsTitle', 'Sin resultados')} description={t('scoutingPage.noResultsDescription', 'Ningún jugador coincide con los filtros actuales.')} />
         ) : (
           <>
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10">#</TableHead>
-                  <TableHead>Jugador</TableHead>
-                  <TableHead>Equipo</TableHead>
-                  <TableHead className="text-right">PJ</TableHead>
-                  <TableHead className="text-right">Goles</TableHead>
-                  <TableHead className="text-right">Pts</TableHead>
-                  <TableHead>Rol</TableHead>
-                  <TableHead className="text-right">Prob. élite</TableHead>
+                  <TableHead>{t('scoutingPage.col.player', 'Jugador')}</TableHead>
+                  <TableHead>{t('scoutingPage.col.team', 'Equipo')}</TableHead>
+                  <TableHead className="text-right">{t('scoutingPage.col.gp', 'PJ')}</TableHead>
+                  <TableHead className="text-right">{t('scoutingPage.col.goals', 'Goles')}</TableHead>
+                  <TableHead className="text-right">{t('scoutingPage.col.points', 'Pts')}</TableHead>
+                  <TableHead>{t('scoutingPage.col.role', 'Rol')}</TableHead>
+                  <TableHead className="text-right">{t('scoutingPage.col.eliteProb', 'Prob. élite')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -226,21 +231,23 @@ export default function Scouting({ orgId }: { orgId: string }) {
           <CardHeader>
             <div>
               <CardTitle className="flex items-center gap-2">
-                <ShieldHalf className="size-4 text-ai" aria-hidden="true" /> Porteros
+                <ShieldHalf className="size-4 text-ai" aria-hidden="true" /> {t('scoutingPage.goalkeepersTitle', 'Porteros')}
               </CardTitle>
-              <CardDescription className="mt-1">{keepers.length} porteros · ordenados por porcentaje de atajadas</CardDescription>
+              <CardDescription className="mt-1">
+                {t('scoutingPage.goalkeepersDescription', '{{count}} porteros · ordenados por porcentaje de atajadas', { count: keepers.length })}
+              </CardDescription>
             </div>
           </CardHeader>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">#</TableHead>
-                <TableHead>Jugador</TableHead>
-                <TableHead>Equipo</TableHead>
-                <TableHead className="text-right">PJ</TableHead>
-                <TableHead className="text-right">GAA</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead className="text-right">% atajadas</TableHead>
+                <TableHead>{t('scoutingPage.col.player', 'Jugador')}</TableHead>
+                <TableHead>{t('scoutingPage.col.team', 'Equipo')}</TableHead>
+                <TableHead className="text-right">{t('scoutingPage.col.gp', 'PJ')}</TableHead>
+                <TableHead className="text-right">{t('scoutingPage.col.gaa', 'GAA')}</TableHead>
+                <TableHead>{t('scoutingPage.col.role', 'Rol')}</TableHead>
+                <TableHead className="text-right">{t('scoutingPage.col.savePct', '% atajadas')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

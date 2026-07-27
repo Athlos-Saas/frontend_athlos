@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Bell, HeartPulse, Radar } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -23,11 +25,25 @@ const ALERT_FILTER: Record<string, { types: string[]; labels: string[] }> = {
   player_load_expected: { types: ['player_load_expected'], labels: ['sobre_esfuerzo'] },
 };
 
-const TYPE_META: Record<string, { label: string; badge: 'danger' | 'warning'; description: string }> = {
-  fatigue_risk: { label: 'Fatiga alta', badge: 'danger', description: 'El modelo clasificó la sesión como riesgo de fatiga alto' },
-  anomaly: { label: 'Sesión anómala', badge: 'warning', description: 'Métricas fuera del patrón habitual del plantel' },
-  player_load_expected: { label: 'Sobre-esfuerzo', badge: 'danger', description: 'Player Load muy por encima de lo esperado' },
-};
+function buildTypeMeta(t: TFunction): Record<string, { label: string; badge: 'danger' | 'warning'; description: string }> {
+  return {
+    fatigue_risk: {
+      label: t('alertas.type.fatigueRisk.label', 'Fatiga alta'),
+      badge: 'danger',
+      description: t('alertas.type.fatigueRisk.description', 'El modelo clasificó la sesión como riesgo de fatiga alto'),
+    },
+    anomaly: {
+      label: t('alertas.type.anomaly.label', 'Sesión anómala'),
+      badge: 'warning',
+      description: t('alertas.type.anomaly.description', 'Métricas fuera del patrón habitual del plantel'),
+    },
+    player_load_expected: {
+      label: t('alertas.type.overexertion.label', 'Sobre-esfuerzo'),
+      badge: 'danger',
+      description: t('alertas.type.overexertion.description', 'Player Load muy por encima de lo esperado'),
+    },
+  };
+}
 
 interface AlertRow {
   prediction_type: string;
@@ -46,7 +62,9 @@ interface ActiveInjury {
 }
 
 export default function Alertas({ orgId }: { orgId: string }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+  const typeMeta = useMemo(() => buildTypeMeta(t), [t]);
   const [alerts, setAlerts] = useState<AlertRow[] | null>(null);
   const [injuries, setInjuries] = useState<ActiveInjury[]>([]);
   const [playerNames, setPlayerNames] = useState<Record<string, string>>({});
@@ -66,7 +84,11 @@ export default function Alertas({ orgId }: { orgId: string }) {
       supabase.from('injuries').select('id, player_id, severity, injury_date, notes').eq('org_id', orgId).is('return_date', null),
     ]).then(async ([alertsRes, injuriesRes]) => {
       if (alertsRes.error) {
-        toast({ title: 'No se pudieron cargar las alertas', description: alertsRes.error.message, variant: 'danger' });
+        toast({
+          title: t('alertas.loadError.title', 'No se pudieron cargar las alertas'),
+          description: alertsRes.error.message,
+          variant: 'danger',
+        });
         setAlerts([]);
         return;
       }
@@ -83,7 +105,7 @@ export default function Alertas({ orgId }: { orgId: string }) {
         setPlayerNames(Object.fromEntries((playersData ?? []).map((p) => [p.id, p.full_name])));
       }
     });
-  }, [orgId]);
+  }, [orgId, t]);
 
   const visibleAlerts = useMemo(() => {
     if (!alerts) return [];
@@ -100,22 +122,37 @@ export default function Alertas({ orgId }: { orgId: string }) {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Alertas</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('alertas.title', 'Alertas')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Señales de riesgo detectadas por los modelos de IA y lesiones activas del plantel
+          {t('alertas.subtitle', 'Señales de riesgo detectadas por los modelos de IA y lesiones activas del plantel')}
         </p>
       </div>
 
       <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="Lesiones activas"
+          label={t('alertas.kpi.activeInjuries', 'Lesiones activas')}
           value={<AnimatedNumber value={injuries.length} />}
           icon={HeartPulse}
           accent={injuries.length > 0 ? 'danger' : 'success'}
         />
-        <StatCard label="Riesgo de fatiga" value={<AnimatedNumber value={fatigueCount} />} icon={AlertTriangle} accent="danger" />
-        <StatCard label="Sobre-esfuerzo" value={<AnimatedNumber value={overexertionCount} />} icon={Bell} accent="warning" />
-        <StatCard label="Sesiones anómalas" value={<AnimatedNumber value={anomalyCount} />} icon={Radar} accent="purple" />
+        <StatCard
+          label={t('alertas.kpi.fatigueRisk', 'Riesgo de fatiga')}
+          value={<AnimatedNumber value={fatigueCount} />}
+          icon={AlertTriangle}
+          accent="danger"
+        />
+        <StatCard
+          label={t('alertas.kpi.overexertion', 'Sobre-esfuerzo')}
+          value={<AnimatedNumber value={overexertionCount} />}
+          icon={Bell}
+          accent="warning"
+        />
+        <StatCard
+          label={t('alertas.kpi.anomalousSessions', 'Sesiones anómalas')}
+          value={<AnimatedNumber value={anomalyCount} />}
+          icon={Radar}
+          accent="purple"
+        />
       </div>
 
       {injuries.length > 0 && (
@@ -124,9 +161,11 @@ export default function Alertas({ orgId }: { orgId: string }) {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <span className="flex size-2.5 rounded-full bg-danger animate-pulse-glow" />
-                Lesiones activas
+                {t('alertas.activeInjuries.title', 'Lesiones activas')}
               </CardTitle>
-              <CardDescription className="mt-1">Jugadores sin fecha de retorno registrada</CardDescription>
+              <CardDescription className="mt-1">
+                {t('alertas.activeInjuries.description', 'Jugadores sin fecha de retorno registrada')}
+              </CardDescription>
             </div>
           </CardHeader>
           <div className="space-y-2">
@@ -139,9 +178,11 @@ export default function Alertas({ orgId }: { orgId: string }) {
                 style={{ animationDelay: `${Math.min(index * 50, 400)}ms`, animationFillMode: 'backwards' }}
               >
                 <div>
-                  <p className="text-sm font-medium text-foreground">{playerNames[injury.player_id] ?? 'Jugador'}</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {playerNames[injury.player_id] ?? t('alertas.fallback.player', 'Jugador')}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    Desde {new Date(injury.injury_date).toLocaleDateString('es-ES')}
+                    {t('alertas.activeInjuries.since', 'Desde')} {new Date(injury.injury_date).toLocaleDateString('es-ES')}
                     {injury.notes ? ` · ${injury.notes}` : ''}
                   </p>
                 </div>
@@ -155,18 +196,20 @@ export default function Alertas({ orgId }: { orgId: string }) {
       <Card>
         <CardHeader>
           <div>
-            <CardTitle>Alertas de los modelos</CardTitle>
-            <CardDescription className="mt-1">Últimas {alerts.length} señales generadas al reentrenar</CardDescription>
+            <CardTitle>{t('alertas.modelAlerts.title', 'Alertas de los modelos')}</CardTitle>
+            <CardDescription className="mt-1">
+              {t('alertas.modelAlerts.description', 'Últimas {{count}} señales generadas al reentrenar', { count: alerts.length })}
+            </CardDescription>
           </div>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="h-8 w-48 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="fatigue_risk">Fatiga alta</SelectItem>
-              <SelectItem value="player_load_expected">Sobre-esfuerzo</SelectItem>
-              <SelectItem value="anomaly">Sesiones anómalas</SelectItem>
+              <SelectItem value="all">{t('alertas.filter.all', 'Todas')}</SelectItem>
+              <SelectItem value="fatigue_risk">{t('alertas.filter.fatigueRisk', 'Fatiga alta')}</SelectItem>
+              <SelectItem value="player_load_expected">{t('alertas.filter.overexertion', 'Sobre-esfuerzo')}</SelectItem>
+              <SelectItem value="anomaly">{t('alertas.filter.anomaly', 'Sesiones anómalas')}</SelectItem>
             </SelectContent>
           </Select>
         </CardHeader>
@@ -174,13 +217,16 @@ export default function Alertas({ orgId }: { orgId: string }) {
         {visibleAlerts.length === 0 ? (
           <EmptyState
             icon={Bell}
-            title="Sin alertas"
-            description="No hay señales de riesgo con este filtro. Se generan al reentrenar los modelos físicos."
+            title={t('alertas.empty.title', 'Sin alertas')}
+            description={t(
+              'alertas.empty.description',
+              'No hay señales de riesgo con este filtro. Se generan al reentrenar los modelos físicos.',
+            )}
           />
         ) : (
           <div className="space-y-2">
             {visibleAlerts.map((alert, index) => {
-              const meta = TYPE_META[alert.prediction_type];
+              const meta = typeMeta[alert.prediction_type];
               return (
                 <button
                   key={`${alert.prediction_type}-${alert.created_at}-${index}`}
@@ -193,7 +239,9 @@ export default function Alertas({ orgId }: { orgId: string }) {
                     <Badge variant={meta?.badge ?? 'warning'}>{meta?.label ?? alert.prediction_type}</Badge>
                     <div>
                       <p className="text-sm font-medium text-foreground">
-                        {alert.player_id ? playerNames[alert.player_id] ?? 'Jugador' : 'Plantel'}
+                        {alert.player_id
+                          ? playerNames[alert.player_id] ?? t('alertas.fallback.player', 'Jugador')
+                          : t('alertas.fallback.roster', 'Plantel')}
                       </p>
                       <p className="text-xs text-muted-foreground">{meta?.description}</p>
                     </div>

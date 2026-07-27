@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Target } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { BenchmarkBarChart } from '@/components/charts/BenchmarkBarChart';
 import { Badge } from '@/components/ui/Badge';
@@ -10,6 +11,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { usePlayerLeagueStats, useTeamBenchmarks } from '../queries';
 
 export default function TabScouting({ orgId, playerId }: { orgId: string; playerId: string }) {
+  const { t } = useTranslation();
   const leagueStats = usePlayerLeagueStats(orgId, playerId);
 
   const attackerRow = leagueStats.data?.attacker[0];
@@ -35,8 +37,11 @@ export default function TabScouting({ orgId, playerId }: { orgId: string; player
     return (
       <EmptyState
         icon={Target}
-        title="Sin señales de scouting"
-        description="Este jugador no está reconciliado con estadísticas de liga, así que no hay rol ni probabilidades de modelo que mostrar."
+        title={t('tabScouting.emptyTitle', 'Sin señales de scouting')}
+        description={t(
+          'tabScouting.emptyDescription',
+          'Este jugador no está reconciliado con estadísticas de liga, así que no hay rol ni probabilidades de modelo que mostrar.',
+        )}
       />
     );
   }
@@ -46,13 +51,15 @@ export default function TabScouting({ orgId, playerId }: { orgId: string; player
       {hasScoutingSignals && (
         <Card>
           <CardHeader>
-            <CardTitle>Perfil de scouting</CardTitle>
+            <CardTitle>{t('tabScouting.profileTitle', 'Perfil de scouting')}</CardTitle>
           </CardHeader>
           <div className="flex flex-wrap items-center gap-3">
-            {roleLabel && <Badge variant="purple">Rol: {roleLabel}</Badge>}
+            {roleLabel && <Badge variant="purple">{t('tabScouting.roleLabel', 'Rol: {{role}}', { role: roleLabel })}</Badge>}
             {attackerRow?.proba_top_scorer !== undefined && attackerRow?.proba_top_scorer !== null && (
               <Badge variant={attackerRow.proba_top_scorer >= 0.7 ? 'success' : 'neutral'}>
-                Prob. goleador élite: {(attackerRow.proba_top_scorer * 100).toFixed(0)}%
+                {t('tabScouting.topScorerProb', 'Prob. goleador élite: {{value}}%', {
+                  value: (attackerRow.proba_top_scorer * 100).toFixed(0),
+                })}
               </Badge>
             )}
           </div>
@@ -63,10 +70,12 @@ export default function TabScouting({ orgId, playerId }: { orgId: string; player
         <Card>
           <CardHeader>
             <div>
-              <CardTitle>Jugadores similares</CardTitle>
+              <CardTitle>{t('tabScouting.similarPlayersTitle', 'Jugadores similares')}</CardTitle>
               <CardDescription className="mt-1">
-                Por distancia estadística en la misma temporada/competición — no es un match de posición, es
-                similitud de perfil (goles, asistencias, tiros por partido).
+                {t(
+                  'tabScouting.similarPlayersDescription',
+                  'Por distancia estadística en la misma temporada/competición — no es un match de posición, es similitud de perfil (goles, asistencias, tiros por partido).',
+                )}
               </CardDescription>
             </div>
           </CardHeader>
@@ -84,17 +93,25 @@ export default function TabScouting({ orgId, playerId }: { orgId: string; player
         <Skeleton className="h-64 w-full" />
       ) : benchmarkData.length > 0 ? (
         <ChartCard
-          title="Rendimiento del equipo vs. conferencia"
-          description={teamName ? `${teamName} vs. media de la conferencia — dato de equipo, no individual del jugador` : 'Dato de equipo, no individual del jugador'}
+          title={t('tabScouting.benchmarkTitle', 'Rendimiento del equipo vs. conferencia')}
+          description={
+            teamName
+              ? t('tabScouting.benchmarkDescriptionWithTeam', '{{team}} vs. media de la conferencia — dato de equipo, no individual del jugador', {
+                  team: teamName,
+                })
+              : t('tabScouting.teamDataOnly', 'Dato de equipo, no individual del jugador')
+          }
         >
-          <BenchmarkBarChart data={benchmarkData} teamLabel={teamName ?? 'Equipo'} />
+          <BenchmarkBarChart data={benchmarkData} teamLabel={teamName ?? t('tabScouting.teamFallback', 'Equipo')} />
         </ChartCard>
       ) : (
         <Card>
           <CardHeader>
             <div>
-              <CardTitle>Rendimiento vs. conferencia</CardTitle>
-              <CardDescription className="mt-1">Sin benchmarks de conferencia para la temporada/posición de este equipo.</CardDescription>
+              <CardTitle>{t('tabScouting.benchmarkEmptyTitle', 'Rendimiento vs. conferencia')}</CardTitle>
+              <CardDescription className="mt-1">
+                {t('tabScouting.benchmarkEmptyDescription', 'Sin benchmarks de conferencia para la temporada/posición de este equipo.')}
+              </CardDescription>
             </div>
           </CardHeader>
         </Card>

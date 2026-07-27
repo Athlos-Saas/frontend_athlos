@@ -1,0 +1,147 @@
+{
+  "dashboard": {
+    "title": "Centro de inteligencia deportiva",
+    "subtitle": "Resumen en tiempo real de tu organización",
+    "liveData": "Datos en vivo",
+    "kpi": {
+      "players": "Atletas monitoreados",
+      "sessions": "Sesiones GPS",
+      "videos": "Videos analizados",
+      "predictions": "Predicciones IA",
+      "activeAlerts": "Alertas activas"
+    },
+    "chart": {
+      "sessions": {
+        "title": "Sesiones GPS · últimos 14 días",
+        "description": "Volumen de sesiones registradas por toda la organización",
+        "seriesName": "Sesiones"
+      },
+      "predictions": {
+        "title": "Distribución de predicciones",
+        "description": "Últimas 120 predicciones del modelo, por etiqueta",
+        "empty": "Sin predicciones recientes"
+      }
+    },
+    "recentModels": {
+      "title": "Modelos entrenados recientes",
+      "description": "Últimas versiones registradas por el pipeline de ML",
+      "viewAll": "Ver todos →",
+      "empty": {
+        "title": "Sin modelos aún",
+        "descriptionPrefix": "Corre",
+        "descriptionSuffix": "en el backend."
+      }
+    },
+    "col": {
+      "model": "Modelo",
+      "task": "Tarea",
+      "version": "Versión",
+      "metrics": "Métricas clave"
+    },
+    "recentActivity": {
+      "title": "Actividad reciente",
+      "empty": "Sin actividad reciente"
+    }
+  },
+  "aiIntelligenceCenter": {
+    "title": "AI Intelligence Center",
+    "subtitle": "Insights, predicciones y salud de los modelos de Machine Learning de tu organización",
+    "kpi": {
+      "activeModels": "Modelos activos",
+      "predictions30d": "Predicciones (30 días)",
+      "anomalies": "Anomalías detectadas",
+      "avgPrecision": "Precisión media"
+    },
+    "chart": {
+      "precision": {
+        "title": "Precisión media de modelos",
+        "description": "Promedio de la primera métrica numérica reportada por cada modelo",
+        "gaugeLabel": "Precisión"
+      },
+      "coverage": {
+        "title": "Cobertura del sistema IA",
+        "description": "Volumen relativo por categoría, normalizado 0-100",
+        "seriesName": "Cobertura"
+      }
+    },
+    "axis": {
+      "players": "Atletas",
+      "sessions": "Sesiones GPS",
+      "videos": "Videos",
+      "predictions": "Predicciones",
+      "models": "Modelos"
+    },
+    "recentPredictions": {
+      "title": "Predicciones recientes",
+      "description": "Últimas 200 predicciones generadas por los modelos",
+      "searchPlaceholder": "Buscar por tipo o etiqueta…"
+    },
+    "col": {
+      "type": "Tipo",
+      "label": "Etiqueta",
+      "score": "Score",
+      "date": "Fecha"
+    },
+    "modelHistory": {
+      "title": "Historial de modelos"
+    }
+  },
+  "alertas": {
+    "title": "Alertas",
+    "subtitle": "Señales de riesgo detectadas por los modelos de IA y lesiones activas del plantel",
+    "kpi": {
+      "activeInjuries": "Lesiones activas",
+      "fatigueRisk": "Riesgo de fatiga",
+      "overexertion": "Sobre-esfuerzo",
+      "anomalousSessions": "Sesiones anómalas"
+    },
+    "activeInjuries": {
+      "title": "Lesiones activas",
+      "description": "Jugadores sin fecha de retorno registrada",
+      "since": "Desde"
+    },
+    "modelAlerts": {
+      "title": "Alertas de los modelos",
+      "description": "Últimas {{count}} señales generadas al reentrenar"
+    },
+    "filter": {
+      "all": "Todas",
+      "fatigueRisk": "Fatiga alta",
+      "overexertion": "Sobre-esfuerzo",
+      "anomaly": "Sesiones anómalas"
+    },
+    "empty": {
+      "title": "Sin alertas",
+      "description": "No hay señales de riesgo con este filtro. Se generan al reentrenar los modelos físicos."
+    },
+    "type": {
+      "fatigueRisk": {
+        "label": "Fatiga alta",
+        "description": "El modelo clasificó la sesión como riesgo de fatiga alto"
+      },
+      "anomaly": {
+        "label": "Sesión anómala",
+        "description": "Métricas fuera del patrón habitual del plantel"
+      },
+      "overexertion": {
+        "label": "Sobre-esfuerzo",
+        "description": "Player Load muy por encima de lo esperado"
+      }
+    },
+    "loadError": {
+      "title": "No se pudieron cargar las alertas"
+    },
+    "fallback": {
+      "player": "Jugador",
+      "roster": "Plantel"
+    }
+  },
+  "modulePlaceholder": {
+    "comingSoon": "Próximamente",
+    "bulletsTitle": "Lo que vas a poder hacer aquí",
+    "empty": {
+      "title": "Sin fuente de datos conectada",
+      "description": "Este módulo se activa en cuanto el backend exponga la tabla correspondiente en Supabase."
+    }
+  }
+}

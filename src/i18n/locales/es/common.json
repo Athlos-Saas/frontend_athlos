@@ -18,10 +18,10 @@
     "equipos": "Equipos",
     "competiciones": "Competiciones",
     "temporadas": "Temporadas",
-    "aiCenter": "AI Intelligence Center",
+    "aiCenter": "Centro de Inteligencia IA",
     "pronosticos": "Pronósticos IA",
     "modelosIa": "Modelos IA",
-    "scouting": "Scouting",
+    "scouting": "Búsqueda de talento",
     "reportes": "Reportes",
     "dispositivos": "Dispositivos",
     "integraciones": "Integraciones",
@@ -81,7 +81,7 @@
       "ml": { "label": "Modelos de ML en producción", "description": "Fatiga, clustering y clasificación en tiempo real" },
       "gps": { "label": "Monitoreo GPS y wellness", "description": "Carga física y prevención de lesiones" },
       "video": { "label": "Video análisis", "description": "Tracking de jugadores con computer vision" },
-      "ai": { "label": "AI Intelligence Center", "description": "Insights y predicciones consolidadas" }
+      "ai": { "label": "Centro de Inteligencia IA", "description": "Insights y predicciones consolidadas" }
     }
   },
   "processing": {

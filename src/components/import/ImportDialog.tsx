@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Download, Upload } from 'lucide-react';
 import type { WorkBook } from 'xlsx';
 import * as XLSX from 'xlsx';
@@ -18,12 +19,16 @@ import { supabase } from '@/lib/supabase';
 import { detectKind } from '@/lib/importers/detect';
 import type { ImportKind, ImportSummary } from '@/lib/importers/types';
 
-const KIND_LABEL: Record<ImportKind, string> = {
+const KIND_LABEL_DEFAULTS: Record<ImportKind, string> = {
   roster: 'roster físico',
   catapult: 'sesiones GPS de Catapult',
   conference: 'stats de conferencia',
   unknown: 'desconocido',
 };
+
+function kindLabel(t: (key: string, defaultValue: string) => string, kind: ImportKind): string {
+  return t(`importDialog.kind.${kind}`, KIND_LABEL_DEFAULTS[kind]);
+}
 
 type Status = 'idle' | 'analyzing' | 'preview' | 'rejected' | 'importing';
 
@@ -79,6 +84,7 @@ export function ImportDialog<TParsed>({
   disabled,
   onDownloadTemplate,
 }: ImportDialogProps<TParsed>) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
   const [fileName, setFileName] = useState('');
@@ -106,7 +112,10 @@ export function ImportDialog<TParsed>({
         setStatus('rejected');
         setMessage(
           detected.reason ??
-            `Detecté un archivo de ${KIND_LABEL[detected.kind]}, pero esta sección espera ${KIND_LABEL[expectedKind]}.`,
+            t('importDialog.kindMismatch', 'Detecté un archivo de {{detected}}, pero esta sección espera {{expected}}.', {
+              detected: kindLabel(t, detected.kind),
+              expected: kindLabel(t, expectedKind),
+            }),
         );
         return;
       }
@@ -118,7 +127,7 @@ export function ImportDialog<TParsed>({
       setStatus('preview');
     } catch (error) {
       setStatus('rejected');
-      setMessage(error instanceof Error ? error.message : 'No pude leer el archivo.');
+      setMessage(error instanceof Error ? error.message : t('importDialog.readError', 'No pude leer el archivo.'));
     }
   };
 
@@ -128,19 +137,25 @@ export function ImportDialog<TParsed>({
     try {
       const summary = await onConfirm(parsed);
       await logImport(orgId, expectedKind, fileName, summary);
+      const skippedText = summary.skipped
+        ? t('importDialog.toast.skippedFragment', ', {{skipped}} omitidas', { skipped: summary.skipped })
+        : '';
+      const warningsText = summary.warnings.length ? ` ${summary.warnings.join(' ')}` : '';
       toast({
-        title: 'Importación completa',
-        description: `${summary.written} filas escritas${summary.skipped ? `, ${summary.skipped} omitidas` : ''}.${
-          summary.warnings.length ? ` ${summary.warnings.join(' ')}` : ''
-        }`,
+        title: t('importDialog.toast.completeTitle', 'Importación completa'),
+        description: t('importDialog.toast.completeDescription', '{{written}} filas escritas{{skipped}}.{{warnings}}', {
+          written: summary.written,
+          skipped: skippedText,
+          warnings: warningsText,
+        }),
         variant: 'success',
       });
       setOpen(false);
       reset();
     } catch (error) {
       toast({
-        title: 'Error al importar',
-        description: error instanceof Error ? error.message : 'Ocurrió un error inesperado.',
+        title: t('importDialog.toast.errorTitle', 'Error al importar'),
+        description: error instanceof Error ? error.message : t('importDialog.toast.unexpectedError', 'Ocurrió un error inesperado.'),
         variant: 'danger',
       });
       setStatus('preview');
@@ -167,7 +182,7 @@ export function ImportDialog<TParsed>({
         </DialogHeader>
 
         <Button variant="secondary" size="sm" className="mb-4" onClick={onDownloadTemplate}>
-          <Download className="size-4" aria-hidden="true" /> Descargar plantilla
+          <Download className="size-4" aria-hidden="true" /> {t('importDialog.downloadTemplate', 'Descargar plantilla')}
         </Button>
 
         <input
@@ -183,11 +198,11 @@ export function ImportDialog<TParsed>({
 
         {fileName && (
           <p className="mb-2 text-xs text-muted-foreground">
-            Archivo: <span className="font-medium text-foreground">{fileName}</span>
+            {t('importDialog.fileLabel', 'Archivo:')} <span className="font-medium text-foreground">{fileName}</span>
           </p>
         )}
 
-        {status === 'analyzing' && <p className="text-sm text-muted-foreground">Analizando…</p>}
+        {status === 'analyzing' && <p className="text-sm text-muted-foreground">{t('importDialog.analyzing', 'Analizando…')}</p>}
         {status === 'rejected' && <p className="text-sm text-danger">{message}</p>}
         {(status === 'preview' || status === 'importing') && (
           <>
@@ -204,7 +219,7 @@ export function ImportDialog<TParsed>({
 
         <DialogFooter>
           <Button variant="secondary" size="sm" onClick={() => setOpen(false)}>
-            Cancelar
+            {t('importDialog.cancel', 'Cancelar')}
           </Button>
           <Button
             size="sm"
@@ -212,7 +227,7 @@ export function ImportDialog<TParsed>({
             isLoading={status === 'importing'}
             onClick={handleConfirm}
           >
-            Confirmar e importar
+            {t('importDialog.confirm', 'Confirmar e importar')}
           </Button>
         </DialogFooter>
       </DialogContent>

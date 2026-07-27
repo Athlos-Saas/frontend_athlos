@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Check, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -72,6 +73,7 @@ function CapabilityRow({ label, value }: { label: string; value: boolean }) {
 }
 
 export default function Roles({ orgId }: { orgId: string }) {
+  const { t } = useTranslation();
   const [counts, setCounts] = useState<Record<OrgUserRole, number> | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -96,12 +98,17 @@ export default function Roles({ orgId }: { orgId: string }) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Los 5 niveles de permiso que existen en ATHLOS (<code>public.user_role</code> en la base) y qué puede
-        hacer cada uno. Cuántos usuarios de tu organización tienen cada rol asignado hoy — ver el detalle
-        completo en la pestaña Usuarios.
+        {t('roles.introBefore', 'Los 5 niveles de permiso que existen en ATHLOS (')}
+        <code>public.user_role</code>
+        {t(
+          'roles.introAfter',
+          ' en la base) y qué puede hacer cada uno. Cuántos usuarios de tu organización tienen cada rol asignado hoy — ver el detalle completo en la pestaña Usuarios.'
+        )}
       </p>
 
-      {loadError && <ErrorState title="No se pudo cargar el conteo de usuarios" description={loadError} onRetry={loadCounts} />}
+      {loadError && (
+        <ErrorState title={t('roles.error.title', 'No se pudo cargar el conteo de usuarios')} description={loadError} onRetry={loadCounts} />
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {ROLE_DEFINITIONS.map((def) => (
@@ -109,22 +116,22 @@ export default function Roles({ orgId }: { orgId: string }) {
             <CardHeader>
               <div>
                 <CardTitle>
-                  <Badge variant={ROLE_BADGE[def.role]}>{ROLE_LABEL[def.role]}</Badge>
+                  <Badge variant={ROLE_BADGE[def.role]}>{t(`roles.label.${def.role}`, ROLE_LABEL[def.role])}</Badge>
                 </CardTitle>
-                <CardDescription className="mt-2">{def.descripcion}</CardDescription>
+                <CardDescription className="mt-2">{t(`roles.definition.${def.role}`, def.descripcion)}</CardDescription>
               </div>
               {counts ? (
                 <span className={cn('shrink-0 text-xs font-medium', counts[def.role] === 0 ? 'text-muted-foreground/60' : 'text-foreground')}>
-                  {counts[def.role]} {counts[def.role] === 1 ? 'usuario' : 'usuarios'}
+                  {counts[def.role]} {counts[def.role] === 1 ? t('roles.userCountSingular', 'usuario') : t('roles.userCountPlural', 'usuarios')}
                 </span>
               ) : (
                 <Skeleton className="h-4 w-16 shrink-0" />
               )}
             </CardHeader>
             <div className="space-y-1.5 border-t border-border pt-3">
-              <CapabilityRow label="Escribir datos operativos" value={def.puedeEscribirDatos} />
-              <CapabilityRow label="Administrar usuarios / organización" value={def.puedeAdministrar} />
-              <CapabilityRow label="Eliminar filas protegidas" value={def.puedeEliminarProtegidas} />
+              <CapabilityRow label={t('roles.capability.write', 'Escribir datos operativos')} value={def.puedeEscribirDatos} />
+              <CapabilityRow label={t('roles.capability.administer', 'Administrar usuarios / organización')} value={def.puedeAdministrar} />
+              <CapabilityRow label={t('roles.capability.deleteProtected', 'Eliminar filas protegidas')} value={def.puedeEliminarProtegidas} />
             </div>
           </Card>
         ))}

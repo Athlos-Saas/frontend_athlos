@@ -1,0 +1,155 @@
+{
+  "configuracion": {
+    "title": "Settings",
+    "subtitle": "Your organization's and account's details",
+    "org": {
+      "title": "Organization",
+      "descriptionAdmin": "Only administrators can edit this information.",
+      "descriptionReadonly": "Read-only — requires an administrator role to edit.",
+      "plan": "{{plan}} plan",
+      "nameLabel": "Name",
+      "countryLabel": "Country",
+      "countryPlaceholder": "--",
+      "save": "Save organization"
+    },
+    "account": {
+      "title": "My account",
+      "nameLabel": "Full name",
+      "save": "Save profile"
+    },
+    "toast": {
+      "nameRequired": "Name cannot be empty",
+      "saveOrgError": "Couldn't save",
+      "orgUpdated": "Organization updated",
+      "saveProfileError": "Couldn't save your profile",
+      "profileUpdated": "Profile updated",
+      "profileUpdatedDesc": "This will show up after you reload."
+    }
+  },
+  "usuarios": {
+    "adminOnly": {
+      "title": "Administrators only",
+      "description": "Managing the organization's users requires an administrator role."
+    },
+    "title": "Users",
+    "subtitle": "Members of your organization. Accounts are created by invitation — there is no public sign-up.",
+    "inviteButton": "Invite user",
+    "card": {
+      "title": "Members",
+      "count": "{{count}} users with access",
+      "loading": "Loading…"
+    },
+    "error": {
+      "title": "Couldn't load users"
+    },
+    "empty": {
+      "title": "No users",
+      "description": "Invite the first member of your organization."
+    },
+    "col": {
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "createdAt": "Joined",
+      "actions": "Actions"
+    },
+    "youBadge": "You",
+    "deleteSr": "Delete",
+    "confirmDelete": {
+      "title": "Delete {{name}}?",
+      "description": "All access to the platform is revoked (the account is deleted). This cannot be undone.",
+      "confirmLabel": "Delete",
+      "fallbackUser": "this user"
+    },
+    "dialog": {
+      "title": "Invite user",
+      "description": "They'll receive an email from Supabase with a link to set their password — no password ever travels through the app.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "person@club.com",
+      "nameLabel": "Full name",
+      "roleLabel": "Role",
+      "cancel": "Cancel",
+      "submit": "Send invitation"
+    },
+    "toast": {
+      "completeFields": "Fill in email and name",
+      "inviteSentTitle": "Invitation sent",
+      "inviteSentDesc": "{{email}} will receive an email to set their password.",
+      "inviteErrorTitle": "Couldn't invite",
+      "roleUpdatedTitle": "Role updated to {{role}}",
+      "roleUpdateErrorTitle": "Couldn't change the role",
+      "userDeletedTitle": "User deleted",
+      "userDeletedDesc": "Their access was fully revoked.",
+      "deleteErrorTitle": "Couldn't delete"
+    }
+  },
+  "roles": {
+    "label": {
+      "admin": "Administrator",
+      "coach": "Coach",
+      "medical": "Medical",
+      "analyst": "Analyst",
+      "viewer": "Read-only"
+    },
+    "introBefore": "The 5 permission levels that exist in ATHLOS (",
+    "introAfter": " in the database) and what each one can do. How many users in your organization have each role assigned today — see the full detail in the Users tab.",
+    "error": {
+      "title": "Couldn't load the user count"
+    },
+    "definition": {
+      "admin": "Full access. The only role that can manage Users and edit the Organization in Settings, and the only one that can delete protected rows (injuries, GPS sessions, videos, league stats rows).",
+      "coach": "Can create and edit operational data (roster, wellness, videos, GPS loads, league stats), but cannot manage users, edit the Organization, or delete the rows protected for admins.",
+      "medical": "Same data-writing permissions as coach — intended for medical staff.",
+      "analyst": "Same data-writing permissions as coach — intended for analytics staff.",
+      "viewer": "Read-only role. Not on the list of roles with write permission — the database rejects any attempt to create, edit, or delete data, though some screens don't visually block it beforehand (see Permission matrix)."
+    },
+    "userCountSingular": "user",
+    "userCountPlural": "users",
+    "capability": {
+      "write": "Write operational data",
+      "administer": "Manage users / organization",
+      "deleteProtected": "Delete protected rows"
+    }
+  },
+  "administracion": {
+    "adminOnly": {
+      "title": "Administrators only",
+      "description": "Roles, permissions, and users of the organization require an administrator role."
+    },
+    "title": "Administration",
+    "subtitle": "Roles, permissions, and users of your organization — all in one place.",
+    "tab": {
+      "permisos": "Permission matrix",
+      "roles": "Roles",
+      "usuarios": "Users"
+    }
+  },
+  "matrizPermisos": {
+    "optionSingular": "option",
+    "optionPlural": "options",
+    "col": {
+      "option": "Option"
+    },
+    "tooltip": {
+      "navAdminLocked": "Administrators can always access Administration.",
+      "enforcedAdminLocked": "An admin can always do this — it prevents the org from being left with no one who can."
+    },
+    "toast": {
+      "permissionSaveError": "Couldn't save the permission",
+      "navSaveError": "Couldn't save the access"
+    },
+    "error": {
+      "title": "Couldn't load the permission matrix"
+    },
+    "title": "Permission matrix",
+    "legend": {
+      "navigationLabel": "Navigation:",
+      "navigation": "the checkbox controls in real time which menu modules each role sees and blocks direct access by URL.",
+      "restLabel": "Other folders:",
+      "rest": "most checkboxes already change real behavior (RLS or backend) — they're marked with their own note under \"how it's gated\". The few rows that are still only target configuration say so explicitly (own profile, invite/change role/delete user).",
+      "adminColumnLabel": "\"Administrator\" column:",
+      "adminColumn": "stays locked on connected rows, so no admin can leave their own organization with no one able to perform that action."
+    },
+    "loading": "Loading…"
+  }
+}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -36,6 +37,7 @@ interface FolderProps {
 }
 
 function PermissionFolder({ group, isOpen, onToggle, isNavGroup, overrides, savingKeys, onCheck }: FolderProps) {
+  const { t } = useTranslation();
   return (
     <Card className="p-0">
       <button
@@ -49,7 +51,7 @@ function PermissionFolder({ group, isOpen, onToggle, isNavGroup, overrides, savi
           {group.label}
         </span>
         <span className="text-xs text-muted-foreground">
-          {group.rows.length} {group.rows.length === 1 ? 'opción' : 'opciones'}
+          {group.rows.length} {group.rows.length === 1 ? t('matrizPermisos.optionSingular', 'opción') : t('matrizPermisos.optionPlural', 'opciones')}
         </span>
       </button>
 
@@ -58,10 +60,10 @@ function PermissionFolder({ group, isOpen, onToggle, isNavGroup, overrides, savi
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Opción</TableHead>
+                <TableHead>{t('matrizPermisos.col.option', 'Opción')}</TableHead>
                 {ALL_ROLES.map((role) => (
                   <TableHead key={role} className="text-center">
-                    {ROLE_LABEL[role]}
+                    {t(`roles.label.${role}`, ROLE_LABEL[role])}
                   </TableHead>
                 ))}
               </TableRow>
@@ -105,7 +107,9 @@ function PermissionFolder({ group, isOpen, onToggle, isNavGroup, overrides, savi
                               <TooltipTrigger asChild>
                                 <span className="inline-flex">{box}</span>
                               </TooltipTrigger>
-                              <TooltipContent>Los administradores siempre pueden acceder a Administración.</TooltipContent>
+                              <TooltipContent>
+                                {t('matrizPermisos.tooltip.navAdminLocked', 'Los administradores siempre pueden acceder a Administración.')}
+                              </TooltipContent>
                             </Tooltip>
                           ) : enforcedAdminLocked ? (
                             <Tooltip>
@@ -113,7 +117,10 @@ function PermissionFolder({ group, isOpen, onToggle, isNavGroup, overrides, savi
                                 <span className="inline-flex">{box}</span>
                               </TooltipTrigger>
                               <TooltipContent>
-                                Un admin siempre puede hacer esto — evita que la org se quede sin nadie que pueda.
+                                {t(
+                                  'matrizPermisos.tooltip.enforcedAdminLocked',
+                                  'Un admin siempre puede hacer esto — evita que la org se quede sin nadie que pueda.'
+                                )}
                               </TooltipContent>
                             </Tooltip>
                           ) : (
@@ -134,6 +141,7 @@ function PermissionFolder({ group, isOpen, onToggle, isNavGroup, overrides, savi
 }
 
 export default function MatrizPermisos({ orgId, viewerRole }: { orgId: string; viewerRole: string | null }) {
+  const { t } = useTranslation();
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
   const [permOverrides, setPermOverrides] = useState<Map<string, boolean>>(new Map());
   const [navOverrides, setNavOverrides] = useState<Map<string, boolean>>(new Map());
@@ -191,7 +199,11 @@ export default function MatrizPermisos({ orgId, viewerRole }: { orgId: string; v
         cellKeys.forEach((k) => next.set(k, !checked));
         return next;
       });
-      toast({ title: 'No se pudo guardar el permiso', description: error instanceof Error ? error.message : undefined, variant: 'danger' });
+      toast({
+        title: t('matrizPermisos.toast.permissionSaveError', 'No se pudo guardar el permiso'),
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'danger',
+      });
     } finally {
       setSavingKeys((prev) => {
         const next = new Set(prev);
@@ -215,7 +227,11 @@ export default function MatrizPermisos({ orgId, viewerRole }: { orgId: string; v
       }
     } catch (error) {
       setNavOverrides((prev) => new Map(prev).set(key, !checked));
-      toast({ title: 'No se pudo guardar el acceso', description: error instanceof Error ? error.message : undefined, variant: 'danger' });
+      toast({
+        title: t('matrizPermisos.toast.navSaveError', 'No se pudo guardar el acceso'),
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'danger',
+      });
     } finally {
       setSavingKeys((prev) => {
         const next = new Set(prev);
@@ -226,7 +242,13 @@ export default function MatrizPermisos({ orgId, viewerRole }: { orgId: string; v
   };
 
   if (loadError) {
-    return <ErrorState title="No se pudo cargar la matriz de permisos" description={loadError} onRetry={loadSettings} />;
+    return (
+      <ErrorState
+        title={t('matrizPermisos.error.title', 'No se pudo cargar la matriz de permisos')}
+        description={loadError}
+        onRetry={loadSettings}
+      />
+    );
   }
 
   return (
@@ -234,22 +256,28 @@ export default function MatrizPermisos({ orgId, viewerRole }: { orgId: string; v
       <Card>
         <CardHeader>
           <div>
-            <CardTitle>Matriz de permisos</CardTitle>
+            <CardTitle>{t('matrizPermisos.title', 'Matriz de permisos')}</CardTitle>
             <CardDescription className="mt-1.5 space-y-1">
               <span className="block">
-                <strong className="text-foreground">Navegación:</strong> el checkbox controla en vivo qué módulos del
-                menú ve cada rol y bloquea el acceso directo por URL.
+                <strong className="text-foreground">{t('matrizPermisos.legend.navigationLabel', 'Navegación:')}</strong>{' '}
+                {t(
+                  'matrizPermisos.legend.navigation',
+                  'el checkbox controla en vivo qué módulos del menú ve cada rol y bloquea el acceso directo por URL.'
+                )}
               </span>
               <span className="block">
-                <strong className="text-foreground">Resto de carpetas:</strong> la mayoría de los checkboxes ya
-                cambian el comportamiento real (RLS o backend) — se marcan con su propia nota en "cómo se gatea".
-                Las pocas filas que todavía son solo configuración objetivo lo dicen explícitamente (perfil propio,
-                invitar/cambiar rol/eliminar usuario).
+                <strong className="text-foreground">{t('matrizPermisos.legend.restLabel', 'Resto de carpetas:')}</strong>{' '}
+                {t(
+                  'matrizPermisos.legend.rest',
+                  'la mayoría de los checkboxes ya cambian el comportamiento real (RLS o backend) — se marcan con su propia nota en "cómo se gatea". Las pocas filas que todavía son solo configuración objetivo lo dicen explícitamente (perfil propio, invitar/cambiar rol/eliminar usuario).'
+                )}
               </span>
               <span className="block">
-                <strong className="text-foreground">Columna "Administrador":</strong> queda bloqueada en las filas
-                conectadas, para que ningún admin pueda dejar a su propia organización sin nadie que pueda ejercer
-                esa acción.
+                <strong className="text-foreground">{t('matrizPermisos.legend.adminColumnLabel', 'Columna "Administrador":')}</strong>{' '}
+                {t(
+                  'matrizPermisos.legend.adminColumn',
+                  'queda bloqueada en las filas conectadas, para que ningún admin pueda dejar a su propia organización sin nadie que pueda ejercer esa acción.'
+                )}
               </span>
             </CardDescription>
           </div>
@@ -257,7 +285,7 @@ export default function MatrizPermisos({ orgId, viewerRole }: { orgId: string; v
       </Card>
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Cargando…</p>
+        <p className="text-sm text-muted-foreground">{t('matrizPermisos.loading', 'Cargando…')}</p>
       ) : (
         <div className="space-y-2">
           <PermissionFolder

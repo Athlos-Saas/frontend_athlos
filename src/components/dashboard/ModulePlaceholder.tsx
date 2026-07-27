@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import { CheckCircle2, Construction } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -14,6 +15,7 @@ export interface ModulePlaceholderProps {
 }
 
 export function ModulePlaceholder({ title, description, icon, bullets, kpis }: ModulePlaceholderProps) {
+  const { t } = useTranslation();
   return (
     <div>
       <div className="mb-6 flex items-start justify-between gap-4">
@@ -21,7 +23,7 @@ export function ModulePlaceholder({ title, description, icon, bullets, kpis }: M
           <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
           <p className="mt-1 max-w-xl text-sm text-muted-foreground">{description}</p>
         </div>
-        <Badge variant="purple">Próximamente</Badge>
+        <Badge variant="purple">{t('modulePlaceholder.comingSoon', 'Próximamente')}</Badge>
       </div>
 
       {kpis && kpis.length > 0 && (
@@ -38,14 +40,17 @@ export function ModulePlaceholder({ title, description, icon, bullets, kpis }: M
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <EmptyState
           icon={icon ?? Construction}
-          title="Sin fuente de datos conectada"
-          description="Este módulo se activa en cuanto el backend exponga la tabla correspondiente en Supabase."
+          title={t('modulePlaceholder.empty.title', 'Sin fuente de datos conectada')}
+          description={t(
+            'modulePlaceholder.empty.description',
+            'Este módulo se activa en cuanto el backend exponga la tabla correspondiente en Supabase.',
+          )}
         />
 
         {bullets && bullets.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Lo que vas a poder hacer aquí</CardTitle>
+              <CardTitle>{t('modulePlaceholder.bulletsTitle', 'Lo que vas a poder hacer aquí')}</CardTitle>
             </CardHeader>
             <ul className="space-y-2.5">
               {bullets.map((bullet) => (

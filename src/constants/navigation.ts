@@ -56,10 +56,10 @@ export const NAV_SECTIONS: NavSection[] = [
     section: 'Inteligencia artificial',
     sectionKey: 'nav.section.ia',
     items: [
-      { label: 'AI Intelligence Center', labelKey: 'nav.aiCenter', to: '/ai', icon: Sparkles },
+      { label: 'Centro de Inteligencia IA', labelKey: 'nav.aiCenter', to: '/ai', icon: Sparkles },
       { label: 'Pronósticos IA', labelKey: 'nav.pronosticos', to: '/pronosticos', icon: BrainCircuit },
       { label: 'Modelos IA', labelKey: 'nav.modelosIa', to: '/modelos', icon: BrainCircuit },
-      { label: 'Scouting', labelKey: 'nav.scouting', to: '/scouting', icon: Radar },
+      { label: 'Búsqueda de talento', labelKey: 'nav.scouting', to: '/scouting', icon: Radar },
     ],
   },
   {

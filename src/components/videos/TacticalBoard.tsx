@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ArrowLeftRight, Flame, Route, UserCheck, Users, X, Zap } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import {
   buildHeatmapDataUrl,
@@ -357,8 +358,13 @@ function PanelShell({
  * el límite real de esto (no alcanza para clasificar por banda de
  * velocidad de forma confiable, solo para aliviar el gráfico). */
 function SpeedChart({ series }: { series: { t: number; speedKmh: number }[] }) {
+  const { t } = useTranslation();
   if (series.length < 2) {
-    return <p className="py-9 text-center text-xs text-muted-foreground">Sin suficientes datos de velocidad.</p>;
+    return (
+      <p className="py-9 text-center text-xs text-muted-foreground">
+        {t('tacticalBoard.speedChart.notEnoughData', 'Sin suficientes datos de velocidad.')}
+      </p>
+    );
   }
   const width = 300;
   const height = 100;
@@ -393,16 +399,21 @@ function SpeedChart({ series }: { series: { t: number; speedKmh: number }[] }) {
 /** Distancia recorrida por el jugador seleccionado, desglosada por zona
  * (de cancha o de intensidad, según qué lista de zonas se le pase). */
 function ZoneDistanceBars({ zones }: { zones: { key: string; label: string; distanceM: number }[] }) {
+  const { t } = useTranslation();
   const total = zones.reduce((sum, z) => sum + z.distanceM, 0);
   if (total === 0) {
-    return <p className="py-9 text-center text-xs text-muted-foreground">Sin suficiente recorrido para desglosar.</p>;
+    return (
+      <p className="py-9 text-center text-xs text-muted-foreground">
+        {t('tacticalBoard.zoneDistance.notEnoughData', 'Sin suficiente recorrido para desglosar.')}
+      </p>
+    );
   }
   const maxDistance = Math.max(...zones.map((z) => z.distanceM), 1);
   return (
     <div className="space-y-2.5 py-1">
       {zones.map((zone) => (
         <div key={zone.key} className="flex items-center gap-2 text-xs">
-          <span className="w-16 shrink-0 text-muted-foreground">{zone.label}</span>
+          <span className="w-16 shrink-0 text-muted-foreground">{t(`tacticalBoard.zones.${zone.key}`, zone.label)}</span>
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/5">
             <div className="h-full rounded-full bg-ai" style={{ width: `${(zone.distanceM / maxDistance) * 100}%` }} />
           </div>
@@ -436,6 +447,7 @@ export function TacticalBoard({
   isSaving: boolean;
   onAssign: (trackIds: number[], playerId: string | null) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState('');
   const [activeZone, setActiveZone] = useState<ZoneKey | null>(null);
@@ -617,7 +629,8 @@ export function TacticalBoard({
 
   const selectedAssignment = selectedTrackId ? assignmentByTrack.get(selectedTrackId) ?? null : null;
   const selectedPlayer = playerById.get(selectedPlayerId);
-  const zoneLabel = ZONES.find((z) => z.key === activeZone)?.label;
+  const activeZoneMeta = ZONES.find((z) => z.key === activeZone);
+  const zoneLabel = activeZoneMeta ? t(`tacticalBoard.zones.${activeZoneMeta.key}`, activeZoneMeta.label) : undefined;
 
   /** Sugerencia 2: zona dominante del track seleccionado (misma franja que
    * usan los botones de asignación por zona) cruzada con la posición del
@@ -646,10 +659,10 @@ export function TacticalBoard({
           onValueChange={(value) => setSelectedTrackId(value === '__all__' ? null : value)}
         >
           <SelectTrigger className="h-9 w-56">
-            <SelectValue placeholder="Identidad" />
+            <SelectValue placeholder={t('tacticalBoard.identitySelect.placeholder', 'Identidad')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__all__">Todas las identidades</SelectItem>
+            <SelectItem value="__all__">{t('tacticalBoard.identitySelect.all', 'Todas las identidades')}</SelectItem>
             {markers.map((marker) => {
               const assigned = marker.matchedPlayerId ? playerById.get(marker.matchedPlayerId) : null;
               const color = trackColorById.get(marker.trackId);
@@ -671,7 +684,7 @@ export function TacticalBoard({
         </Select>
 
         <Button size="sm" variant="ghost" onClick={() => setIsFlipped((v) => !v)}>
-          <ArrowLeftRight className="size-4" aria-hidden="true" /> Invertir lados
+          <ArrowLeftRight className="size-4" aria-hidden="true" /> {t('tacticalBoard.flipSides', 'Invertir lados')}
         </Button>
 
         {(teamSwatches.A || teamSwatches.B) && (
@@ -690,7 +703,7 @@ export function TacticalBoard({
                     style={{ backgroundColor: teamSwatches[label] ?? undefined }}
                     aria-hidden="true"
                   />
-                  Equipo {label}
+                  {t('tacticalBoard.team', 'Equipo {{label}}', { label })}
                 </Button>
               ) : null,
             )}
@@ -702,7 +715,7 @@ export function TacticalBoard({
             <div className="mx-1 h-6 w-px bg-border" aria-hidden="true" />
             <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
               <SelectTrigger className="h-9 w-56">
-                <SelectValue placeholder="Jugador del roster…" />
+                <SelectValue placeholder={t('tacticalBoard.playerSelect.placeholder', 'Jugador del roster…')} />
               </SelectTrigger>
               <SelectContent>
                 {players.map((player) => (
@@ -721,23 +734,32 @@ export function TacticalBoard({
                 variant={activeZone === zone.key ? 'primary' : 'secondary'}
                 onClick={() => setActiveZone((current) => (current === zone.key ? null : zone.key))}
               >
-                {zone.label}
+                {t(`tacticalBoard.zones.${zone.key}`, zone.label)}
               </Button>
             ))}
 
             {selectedTrackId && selectedPlayer && (
               <Button size="sm" isLoading={isSaving} onClick={() => onAssign([Number(selectedTrackId)], selectedPlayerId)}>
-                <UserCheck className="size-4" aria-hidden="true" /> Asignar J{selectedTrackId} a {initials(selectedPlayer.full_name)}
+                <UserCheck className="size-4" aria-hidden="true" />{' '}
+                {t('tacticalBoard.assignSingle', 'Asignar J{{trackId}} a {{name}}', {
+                  trackId: selectedTrackId,
+                  name: initials(selectedPlayer.full_name),
+                })}
               </Button>
             )}
             {activeZone && selectedPlayer && zoneTrackIds.length > 0 && (
               <Button size="sm" variant="secondary" isLoading={isSaving} onClick={() => onAssign(zoneTrackIds, selectedPlayerId)}>
-                <UserCheck className="size-4" aria-hidden="true" /> Asignar {zoneTrackIds.length} de {zoneLabel?.toLowerCase()}
+                <UserCheck className="size-4" aria-hidden="true" />{' '}
+                {t('tacticalBoard.assignZone', 'Asignar {{count}} de {{zone}}', {
+                  count: zoneTrackIds.length,
+                  zone: zoneLabel?.toLowerCase(),
+                })}
               </Button>
             )}
             {selectedTrackId && selectedAssignment && (
               <Button size="sm" variant="ghost" isLoading={isSaving} onClick={() => onAssign([Number(selectedTrackId)], null)}>
-                <X className="size-4" aria-hidden="true" /> Quitar J{selectedTrackId}
+                <X className="size-4" aria-hidden="true" />{' '}
+                {t('tacticalBoard.unassignSingle', 'Quitar J{{trackId}}', { trackId: selectedTrackId })}
               </Button>
             )}
           </>
@@ -747,7 +769,12 @@ export function TacticalBoard({
       {canEdit && selectedTrackId && !selectedAssignment && suggestedPlayers.length > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-muted-foreground">
-            Sugerido por posición ({ZONES.find((z) => z.key === dominantZone)?.label?.toLowerCase()}):
+            {t('tacticalBoard.suggestedByPosition', 'Sugerido por posición ({{zone}}):', {
+              zone: (() => {
+                const zone = ZONES.find((z) => z.key === dominantZone);
+                return zone ? t(`tacticalBoard.zones.${zone.key}`, zone.label).toLowerCase() : '';
+              })(),
+            })}
           </span>
           {suggestedPlayers.map((player) => (
             <button
@@ -766,13 +793,13 @@ export function TacticalBoard({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <PanelShell
           icon={Flame}
-          title="Mapa de calor"
+          title={t('tacticalBoard.heatmap.title', 'Mapa de calor')}
           subtitle={
             selectedTrackId
-              ? `Densidad de J${selectedTrackId}`
+              ? t('tacticalBoard.heatmap.densityOf', 'Densidad de J{{trackId}}', { trackId: selectedTrackId })
               : teamFilter
-                ? `Densidad del equipo ${teamFilter}`
-                : 'Densidad de todas las identidades'
+                ? t('tacticalBoard.heatmap.densityTeam', 'Densidad del equipo {{team}}', { team: teamFilter })
+                : t('tacticalBoard.heatmap.densityAll', 'Densidad de todas las identidades')
           }
           accent="bg-warning/15 text-warning"
         >
@@ -794,7 +821,7 @@ export function TacticalBoard({
               />
             ) : (
               <text x={FIELD_LENGTH_M / 2} y={FIELD_WIDTH_M / 2} textAnchor="middle" fontSize={4} fill="rgba(255,255,255,0.5)">
-                Sin datos suficientes para el mapa de calor
+                {t('tacticalBoard.heatmap.noData', 'Sin datos suficientes para el mapa de calor')}
               </text>
             )}
           </svg>
@@ -802,13 +829,19 @@ export function TacticalBoard({
 
         <PanelShell
           icon={Route}
-          title="Movimiento capturado"
+          title={t('tacticalBoard.movement.title', 'Movimiento capturado')}
           subtitle={
             selectedTrackId
-              ? `Recorrido real de J${selectedTrackId} a velocidad del video`
+              ? t('tacticalBoard.movement.realPath', 'Recorrido real de J{{trackId}} a velocidad del video', {
+                  trackId: selectedTrackId,
+                })
               : teamFilter
-                ? `Mostrando equipo ${teamFilter} — toca una identidad para animar su recorrido`
-                : 'Toca una identidad para animar su recorrido'
+                ? t(
+                    'tacticalBoard.movement.teamFilterHint',
+                    'Mostrando equipo {{team}} — toca una identidad para animar su recorrido',
+                    { team: teamFilter },
+                  )
+                : t('tacticalBoard.movement.tapHint', 'Toca una identidad para animar su recorrido')
           }
           accent="bg-ai/15 text-ai"
         >
@@ -890,7 +923,14 @@ export function TacticalBoard({
                   onClick={() => setSelectedTrackId((current) => (current === marker.trackId ? null : marker.trackId))}
                   className="cursor-pointer"
                   role="button"
-                  aria-label={`Identidad J${marker.trackId}${assigned ? ` asignada a ${assigned.full_name}` : ''}`}
+                  aria-label={
+                    assigned
+                      ? t('tacticalBoard.markerAriaLabelAssigned', 'Identidad J{{trackId}} asignada a {{name}}', {
+                          trackId: marker.trackId,
+                          name: assigned.full_name,
+                        })
+                      : t('tacticalBoard.markerAriaLabel', 'Identidad J{{trackId}}', { trackId: marker.trackId })
+                  }
                 >
                   <HologramFigure
                     variant={assigned ? 'assigned' : 'unassigned'}
@@ -933,8 +973,8 @@ export function TacticalBoard({
       <div className="mt-4">
         <PanelShell
           icon={Users}
-          title="Forma del equipo"
-          subtitle="Centro de gravedad y amplitud — promedio de toda la corrida"
+          title={t('tacticalBoard.teamShape.title', 'Forma del equipo')}
+          subtitle={t('tacticalBoard.teamShape.subtitle', 'Centro de gravedad y amplitud — promedio de toda la corrida')}
           accent="bg-purple/15 text-purple"
         >
           {teamShapes.length > 0 ? (
@@ -969,14 +1009,17 @@ export function TacticalBoard({
                     fontWeight={700}
                     fill={shape.color}
                   >
-                    Equipo {shape.label}
+                    {t('tacticalBoard.team', 'Equipo {{label}}', { label: shape.label })}
                   </text>
                 </g>
               ))}
             </svg>
           ) : (
             <p className="py-9 text-center text-xs text-muted-foreground">
-              Todavía no hay suficientes camisetas identificadas para agrupar los dos equipos.
+              {t(
+                'tacticalBoard.teamShape.notEnough',
+                'Todavía no hay suficientes camisetas identificadas para agrupar los dos equipos.',
+              )}
             </p>
           )}
         </PanelShell>
@@ -988,16 +1031,16 @@ export function TacticalBoard({
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <PanelShell
             icon={Zap}
-            title="Velocidad en el tiempo"
-            subtitle={`Velocidad instantánea de J${selectedTrackId}`}
+            title={t('tacticalBoard.speedChart.title', 'Velocidad en el tiempo')}
+            subtitle={t('tacticalBoard.speedChart.subtitle', 'Velocidad instantánea de J{{trackId}}', { trackId: selectedTrackId })}
             accent="bg-ai/15 text-ai"
           >
             <SpeedChart series={speedSeries} />
           </PanelShell>
           <PanelShell
             icon={Route}
-            title="Distancia por zona"
-            subtitle={`Dónde recorrió sus metros J${selectedTrackId}`}
+            title={t('tacticalBoard.zoneDistance.title', 'Distancia por zona')}
+            subtitle={t('tacticalBoard.zoneDistance.subtitle', 'Dónde recorrió sus metros J{{trackId}}', { trackId: selectedTrackId })}
             accent="bg-success/15 text-success"
           >
             <ZoneDistanceBars zones={zoneDistances} />
@@ -1011,9 +1054,12 @@ export function TacticalBoard({
             const player = playerById.get(playerId);
             return (
               <div key={playerId} className="flex flex-wrap items-center gap-2 rounded-md bg-panel px-3 py-2 text-sm">
-                <Badge variant="success">{player?.full_name ?? 'Jugador'}</Badge>
+                <Badge variant="success">{player?.full_name ?? t('tacticalBoard.assignedGroups.defaultPlayerBadge', 'Jugador')}</Badge>
                 <span className="text-xs text-muted-foreground">
-                  {trackIds.length} identidad(es): {trackIds.map((id) => `J${id}`).join(', ')}
+                  {t('tacticalBoard.assignedGroups.identitiesCount', '{{count}} identidad(es): {{trackIds}}', {
+                    count: trackIds.length,
+                    trackIds: trackIds.map((id) => `J${id}`).join(', '),
+                  })}
                 </span>
                 {canEdit && (
                   <button
@@ -1021,7 +1067,7 @@ export function TacticalBoard({
                     className="focus-ring ml-auto flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:text-danger"
                     onClick={() => onAssign(trackIds.map(Number), null)}
                   >
-                    <X className="size-3" aria-hidden="true" /> Quitar todas
+                    <X className="size-3" aria-hidden="true" /> {t('tacticalBoard.assignedGroups.removeAll', 'Quitar todas')}
                   </button>
                 )}
               </div>

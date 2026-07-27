@@ -1,12 +1,13 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { AppShell } from '@/components/layout/AppShell';
 import { ModulePlaceholder } from '@/components/dashboard/ModulePlaceholder';
 import { NavGate } from '@/components/layout/NavGate';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
-import { MODULE_PREVIEWS } from '@/constants/modulePreviews';
+import { useModulePreviews } from '@/constants/modulePreviews';
 import { NAV_ITEMS_FLAT } from '@/constants/navigation';
 import { fetchNavAccessSettings } from '@/lib/permissionSettings';
 import { useNavAccessStore } from '@/store/navAccessStore';
@@ -31,9 +32,11 @@ const Temporadas = lazy(() => import('./pages/Temporadas'));
 const PLACEHOLDER_ROUTES = new Set(['/pronosticos']);
 
 export default function App() {
+  const { t } = useTranslation();
   const { session, profile, isLoading, signIn, signOut } = useAuth();
   const orgId = profile?.org_id;
   const role = profile?.role ?? null;
+  const modulePreviews = useModulePreviews();
 
   useEffect(() => {
     if (!orgId) return;
@@ -101,16 +104,17 @@ export default function App() {
           />
 
           {NAV_ITEMS_FLAT.filter((item) => item.comingSoon || PLACEHOLDER_ROUTES.has(item.to)).map((item) => {
-            const preview = MODULE_PREVIEWS[item.to];
+            const preview = modulePreviews[item.to];
+            const label = t(item.labelKey, item.label);
             return (
               <Route
                 key={item.to}
                 path={item.to}
                 element={
                   <ModulePlaceholder
-                    title={item.label}
+                    title={label}
                     icon={item.icon}
-                    description={preview?.description ?? `Vista de ${item.label.toLowerCase()} para tu organización.`}
+                    description={preview?.description || t('modulePreviews.fallbackDescription', 'Vista de {{label}} para tu organización.', { label: label.toLowerCase() })}
                     bullets={preview?.bullets}
                     kpis={preview?.kpis}
                   />

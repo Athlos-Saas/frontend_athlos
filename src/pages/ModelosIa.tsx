@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrainCircuit, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -24,27 +26,30 @@ function formatMetrics(metrics: MlModel['metrics']) {
     .join(' · ');
 }
 
-const COLUMNS: DataTableColumn<MlModel>[] = [
-  { id: 'name', header: 'Modelo', sortable: true, accessor: (row) => row.name, className: 'font-medium text-foreground' },
-  {
-    id: 'task',
-    header: 'Tarea',
-    sortable: true,
-    accessor: (row) => row.task,
-    cell: (row) => <Badge variant="ai">{row.task}</Badge>,
-  },
-  { id: 'version', header: 'Versión', sortable: true, accessor: (row) => row.version },
-  { id: 'metrics', header: 'Métricas clave', accessor: (row) => formatMetrics(row.metrics), className: 'text-xs text-muted-foreground' },
-  {
-    id: 'trained_at',
-    header: 'Entrenado',
-    sortable: true,
-    accessor: (row) => row.trained_at,
-    cell: (row) => new Date(row.trained_at).toLocaleDateString('es-ES'),
-  },
-];
+function buildColumns(t: TFunction): DataTableColumn<MlModel>[] {
+  return [
+    { id: 'name', header: t('modelosIa.col.model', 'Modelo'), sortable: true, accessor: (row) => row.name, className: 'font-medium text-foreground' },
+    {
+      id: 'task',
+      header: t('modelosIa.col.task', 'Tarea'),
+      sortable: true,
+      accessor: (row) => row.task,
+      cell: (row) => <Badge variant="ai">{row.task}</Badge>,
+    },
+    { id: 'version', header: t('modelosIa.col.version', 'Versión'), sortable: true, accessor: (row) => row.version },
+    { id: 'metrics', header: t('modelosIa.col.metrics', 'Métricas clave'), accessor: (row) => formatMetrics(row.metrics), className: 'text-xs text-muted-foreground' },
+    {
+      id: 'trained_at',
+      header: t('modelosIa.col.trained', 'Entrenado'),
+      sortable: true,
+      accessor: (row) => row.trained_at,
+      cell: (row) => new Date(row.trained_at).toLocaleDateString('es-ES'),
+    },
+  ];
+}
 
 export default function ModelosIa({ orgId, role }: { orgId: string; role: string | null }) {
+  const { t } = useTranslation();
   const [models, setModels] = useState<MlModel[]>([]);
   const [state, setState] = useState<LoadState>('loading');
   const [reloadToken, setReloadToken] = useState(0);
@@ -81,15 +86,17 @@ export default function ModelosIa({ orgId, role }: { orgId: string; role: string
       const physical = await triggerTraining('physical', { org_id: orgId });
       const technical = await triggerTraining('technical', { org_id: orgId, season });
       toast({
-        title: 'Reentrenamiento completo',
-        description: `${physical.length + technical.length} modelos actualizados.`,
+        title: t('modelosIa.toast.retrainSuccessTitle', 'Reentrenamiento completo'),
+        description: t('modelosIa.toast.retrainSuccessDescription', '{{count}} modelos actualizados.', {
+          count: physical.length + technical.length,
+        }),
         variant: 'success',
       });
       setReloadToken((n) => n + 1);
     } catch (error) {
       toast({
-        title: 'No se pudo reentrenar',
-        description: error instanceof Error ? error.message : 'Error inesperado.',
+        title: t('modelosIa.toast.retrainErrorTitle', 'No se pudo reentrenar'),
+        description: error instanceof Error ? error.message : t('modelosIa.toast.unexpectedError', 'Error inesperado.'),
         variant: 'danger',
       });
     } finally {
@@ -103,14 +110,16 @@ export default function ModelosIa({ orgId, role }: { orgId: string; role: string
     <div>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Modelos IA</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('modelosIa.title', 'Modelos IA')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Registro de modelos entrenados por el pipeline de Machine Learning (<code>run_training.py</code>).
+            {t('modelosIa.subtitlePrefix', 'Registro de modelos entrenados por el pipeline de Machine Learning (')}
+            <code>run_training.py</code>
+            {t('modelosIa.subtitleSuffix', ').')}
           </p>
         </div>
         {canWrite(role) && (
           <div className="flex items-end gap-2">
-            <Field label="Temporada" htmlFor="retrain-season" className="max-w-[140px]">
+            <Field label={t('modelosIa.seasonLabel', 'Temporada')} htmlFor="retrain-season" className="max-w-[140px]">
               <Input id="retrain-season" value={season} onChange={(event) => setSeason(event.target.value)} />
             </Field>
             <Button
@@ -119,9 +128,9 @@ export default function ModelosIa({ orgId, role }: { orgId: string; role: string
               disabled={!backendUrl}
               isLoading={isTraining}
               onClick={handleRetrain}
-              title={backendUrl ? undefined : 'Configura VITE_API_URL para habilitar esto (ver .env.example).'}
+              title={backendUrl ? undefined : t('modelosIa.retrainDisabledHint', 'Configura VITE_API_URL para habilitar esto (ver .env.example).')}
             >
-              <RefreshCw className="size-4" aria-hidden="true" /> Reentrenar modelos
+              <RefreshCw className="size-4" aria-hidden="true" /> {t('modelosIa.retrainButton', 'Reentrenar modelos')}
             </Button>
           </div>
         )}
@@ -129,33 +138,36 @@ export default function ModelosIa({ orgId, role }: { orgId: string; role: string
 
       {canWrite(role) && !backendUrl && (
         <p className="mb-5 text-xs text-muted-foreground">
-          "Reentrenar modelos" necesita un backend FastAPI accesible desde el navegador (VITE_API_URL). Mientras
-          tanto, corre <code>run_training.py</code> desde el backend.
+          {t('modelosIa.retrainHintPrefix', '"Reentrenar modelos" necesita un backend FastAPI accesible desde el navegador (VITE_API_URL). Mientras tanto, corre ')}
+          <code>run_training.py</code>
+          {t('modelosIa.retrainHintSuffix', ' desde el backend.')}
         </p>
       )}
 
       <Card>
         <CardHeader>
           <div>
-            <CardTitle>Modelos entrenados</CardTitle>
-            <CardDescription className="mt-1">Últimas 50 versiones registradas para tu organización</CardDescription>
+            <CardTitle>{t('modelosIa.cardTitle', 'Modelos entrenados')}</CardTitle>
+            <CardDescription className="mt-1">{t('modelosIa.cardDescription', 'Últimas 50 versiones registradas para tu organización')}</CardDescription>
           </div>
         </CardHeader>
 
         <DataTable
-          columns={COLUMNS}
+          columns={buildColumns(t)}
           data={models}
           getRowId={(row) => `${row.name}-${row.version}`}
           isLoading={state === 'loading'}
-          searchPlaceholder="Buscar modelo o tarea…"
+          searchPlaceholder={t('modelosIa.searchPlaceholder', 'Buscar modelo o tarea…')}
           exportFileName="modelos-ia.csv"
           emptyState={
             <EmptyState
               icon={BrainCircuit}
-              title="Sin modelos entrenados aún"
+              title={t('modelosIa.emptyTitle', 'Sin modelos entrenados aún')}
               description={
                 <>
-                  Corre <code>run_training.py</code> en el backend para generar la primera versión.
+                  {t('modelosIa.emptyDescriptionPrefix', 'Corre ')}
+                  <code>run_training.py</code>
+                  {t('modelosIa.emptyDescriptionSuffix', ' en el backend para generar la primera versión.')}
                 </>
               }
             />

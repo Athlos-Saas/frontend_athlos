@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, BrainCircuit, Sparkles, Target } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { DataTable, type DataTableColumn, type DataTableFilter } from '@/components/tables/DataTable';
 import { GaugeChart } from '@/components/charts/GaugeChart';
@@ -36,6 +37,7 @@ function normalize(value: number, max: number) {
 }
 
 export default function AiIntelligenceCenter({ orgId }: { orgId: string }) {
+  const { t } = useTranslation();
   const [state, setState] = useState<LoadState>('loading');
   const [models, setModels] = useState<MlModel[]>([]);
   const [predictions, setPredictions] = useState<MlPrediction[]>([]);
@@ -112,15 +114,15 @@ export default function AiIntelligenceCenter({ orgId }: { orgId: string }) {
 
   const coverageData = useMemo(() => {
     const raw = [
-      { axis: 'Atletas', value: counts.players },
-      { axis: 'Sesiones GPS', value: counts.sessions },
-      { axis: 'Videos', value: counts.videos },
-      { axis: 'Predicciones', value: counts.predictionsTotal },
-      { axis: 'Modelos', value: models.length },
+      { axis: t('aiIntelligenceCenter.axis.players', 'Atletas'), value: counts.players },
+      { axis: t('aiIntelligenceCenter.axis.sessions', 'Sesiones GPS'), value: counts.sessions },
+      { axis: t('aiIntelligenceCenter.axis.videos', 'Videos'), value: counts.videos },
+      { axis: t('aiIntelligenceCenter.axis.predictions', 'Predicciones'), value: counts.predictionsTotal },
+      { axis: t('aiIntelligenceCenter.axis.models', 'Modelos'), value: models.length },
     ];
     const max = Math.max(...raw.map((r) => r.value), 1);
     return raw.map((r) => ({ axis: r.axis, cobertura: normalize(r.value, max) }));
-  }, [counts, models.length]);
+  }, [counts, models.length, t]);
 
   const timelineItems: TimelineItem[] = useMemo(
     () =>
@@ -142,29 +144,35 @@ export default function AiIntelligenceCenter({ orgId }: { orgId: string }) {
 
   const predictionColumns: DataTableColumn<MlPrediction>[] = useMemo(
     () => [
-      { id: 'prediction_type', header: 'Tipo', sortable: true, accessor: (row) => row.prediction_type },
+      { id: 'prediction_type', header: t('aiIntelligenceCenter.col.type', 'Tipo'), sortable: true, accessor: (row) => row.prediction_type },
       {
         id: 'label',
-        header: 'Etiqueta',
+        header: t('aiIntelligenceCenter.col.label', 'Etiqueta'),
         sortable: true,
         accessor: (row) => row.label,
         cell: (row) => <Badge variant={ANOMALY_LABELS.includes(row.label) ? 'danger' : 'ai'}>{row.label}</Badge>,
       },
-      { id: 'score', header: 'Score', sortable: true, align: 'right', accessor: (row) => row.score ?? 0 },
+      {
+        id: 'score',
+        header: t('aiIntelligenceCenter.col.score', 'Score'),
+        sortable: true,
+        align: 'right',
+        accessor: (row) => row.score ?? 0,
+      },
       {
         id: 'created_at',
-        header: 'Fecha',
+        header: t('aiIntelligenceCenter.col.date', 'Fecha'),
         sortable: true,
         accessor: (row) => row.created_at,
         cell: (row) => new Date(row.created_at).toLocaleString('es-ES'),
       },
     ],
-    [],
+    [t],
   );
 
   const predictionTypeFilter: DataTableFilter<MlPrediction> = {
     columnId: 'prediction_type',
-    label: 'Tipo',
+    label: t('aiIntelligenceCenter.col.type', 'Tipo'),
     options: predictionTypes,
     accessor: (row) => row.prediction_type,
   };
@@ -177,33 +185,39 @@ export default function AiIntelligenceCenter({ orgId }: { orgId: string }) {
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground">
             <Sparkles className="size-6 text-purple" aria-hidden="true" />
-            AI Intelligence Center
+            {t('aiIntelligenceCenter.title', 'AI Intelligence Center')}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Insights, predicciones y salud de los modelos de Machine Learning de tu organización
+            {t('aiIntelligenceCenter.subtitle', 'Insights, predicciones y salud de los modelos de Machine Learning de tu organización')}
           </p>
         </div>
         <Badge variant="purple">ml_models · ml_predictions</Badge>
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Modelos activos" value={models.length} icon={BrainCircuit} accent="purple" isLoading={state === 'loading'} />
         <StatCard
-          label="Predicciones (30 días)"
+          label={t('aiIntelligenceCenter.kpi.activeModels', 'Modelos activos')}
+          value={models.length}
+          icon={BrainCircuit}
+          accent="purple"
+          isLoading={state === 'loading'}
+        />
+        <StatCard
+          label={t('aiIntelligenceCenter.kpi.predictions30d', 'Predicciones (30 días)')}
           value={counts.predictions30d}
           icon={Sparkles}
           accent="ai"
           isLoading={state === 'loading'}
         />
         <StatCard
-          label="Anomalías detectadas"
+          label={t('aiIntelligenceCenter.kpi.anomalies', 'Anomalías detectadas')}
           value={counts.anomalies}
           icon={AlertTriangle}
           accent={counts.anomalies > 0 ? 'danger' : 'success'}
           isLoading={state === 'loading'}
         />
         <StatCard
-          label="Precisión media"
+          label={t('aiIntelligenceCenter.kpi.avgPrecision', 'Precisión media')}
           value={avgPrecision !== null ? `${avgPrecision.toFixed(1)}%` : '—'}
           icon={Target}
           accent="success"
@@ -213,19 +227,29 @@ export default function AiIntelligenceCenter({ orgId }: { orgId: string }) {
 
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <ChartCard
-          title="Precisión media de modelos"
-          description="Promedio de la primera métrica numérica reportada por cada modelo"
+          title={t('aiIntelligenceCenter.chart.precision.title', 'Precisión media de modelos')}
+          description={t('aiIntelligenceCenter.chart.precision.description', 'Promedio de la primera métrica numérica reportada por cada modelo')}
           isLoading={state === 'loading'}
         >
-          <GaugeChart value={avgPrecision ?? 0} label="Precisión" formatValue={(v) => `${v.toFixed(0)}%`} color={colors.green} />
+          <GaugeChart
+            value={avgPrecision ?? 0}
+            label={t('aiIntelligenceCenter.chart.precision.gaugeLabel', 'Precisión')}
+            formatValue={(v) => `${v.toFixed(0)}%`}
+            color={colors.green}
+          />
         </ChartCard>
         <ChartCard
-          title="Cobertura del sistema IA"
-          description="Volumen relativo por categoría, normalizado 0-100"
+          title={t('aiIntelligenceCenter.chart.coverage.title', 'Cobertura del sistema IA')}
+          description={t('aiIntelligenceCenter.chart.coverage.description', 'Volumen relativo por categoría, normalizado 0-100')}
           isLoading={state === 'loading'}
           className="lg:col-span-2"
         >
-          <RadarComparisonChart data={coverageData} dataKey="cobertura" angleKey="axis" name="Cobertura" />
+          <RadarComparisonChart
+            data={coverageData}
+            dataKey="cobertura"
+            angleKey="axis"
+            name={t('aiIntelligenceCenter.chart.coverage.seriesName', 'Cobertura')}
+          />
         </ChartCard>
       </div>
 
@@ -233,8 +257,10 @@ export default function AiIntelligenceCenter({ orgId }: { orgId: string }) {
         <Card className="lg:col-span-2">
           <CardHeader>
             <div>
-              <CardTitle>Predicciones recientes</CardTitle>
-              <CardDescription className="mt-1">Últimas 200 predicciones generadas por los modelos</CardDescription>
+              <CardTitle>{t('aiIntelligenceCenter.recentPredictions.title', 'Predicciones recientes')}</CardTitle>
+              <CardDescription className="mt-1">
+                {t('aiIntelligenceCenter.recentPredictions.description', 'Últimas 200 predicciones generadas por los modelos')}
+              </CardDescription>
             </div>
           </CardHeader>
           <DataTable
@@ -242,7 +268,7 @@ export default function AiIntelligenceCenter({ orgId }: { orgId: string }) {
             data={predictions}
             getRowId={(row) => `${row.player_id}-${row.created_at}-${row.prediction_type}`}
             isLoading={state === 'loading'}
-            searchPlaceholder="Buscar por tipo o etiqueta…"
+            searchPlaceholder={t('aiIntelligenceCenter.recentPredictions.searchPlaceholder', 'Buscar por tipo o etiqueta…')}
             filters={predictionTypes.length > 1 ? [predictionTypeFilter] : undefined}
             exportFileName="predicciones-ia.csv"
           />
@@ -250,7 +276,7 @@ export default function AiIntelligenceCenter({ orgId }: { orgId: string }) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Historial de modelos</CardTitle>
+            <CardTitle>{t('aiIntelligenceCenter.modelHistory.title', 'Historial de modelos')}</CardTitle>
           </CardHeader>
           {timelineItems.length > 0 && <TimelineList items={timelineItems} />}
         </Card>

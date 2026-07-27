@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Activity, ArrowRight, HeartPulse, Moon, Shield, Smile, Users, Zap } from 'lucide-react';
 
 import { BenchmarkBarChart } from '@/components/charts/BenchmarkBarChart';
@@ -48,6 +49,7 @@ interface WellnessAvg {
  */
 export default function Equipos({ orgId }: { orgId: string }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [teams, setTeams] = useState<Team[] | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [roster, setRoster] = useState<RosterPlayer[] | null>(null);
@@ -64,7 +66,7 @@ export default function Equipos({ orgId }: { orgId: string }) {
       .order('season', { ascending: false })
       .then(({ data, error }) => {
         if (error) {
-          toast({ title: 'No se pudieron cargar los equipos', description: error.message, variant: 'danger' });
+          toast({ title: t('equipos.toast.loadTeamsError', 'No se pudieron cargar los equipos'), description: error.message, variant: 'danger' });
           return;
         }
         setTeams(data ?? []);
@@ -85,7 +87,7 @@ export default function Equipos({ orgId }: { orgId: string }) {
       .eq('is_active', true)
       .then(async ({ data: players, error }) => {
         if (error) {
-          toast({ title: 'No se pudo cargar el plantel', description: error.message, variant: 'danger' });
+          toast({ title: t('equipos.toast.loadRosterError', 'No se pudo cargar el plantel'), description: error.message, variant: 'danger' });
           setRoster([]);
           return;
         }
@@ -149,7 +151,7 @@ export default function Equipos({ orgId }: { orgId: string }) {
   const positionBreakdown = useMemo(() => {
     const counts = new Map<string, number>();
     for (const player of roster ?? []) {
-      const position = player.position?.trim() || 'Sin posición';
+      const position = player.position?.trim() || t('equipos.noPosition', 'Sin posición');
       counts.set(position, (counts.get(position) ?? 0) + 1);
     }
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([posicion, jugadores]) => ({ posicion, jugadores }));
@@ -162,20 +164,26 @@ export default function Equipos({ orgId }: { orgId: string }) {
     }
     const names = new Map((roster ?? []).map((player) => [player.id, player.full_name]));
     return [...byPlayer.entries()]
-      .map(([player_id, distanceKm]) => ({ player_id, name: names.get(player_id) ?? 'Jugador', distanceKm }))
+      .map(([player_id, distanceKm]) => ({ player_id, name: names.get(player_id) ?? t('equipos.player', 'Jugador'), distanceKm }))
       .sort((a, b) => b.distanceKm - a.distanceKm)
       .slice(0, 5);
   }, [gpsSessions, roster]);
 
   const injuredNames = useMemo(() => {
     const names = new Map((roster ?? []).map((player) => [player.id, player.full_name]));
-    return activeInjuries.map((injury) => ({ ...injury, name: names.get(injury.player_id) ?? 'Jugador' }));
+    return activeInjuries.map((injury) => ({ ...injury, name: names.get(injury.player_id) ?? t('equipos.player', 'Jugador') }));
   }, [activeInjuries, roster]);
 
   if (teams === null) return <Skeleton className="h-96 w-full" />;
 
   if (teams.length === 0) {
-    return <EmptyState icon={Shield} title="Sin equipos" description="Importa un roster para crear el primer equipo de la organización." />;
+    return (
+      <EmptyState
+        icon={Shield}
+        title={t('equipos.empty.title', 'Sin equipos')}
+        description={t('equipos.empty.description', 'Importa un roster para crear el primer equipo de la organización.')}
+      />
+    );
   }
 
   const totalDistance = gpsSessions.reduce((sum, s) => sum + (s.distance_km ?? 0), 0);
@@ -185,14 +193,16 @@ export default function Equipos({ orgId }: { orgId: string }) {
     <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Equipos</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Estado agregado del plantel — el detalle individual vive en Atletas</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('equipos.title', 'Equipos')}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t('equipos.subtitle', 'Estado agregado del plantel — el detalle individual vive en Atletas')}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {teams.length > 1 && (
             <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
               <SelectTrigger className="w-64">
-                <SelectValue placeholder="Equipo" />
+                <SelectValue placeholder={t('equipos.selectPlaceholder', 'Equipo')} />
               </SelectTrigger>
               <SelectContent>
                 {teams.map((team) => (
@@ -204,7 +214,7 @@ export default function Equipos({ orgId }: { orgId: string }) {
             </Select>
           )}
           <Button variant="secondary" size="sm" onClick={() => navigate('/atletas')}>
-            Ver plantel <ArrowRight className="size-4" aria-hidden="true" />
+            {t('equipos.viewRoster', 'Ver plantel')} <ArrowRight className="size-4" aria-hidden="true" />
           </Button>
         </div>
       </div>
@@ -218,16 +228,21 @@ export default function Equipos({ orgId }: { orgId: string }) {
             <h2 className="text-lg font-semibold text-foreground">{selectedTeam.name}</h2>
             <p className="text-sm text-muted-foreground">
               {selectedTeam.sport ?? 'soccer'}
-              {selectedTeam.season ? ` · Temporada ${selectedTeam.season}` : ''}
+              {selectedTeam.season ? ` · ${t('equipos.season', 'Temporada')} ${selectedTeam.season}` : ''}
             </p>
           </div>
         </div>
       )}
 
       <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Jugadores activos" value={roster === null ? '…' : <AnimatedNumber value={roster.length} />} icon={Users} accent="ai" />
         <StatCard
-          label="Disponibilidad"
+          label={t('equipos.stat.activePlayers', 'Jugadores activos')}
+          value={roster === null ? '…' : <AnimatedNumber value={roster.length} />}
+          icon={Users}
+          accent="ai"
+        />
+        <StatCard
+          label={t('equipos.stat.availability', 'Disponibilidad')}
           value={
             roster === null || roster.length === 0
               ? '--'
@@ -236,9 +251,14 @@ export default function Equipos({ orgId }: { orgId: string }) {
           icon={HeartPulse}
           accent={activeInjuries.length > 0 ? 'warning' : 'success'}
         />
-        <StatCard label={`Sesiones GPS (${DAYS_WINDOW}d)`} value={<AnimatedNumber value={gpsSessions.length} />} icon={Activity} accent="purple" />
         <StatCard
-          label={`Distancia total (${DAYS_WINDOW}d)`}
+          label={t('equipos.stat.gpsSessions', 'Sesiones GPS ({{days}}d)', { days: DAYS_WINDOW })}
+          value={<AnimatedNumber value={gpsSessions.length} />}
+          icon={Activity}
+          accent="purple"
+        />
+        <StatCard
+          label={t('equipos.stat.totalDistance', 'Distancia total ({{days}}d)', { days: DAYS_WINDOW })}
           value={gpsSessions.length > 0 ? <AnimatedNumber value={totalDistance} decimals={1} suffix=" km" /> : '--'}
           icon={Zap}
           accent="success"
@@ -247,20 +267,34 @@ export default function Equipos({ orgId }: { orgId: string }) {
 
       <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
         {positionBreakdown.length > 0 && (
-          <ChartCard title="Composición del plantel" description="Jugadores activos por posición">
-            <ComparisonBarChart data={positionBreakdown} xKey="posicion" yKey="jugadores" name="Jugadores" color={colors.blue} />
+          <ChartCard
+            title={t('equipos.chart.rosterComposition.title', 'Composición del plantel')}
+            description={t('equipos.chart.rosterComposition.description', 'Jugadores activos por posición')}
+          >
+            <ComparisonBarChart
+              data={positionBreakdown}
+              xKey="posicion"
+              yKey="jugadores"
+              name={t('equipos.player_plural', 'Jugadores')}
+              color={colors.blue}
+            />
           </ChartCard>
         )}
 
         <Card>
           <CardHeader>
             <div>
-              <CardTitle>Mayor carga ({DAYS_WINDOW} días)</CardTitle>
-              <CardDescription className="mt-1">Top 5 por distancia acumulada — click abre la ficha</CardDescription>
+              <CardTitle>{t('equipos.card.topLoad.title', 'Mayor carga ({{days}} días)', { days: DAYS_WINDOW })}</CardTitle>
+              <CardDescription className="mt-1">
+                {t('equipos.card.topLoad.description', 'Top 5 por distancia acumulada — click abre la ficha')}
+              </CardDescription>
             </div>
           </CardHeader>
           {topLoads.length === 0 ? (
-            <EmptyState title="Sin sesiones GPS" description={`No hay sesiones registradas en los últimos ${DAYS_WINDOW} días.`} />
+            <EmptyState
+              title={t('equipos.empty.noGpsSessions.title', 'Sin sesiones GPS')}
+              description={t('equipos.empty.noGpsSessions.description', 'No hay sesiones registradas en los últimos {{days}} días.', { days: DAYS_WINDOW })}
+            />
           ) : (
             <div className="space-y-2.5">
               {topLoads.map((load, index) => (
@@ -292,21 +326,26 @@ export default function Equipos({ orgId }: { orgId: string }) {
         <Card>
           <CardHeader>
             <div>
-              <CardTitle>Wellness del plantel ({WELLNESS_DAYS} días)</CardTitle>
+              <CardTitle>{t('equipos.card.wellness.title', 'Wellness del plantel ({{days}} días)', { days: WELLNESS_DAYS })}</CardTitle>
               <CardDescription className="mt-1">
-                {wellnessAvg && wellnessAvg.entries > 0 ? `Promedio de ${wellnessAvg.entries} registros diarios` : 'Sin registros recientes'}
+                {wellnessAvg && wellnessAvg.entries > 0
+                  ? t('equipos.card.wellness.avgEntries', 'Promedio de {{count}} registros diarios', { count: wellnessAvg.entries })
+                  : t('equipos.card.wellness.noRecent', 'Sin registros recientes')}
               </CardDescription>
             </div>
           </CardHeader>
           {!wellnessAvg || wellnessAvg.entries === 0 ? (
-            <EmptyState title="Sin wellness" description="El plantel no registró wellness diario en la última semana." />
+            <EmptyState
+              title={t('equipos.empty.noWellness.title', 'Sin wellness')}
+              description={t('equipos.empty.noWellness.description', 'El plantel no registró wellness diario en la última semana.')}
+            />
           ) : (
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: 'RPE', value: wellnessAvg.rpe, icon: Zap, max: 10 },
-                { label: 'Sueño (h)', value: wellnessAvg.sleep, icon: Moon, max: 12 },
-                { label: 'Dolor', value: wellnessAvg.soreness, icon: HeartPulse, max: 10 },
-                { label: 'Ánimo', value: wellnessAvg.mood, icon: Smile, max: 5 },
+                { label: t('equipos.metric.rpe', 'RPE'), value: wellnessAvg.rpe, icon: Zap, max: 10 },
+                { label: t('equipos.metric.sleep', 'Sueño (h)'), value: wellnessAvg.sleep, icon: Moon, max: 12 },
+                { label: t('equipos.metric.soreness', 'Dolor'), value: wellnessAvg.soreness, icon: HeartPulse, max: 10 },
+                { label: t('equipos.metric.mood', 'Ánimo'), value: wellnessAvg.mood, icon: Smile, max: 5 },
               ].map((metric, index) => (
                 <div
                   key={metric.label}
@@ -338,14 +377,17 @@ export default function Equipos({ orgId }: { orgId: string }) {
             <div>
               <CardTitle className="flex items-center gap-2">
                 {injuredNames.length > 0 && <span className="flex size-2.5 rounded-full bg-danger animate-pulse-glow" />}
-                Lesionados
+                {t('equipos.card.injured.title', 'Lesionados')}
               </CardTitle>
-              <CardDescription className="mt-1">Sin fecha de retorno registrada</CardDescription>
+              <CardDescription className="mt-1">{t('equipos.card.injured.description', 'Sin fecha de retorno registrada')}</CardDescription>
             </div>
             {injuredNames.length > 0 && <Badge variant="danger">{injuredNames.length}</Badge>}
           </CardHeader>
           {injuredNames.length === 0 ? (
-            <EmptyState title="Plantel completo disponible" description="No hay lesiones activas en este equipo." />
+            <EmptyState
+              title={t('equipos.empty.noInjuries.title', 'Plantel completo disponible')}
+              description={t('equipos.empty.noInjuries.description', 'No hay lesiones activas en este equipo.')}
+            />
           ) : (
             <div className="space-y-2">
               {injuredNames.map((injury, index) => (
@@ -370,14 +412,14 @@ export default function Equipos({ orgId }: { orgId: string }) {
 
       {benchmarks.filter((b) => b.position_group === 'attacker').length > 0 && (
         <ChartCard
-          title="Rendimiento vs. conferencia"
-          description={`${selectedTeam?.name} vs. media de la conferencia (stats ofensivas de liga)`}
+          title={t('equipos.chart.benchmark.title', 'Rendimiento vs. conferencia')}
+          description={t('equipos.chart.benchmark.description', '{{team}} vs. media de la conferencia (stats ofensivas de liga)', { team: selectedTeam?.name })}
         >
           <BenchmarkBarChart
             data={benchmarks
               .filter((b) => b.position_group === 'attacker')
               .map((row) => ({ metric: row.metric, team_value: row.team_value, conference_value: row.conference_value }))}
-            teamLabel={selectedTeam?.name ?? 'Equipo'}
+            teamLabel={selectedTeam?.name ?? t('equipos.team', 'Equipo')}
           />
         </ChartCard>
       )}

@@ -1,0 +1,160 @@
+{
+  "videos": {
+    "defaultTitle": "Partido sin título",
+    "title": "Video análisis",
+    "subtitle": "Computer vision: tracking de jugadores desde video convencional",
+    "toast": {
+      "loadError": "No se pudieron cargar los videos",
+      "uploadError": "Error al subir el video",
+      "registerError": "Error al registrar el video",
+      "uploaded": {
+        "title": "Video subido",
+        "description": "Ahora puedes darle \"Analizar\" en la tabla."
+      },
+      "analyzeStartError": "No se pudo iniciar el análisis",
+      "deleteError": "No se pudo eliminar el video",
+      "deleted": "Video eliminado",
+      "renameError": "No se pudo guardar los cambios",
+      "renamed": "Video actualizado",
+      "assignError": "No se pudo guardar la asignación",
+      "assigned": {
+        "title": "{{count}} lectura(s) asignada(s)",
+        "description": "Los datos de esas lecturas ya cuentan para el jugador en su ficha."
+      },
+      "released": {
+        "title": "{{count}} lectura(s) liberada(s)"
+      }
+    },
+    "upload": {
+      "cardTitle": "Subir video",
+      "matchDateHint": "Se usa para cruzar las métricas de este video con el historial GPS del jugador en su ficha. Sin fecha, el video no aparece en esa comparación.",
+      "submit": "Subir y registrar"
+    },
+    "fields": {
+      "title": "Título",
+      "matchDate": "Fecha del partido (opcional)"
+    },
+    "list": {
+      "cardTitle": "Videos de la organización",
+      "cardDescription": "Estado del pipeline de procesamiento",
+      "emptyTitle": "Aún no hay videos",
+      "emptyDescription": "Sube el primer video para comenzar el análisis.",
+      "columns": {
+        "title": "Título",
+        "status": "Estado",
+        "date": "Fecha",
+        "action": "Acción"
+      }
+    },
+    "status": {
+      "analyzingLabel": "Analizando video…",
+      "uploaded": "Subido",
+      "processing": "Analizando",
+      "done": "Listo",
+      "failed": "Falló"
+    },
+    "yoloModel": {
+      "nano": "Nano (rápido)",
+      "small": "Small (más preciso)"
+    },
+    "actions": {
+      "retry": "Reintentar",
+      "analyze": "Analizar",
+      "viewResult": "Ver resultado",
+      "editTitleSr": "Editar título",
+      "deleteSr": "Eliminar"
+    },
+    "delete": {
+      "title": "¿Eliminar \"{{title}}\"?",
+      "description": "Se borra el video, el análisis, los tracks y los archivos en Storage. No se puede deshacer.",
+      "confirm": "Eliminar"
+    },
+    "result": {
+      "cardTitle": "Resultado del análisis",
+      "selectPlaceholder": "Selecciona un video procesado",
+      "annotatedVideoLabel": "Video anotado",
+      "emptyPositionsTitle": "Sin datos de posición",
+      "emptyPositionsDescription": "No se detectaron suficientes posiciones para dibujar el tablero táctico.",
+      "emptyTracksTitle": "Sin tracks",
+      "emptyTracksDescription": "Ese video no tiene tracks registrados.",
+      "columns": {
+        "track": "Track",
+        "player": "Jugador",
+        "distance": "Distancia (m)",
+        "timeVisible": "Tiempo visible (s)",
+        "avgSpeed": "Vel. media (km/h)",
+        "maxSpeed": "Vel. p95 (km/h)"
+      },
+      "defaultPlayerBadge": "Jugador"
+    },
+    "editDialog": {
+      "title": "Editar video",
+      "matchDateHint": "Se usa para cruzar las métricas de este video con el historial GPS del jugador en su ficha.",
+      "cancel": "Cancelar",
+      "save": "Guardar"
+    },
+    "analyzeDialog": {
+      "title": "Elegí el modelo de detección",
+      "modelLabel": "Modelo",
+      "hint": "Nano procesa más rápido y alcanza para video estándar bien encuadrado. Small detecta bastantes más jugadores y la pelota (probado: 4x más detecciones de jugador, 75x más de pelota) — conviene para tomas difíciles (cámara que panea, ángulo elevado, video vertical), a costa de ~30% más tiempo de proceso.",
+      "cancel": "Cancelar",
+      "confirm": "Analizar"
+    }
+  },
+  "tacticalBoard": {
+    "speedChart": {
+      "notEnoughData": "Sin suficientes datos de velocidad.",
+      "title": "Velocidad en el tiempo",
+      "subtitle": "Velocidad instantánea de J{{trackId}}"
+    },
+    "zoneDistance": {
+      "notEnoughData": "Sin suficiente recorrido para desglosar.",
+      "title": "Distancia por zona",
+      "subtitle": "Dónde recorrió sus metros J{{trackId}}"
+    },
+    "zones": {
+      "portero": "Portero",
+      "defensa": "Defensa",
+      "medio": "Medio",
+      "delantero": "Delantero"
+    },
+    "identitySelect": {
+      "placeholder": "Identidad",
+      "all": "Todas las identidades"
+    },
+    "flipSides": "Invertir lados",
+    "team": "Equipo {{label}}",
+    "playerSelect": {
+      "placeholder": "Jugador del roster…"
+    },
+    "assignSingle": "Asignar J{{trackId}} a {{name}}",
+    "assignZone": "Asignar {{count}} de {{zone}}",
+    "unassignSingle": "Quitar J{{trackId}}",
+    "suggestedByPosition": "Sugerido por posición ({{zone}}):",
+    "heatmap": {
+      "title": "Mapa de calor",
+      "densityOf": "Densidad de J{{trackId}}",
+      "densityTeam": "Densidad del equipo {{team}}",
+      "densityAll": "Densidad de todas las identidades",
+      "noData": "Sin datos suficientes para el mapa de calor"
+    },
+    "movement": {
+      "title": "Movimiento capturado",
+      "realPath": "Recorrido real de J{{trackId}} a velocidad del video",
+      "teamFilterHint": "Mostrando equipo {{team}} — toca una identidad para animar su recorrido",
+      "tapHint": "Toca una identidad para animar su recorrido"
+    },
+    "markerAriaLabelAssigned": "Identidad J{{trackId}} asignada a {{name}}",
+    "markerAriaLabel": "Identidad J{{trackId}}",
+    "assignedGroups": {
+      "defaultPlayerBadge": "Jugador",
+      "identitiesCount": "{{count}} identidad(es): {{trackIds}}",
+      "removeAll": "Quitar todas"
+    },
+    "teamShape": {
+      "title": "Forma del equipo",
+      "subtitle": "Centro de gravedad y amplitud — promedio de toda la corrida",
+      "notEnough": "Todavía no hay suficientes camisetas identificadas para agrupar los dos equipos."
+    }
+  }
+}

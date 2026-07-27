@@ -1,0 +1,110 @@
+{
+  "playerProfile": {
+    "backToRoster": "Volver al roster",
+    "playerNotSpecified": "Jugador no especificado",
+    "loadError": "No se pudo cargar el jugador",
+    "playerNotFound": "Jugador no encontrado",
+    "playerNotFoundDescription": "Puede que no exista o no pertenezca a tu organización.",
+    "inactive": "Inactivo",
+    "noTeamAssigned": "Sin equipo asignado",
+    "years": "años",
+    "lastUpdated": "Última actualización: {{date}}",
+    "editPlayer": "Editar jugador",
+    "moreActions": "Más acciones",
+    "shareRecord": "Compartir ficha",
+    "exportPdf": "Exportar PDF",
+    "notImplemented": "No implementado todavía: no hay librería de exportación/compartición instalada en el proyecto.",
+    "saveError": "No se pudo guardar el jugador",
+    "playerUpdated": "Jugador actualizado",
+    "tabs": {
+      "resumen": "Resumen",
+      "estadisticas": "Estadísticas",
+      "rendimiento": "Rendimiento",
+      "historial": "Historial",
+      "salud": "Salud",
+      "scouting": "Scouting",
+      "documentos": "Documentos",
+      "multimedia": "Multimedia"
+    }
+  },
+  "tabResumen": {
+    "feature": {
+      "distance": "Distancia",
+      "sprint": "Sprint",
+      "topSpeed": "Vel. máxima",
+      "playerLoad": "Player Load"
+    },
+    "stat": {
+      "physicalProfile": "Perfil físico",
+      "fatigueRisk": "Riesgo de fatiga",
+      "availability": "Disponibilidad",
+      "gamesPlayed": "Partidos jugados"
+    },
+    "strengths": "Fortalezas",
+    "weaknesses": "Áreas de mejora"
+  },
+  "tabEstadisticas": {
+    "empty": {
+      "title": "Sin estadísticas de liga",
+      "description": "Este jugador no está reconciliado con ninguna fila de league_attacker_stats/league_goalkeeper_stats todavía (se vincula por nombre al importar stats de conferencia)."
+    },
+    "bySeasonCompetition": "Por temporada/competición",
+    "offensive": { "title": "Stats ofensivas" },
+    "goalkeeper": { "title": "Stats de portero" },
+    "col": {
+      "season": "Temporada",
+      "competition": "Competición",
+      "gp": "PJ",
+      "goals": "Goles",
+      "assists": "Asist.",
+      "points": "Puntos",
+      "role": "Rol",
+      "gaa": "GAA",
+      "saves": "Atajadas",
+      "savePct": "% atajadas"
+    }
+  },
+  "tabRendimiento": {
+    "type": {
+      "fatigue": "Fatiga",
+      "anomaly": "Anomalía",
+      "overexertion": "Sobre-esfuerzo"
+    },
+    "empty": {
+      "title": "Sin datos de rendimiento",
+      "description": "Este jugador todavía no tiene sesiones GPS ni video con fecha de partido registrados."
+    },
+    "chart": {
+      "playerLoad": "Player Load por sesión",
+      "playerLoadSeriesName": "Player Load",
+      "speedComparison": "Velocidad máxima: GPS vs. video (km/h)"
+    },
+    "videosWithoutDate_one": "{{count}} lectura de video de este jugador no tiene fecha de partido y no aparece en la comparación — se puede agregar la fecha editando el video en Video análisis.",
+    "videosWithoutDate_other": "{{count}} lecturas de video de este jugador no tienen fecha de partido y no aparecen en la comparación — se puede agregar la fecha editando el video en Video análisis.",
+    "alerts": {
+      "title": "Alertas del modelo",
+      "totalCount_one": "{{count}} en total",
+      "totalCount_other": "{{count}} en total",
+      "empty": {
+        "title": "Sin alertas",
+        "description": "No hay fatiga, sobre-esfuerzo ni sesiones anómalas registradas para este jugador."
+      }
+    },
+    "col": {
+      "type": "Tipo",
+      "label": "Etiqueta",
+      "score": "Score",
+      "date": "Fecha"
+    },
+    "lastSession": "Última sesión: {{date}}"
+  },
+  "tabHistorial": {
+    "empty": {
+      "title": "Sin historial",
+      "description": "Este jugador no tiene lesiones registradas."
+    },
+    "title": "Historial de lesiones",
+    "recordsCount_one": "{{count}} registro",
+    "recordsCount_other": "{{count}} registros"
+  }
+}

@@ -1,0 +1,155 @@
+{
+  "configuracion": {
+    "title": "Configuración",
+    "subtitle": "Datos de tu organización y de tu cuenta",
+    "org": {
+      "title": "Organización",
+      "descriptionAdmin": "Solo los administradores pueden editar estos datos.",
+      "descriptionReadonly": "Solo lectura — requiere rol de administrador para editar.",
+      "plan": "Plan {{plan}}",
+      "nameLabel": "Nombre",
+      "countryLabel": "País",
+      "countryPlaceholder": "--",
+      "save": "Guardar organización"
+    },
+    "account": {
+      "title": "Mi cuenta",
+      "nameLabel": "Nombre completo",
+      "save": "Guardar perfil"
+    },
+    "toast": {
+      "nameRequired": "El nombre no puede quedar vacío",
+      "saveOrgError": "No se pudo guardar",
+      "orgUpdated": "Organización actualizada",
+      "saveProfileError": "No se pudo guardar tu perfil",
+      "profileUpdated": "Perfil actualizado",
+      "profileUpdatedDesc": "Se verá reflejado al recargar."
+    }
+  },
+  "usuarios": {
+    "adminOnly": {
+      "title": "Solo administradores",
+      "description": "La gestión de usuarios de la organización requiere rol de administrador."
+    },
+    "title": "Usuarios",
+    "subtitle": "Miembros de tu organización. Las cuentas se crean por invitación — no hay registro público.",
+    "inviteButton": "Invitar usuario",
+    "card": {
+      "title": "Miembros",
+      "count": "{{count}} usuarios con acceso",
+      "loading": "Cargando…"
+    },
+    "error": {
+      "title": "No se pudieron cargar los usuarios"
+    },
+    "empty": {
+      "title": "Sin usuarios",
+      "description": "Invita al primer miembro de tu organización."
+    },
+    "col": {
+      "name": "Nombre",
+      "email": "Email",
+      "role": "Rol",
+      "createdAt": "Alta",
+      "actions": "Acciones"
+    },
+    "youBadge": "Tú",
+    "deleteSr": "Eliminar",
+    "confirmDelete": {
+      "title": "¿Eliminar a {{name}}?",
+      "description": "Se revoca todo su acceso a la plataforma (la cuenta se elimina). No se puede deshacer.",
+      "confirmLabel": "Eliminar",
+      "fallbackUser": "este usuario"
+    },
+    "dialog": {
+      "title": "Invitar usuario",
+      "description": "Recibirá un correo de Supabase con un enlace para establecer su contraseña — ninguna contraseña viaja por la app.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "persona@club.com",
+      "nameLabel": "Nombre completo",
+      "roleLabel": "Rol",
+      "cancel": "Cancelar",
+      "submit": "Enviar invitación"
+    },
+    "toast": {
+      "completeFields": "Completa email y nombre",
+      "inviteSentTitle": "Invitación enviada",
+      "inviteSentDesc": "{{email}} recibirá un correo para establecer su contraseña.",
+      "inviteErrorTitle": "No se pudo invitar",
+      "roleUpdatedTitle": "Rol actualizado a {{role}}",
+      "roleUpdateErrorTitle": "No se pudo cambiar el rol",
+      "userDeletedTitle": "Usuario eliminado",
+      "userDeletedDesc": "Su acceso fue revocado por completo.",
+      "deleteErrorTitle": "No se pudo eliminar"
+    }
+  },
+  "roles": {
+    "label": {
+      "admin": "Administrador",
+      "coach": "Entrenador",
+      "medical": "Médico",
+      "analyst": "Analista",
+      "viewer": "Solo lectura"
+    },
+    "introBefore": "Los 5 niveles de permiso que existen en ATHLOS (",
+    "introAfter": " en la base) y qué puede hacer cada uno. Cuántos usuarios de tu organización tienen cada rol asignado hoy — ver el detalle completo en la pestaña Usuarios.",
+    "error": {
+      "title": "No se pudo cargar el conteo de usuarios"
+    },
+    "definition": {
+      "admin": "Acceso total. Único rol que puede gestionar Usuarios y editar la Organización en Configuración, y el único que puede eliminar filas protegidas (lesiones, sesiones GPS, videos, filas de stats de liga).",
+      "coach": "Puede crear y editar datos operativos (roster, wellness, videos, cargas GPS, stats de liga), pero no gestionar usuarios, no editar la Organización, y no puede eliminar las filas protegidas a admin.",
+      "medical": "Mismos permisos que coach a nivel de escritura de datos — pensado para el staff médico.",
+      "analyst": "Mismos permisos que coach a nivel de escritura de datos — pensado para el staff analítico.",
+      "viewer": "Rol de solo lectura. No está en la lista de roles con permiso de escritura — la base de datos rechaza cualquier intento de crear, editar o eliminar datos, aunque algunas pantallas no lo bloqueen visualmente de antemano (ver Matriz de permisos)."
+    },
+    "userCountSingular": "usuario",
+    "userCountPlural": "usuarios",
+    "capability": {
+      "write": "Escribir datos operativos",
+      "administer": "Administrar usuarios / organización",
+      "deleteProtected": "Eliminar filas protegidas"
+    }
+  },
+  "administracion": {
+    "adminOnly": {
+      "title": "Solo administradores",
+      "description": "Roles, permisos y usuarios de la organización requieren rol de administrador."
+    },
+    "title": "Administración",
+    "subtitle": "Roles, permisos y usuarios de tu organización — todo en un solo lugar.",
+    "tab": {
+      "permisos": "Matriz de permisos",
+      "roles": "Roles",
+      "usuarios": "Usuarios"
+    }
+  },
+  "matrizPermisos": {
+    "optionSingular": "opción",
+    "optionPlural": "opciones",
+    "col": {
+      "option": "Opción"
+    },
+    "tooltip": {
+      "navAdminLocked": "Los administradores siempre pueden acceder a Administración.",
+      "enforcedAdminLocked": "Un admin siempre puede hacer esto — evita que la org se quede sin nadie que pueda."
+    },
+    "toast": {
+      "permissionSaveError": "No se pudo guardar el permiso",
+      "navSaveError": "No se pudo guardar el acceso"
+    },
+    "error": {
+      "title": "No se pudo cargar la matriz de permisos"
+    },
+    "title": "Matriz de permisos",
+    "legend": {
+      "navigationLabel": "Navegación:",
+      "navigation": "el checkbox controla en vivo qué módulos del menú ve cada rol y bloquea el acceso directo por URL.",
+      "restLabel": "Resto de carpetas:",
+      "rest": "la mayoría de los checkboxes ya cambian el comportamiento real (RLS o backend) — se marcan con su propia nota en \"cómo se gatea\". Las pocas filas que todavía son solo configuración objetivo lo dicen explícitamente (perfil propio, invitar/cambiar rol/eliminar usuario).",
+      "adminColumnLabel": "Columna \"Administrador\":",
+      "adminColumn": "queda bloqueada en las filas conectadas, para que ningún admin pueda dejar a su propia organización sin nadie que pueda ejercer esa acción."
+    },
+    "loading": "Cargando…"
+  }
+}

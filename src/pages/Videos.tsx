@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Film, Pencil, Play, Trash2, Upload } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { type TrajectoryPoint } from '@/components/charts/SoccerPitchMap';
 import { TacticalBoard, type RosterOption } from '@/components/videos/TacticalBoard';
@@ -45,9 +46,10 @@ const YOLO_MODEL_LABEL: Record<YoloModelKey, string> = {
 };
 
 export default function Videos({ orgId, role }: { orgId: string; role: string | null }) {
+  const { t } = useTranslation();
   const [videos, setVideos] = useState<VideoAnalysis[] | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [videoTitle, setVideoTitle] = useState('Partido sin título');
+  const [videoTitle, setVideoTitle] = useState(t('videos.defaultTitle', 'Partido sin título'));
   const [matchDate, setMatchDate] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
@@ -73,7 +75,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
         if (error) {
-          toast({ title: 'No se pudieron cargar los videos', description: error.message, variant: 'danger' });
+          toast({ title: t('videos.toast.loadError', 'No se pudieron cargar los videos'), description: error.message, variant: 'danger' });
           return;
         }
         setVideos(data ?? []);
@@ -172,7 +174,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
       .upload(storagePath, selectedFile, { contentType: selectedFile.type, upsert: true });
 
     if (uploadError) {
-      toast({ title: 'Error al subir el video', description: uploadError.message, variant: 'danger' });
+      toast({ title: t('videos.toast.uploadError', 'Error al subir el video'), description: uploadError.message, variant: 'danger' });
       setIsUploading(false);
       return;
     }
@@ -182,9 +184,13 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
       .insert({ org_id: orgId, title: videoTitle, match_date: matchDate || null, storage_path: storagePath });
 
     if (insertError) {
-      toast({ title: 'Error al registrar el video', description: insertError.message, variant: 'danger' });
+      toast({ title: t('videos.toast.registerError', 'Error al registrar el video'), description: insertError.message, variant: 'danger' });
     } else {
-      toast({ title: 'Video subido', description: 'Ahora puedes darle "Analizar" en la tabla.', variant: 'success' });
+      toast({
+        title: t('videos.toast.uploaded.title', 'Video subido'),
+        description: t('videos.toast.uploaded.description', 'Ahora puedes darle "Analizar" en la tabla.'),
+        variant: 'success',
+      });
     }
     setSelectedFile(null);
     setMatchDate('');
@@ -202,7 +208,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
       setAnalyzeVideo(null);
     } catch (error) {
       toast({
-        title: 'No se pudo iniciar el análisis',
+        title: t('videos.toast.analyzeStartError', 'No se pudo iniciar el análisis'),
         description: error instanceof Error ? error.message : undefined,
         variant: 'danger',
       });
@@ -222,10 +228,10 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
 
     const { error } = await supabase.from('video_analyses').delete().eq('id', video.id);
     if (error) {
-      toast({ title: 'No se pudo eliminar el video', description: error.message, variant: 'danger' });
+      toast({ title: t('videos.toast.deleteError', 'No se pudo eliminar el video'), description: error.message, variant: 'danger' });
       return;
     }
-    toast({ title: 'Video eliminado', variant: 'success' });
+    toast({ title: t('videos.toast.deleted', 'Video eliminado'), variant: 'success' });
     if (selectedVideoId === video.id) setSelectedVideoId('');
     loadVideos();
   };
@@ -249,13 +255,13 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
     setIsSavingTitle(false);
 
     if (error) {
-      toast({ title: 'No se pudo guardar los cambios', description: error.message, variant: 'danger' });
+      toast({ title: t('videos.toast.renameError', 'No se pudo guardar los cambios'), description: error.message, variant: 'danger' });
       return;
     }
     setVideos((current) =>
       (current ?? []).map((v) => (v.id === editingVideo.id ? { ...v, title: trimmed, match_date: editMatchDate || null } : v)),
     );
-    toast({ title: 'Video actualizado', variant: 'success' });
+    toast({ title: t('videos.toast.renamed', 'Video actualizado'), variant: 'success' });
     setEditingVideo(null);
   };
 
@@ -269,12 +275,16 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
       .in('track_id', trackIds);
     setIsAssigning(false);
     if (error) {
-      toast({ title: 'No se pudo guardar la asignación', description: error.message, variant: 'danger' });
+      toast({ title: t('videos.toast.assignError', 'No se pudo guardar la asignación'), description: error.message, variant: 'danger' });
       return;
     }
     toast({
-      title: playerId ? `${trackIds.length} lectura(s) asignada(s)` : `${trackIds.length} lectura(s) liberada(s)`,
-      description: playerId ? 'Los datos de esas lecturas ya cuentan para el jugador en su ficha.' : undefined,
+      title: playerId
+        ? t('videos.toast.assigned.title', '{{count}} lectura(s) asignada(s)', { count: trackIds.length })
+        : t('videos.toast.released.title', '{{count}} lectura(s) liberada(s)', { count: trackIds.length }),
+      description: playerId
+        ? t('videos.toast.assigned.description', 'Los datos de esas lecturas ya cuentan para el jugador en su ficha.')
+        : undefined,
       variant: 'success',
     });
     loadTracks(selectedVideoId);
@@ -288,19 +298,21 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Video análisis</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Computer vision: tracking de jugadores desde video convencional</p>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('videos.title', 'Video análisis')}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {t('videos.subtitle', 'Computer vision: tracking de jugadores desde video convencional')}
+        </p>
       </div>
 
       <Card className="mb-5">
         <CardHeader>
-          <CardTitle>Subir video</CardTitle>
+          <CardTitle>{t('videos.upload.cardTitle', 'Subir video')}</CardTitle>
         </CardHeader>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Título" htmlFor="title">
+          <Field label={t('videos.fields.title', 'Título')} htmlFor="title">
             <Input id="title" value={videoTitle} onChange={(event) => setVideoTitle(event.target.value)} />
           </Field>
-          <Field label="Fecha del partido (opcional)" htmlFor="match-date">
+          <Field label={t('videos.fields.matchDate', 'Fecha del partido (opcional)')} htmlFor="match-date">
             <Input
               id="match-date"
               type="date"
@@ -310,8 +322,10 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
           </Field>
         </div>
         <p className="mb-3 text-xs text-muted-foreground">
-          Se usa para cruzar las métricas de este video con el historial GPS del jugador en su ficha. Sin fecha, el
-          video no aparece en esa comparación.
+          {t(
+            'videos.upload.matchDateHint',
+            'Se usa para cruzar las métricas de este video con el historial GPS del jugador en su ficha. Sin fecha, el video no aparece en esa comparación.',
+          )}
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <input
@@ -321,7 +335,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
             className="text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-panel file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-foreground"
           />
           <Button onClick={handleUpload} disabled={!selectedFile} isLoading={isUploading}>
-            <Upload className="size-4" aria-hidden="true" /> Subir y registrar
+            <Upload className="size-4" aria-hidden="true" /> {t('videos.upload.submit', 'Subir y registrar')}
           </Button>
         </div>
       </Card>
@@ -329,20 +343,24 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
       <Card className="mb-5">
         <CardHeader>
           <div>
-            <CardTitle>Videos de la organización</CardTitle>
-            <CardDescription className="mt-1">Estado del pipeline de procesamiento</CardDescription>
+            <CardTitle>{t('videos.list.cardTitle', 'Videos de la organización')}</CardTitle>
+            <CardDescription className="mt-1">{t('videos.list.cardDescription', 'Estado del pipeline de procesamiento')}</CardDescription>
           </div>
         </CardHeader>
         {videos !== null && videos.length === 0 ? (
-          <EmptyState icon={Film} title="Aún no hay videos" description="Sube el primer video para comenzar el análisis." />
+          <EmptyState
+            icon={Film}
+            title={t('videos.list.emptyTitle', 'Aún no hay videos')}
+            description={t('videos.list.emptyDescription', 'Sube el primer video para comenzar el análisis.')}
+          />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Título</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead className="text-right">Acción</TableHead>
+                <TableHead>{t('videos.list.columns.title', 'Título')}</TableHead>
+                <TableHead>{t('videos.list.columns.status', 'Estado')}</TableHead>
+                <TableHead>{t('videos.list.columns.date', 'Fecha')}</TableHead>
+                <TableHead className="text-right">{t('videos.list.columns.action', 'Acción')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -362,9 +380,14 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                           transition={{ duration: 0.25 }}
                         >
                           {video.status === 'processing' ? (
-                            <AnalyzingIndicator label="Analizando video…" stageKeys={VIDEO_PROCESSING_STAGE_KEYS} />
+                            <AnalyzingIndicator
+                              label={t('videos.status.analyzingLabel', 'Analizando video…')}
+                              stageKeys={VIDEO_PROCESSING_STAGE_KEYS}
+                            />
                           ) : (
-                            <Badge variant={STATUS_BADGE[video.status]}>{STATUS_LABEL[video.status]}</Badge>
+                            <Badge variant={STATUS_BADGE[video.status]}>
+                              {t(`videos.status.${video.status}`, STATUS_LABEL[video.status])}
+                            </Badge>
                           )}
                         </motion.div>
                       </AnimatePresence>
@@ -373,7 +396,10 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                       )}
                       {video.yolo_model && (
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {YOLO_MODEL_LABEL[video.yolo_model as YoloModelKey] ?? video.yolo_model}
+                          {t(
+                            `videos.yoloModel.${video.yolo_model}`,
+                            YOLO_MODEL_LABEL[video.yolo_model as YoloModelKey] ?? video.yolo_model,
+                          )}
                         </p>
                       )}
                     </TableCell>
@@ -393,18 +419,18 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                             }}
                           >
                             <Play className="size-4" aria-hidden="true" />
-                            {video.status === 'failed' ? 'Reintentar' : 'Analizar'}
+                            {video.status === 'failed' ? t('videos.actions.retry', 'Reintentar') : t('videos.actions.analyze', 'Analizar')}
                           </Button>
                         )}
                         {video.status === 'done' && (
                           <Button size="sm" variant="ghost" onClick={() => setSelectedVideoId(video.id)}>
-                            Ver resultado
+                            {t('videos.actions.viewResult', 'Ver resultado')}
                           </Button>
                         )}
                         {canWrite(role) && (
                           <Button variant="ghost" size="icon" onClick={() => openRename(video)}>
                             <Pencil className="size-4" aria-hidden="true" />
-                            <span className="sr-only">Editar título</span>
+                            <span className="sr-only">{t('videos.actions.editTitleSr', 'Editar título')}</span>
                           </Button>
                         )}
                         {canWrite(role) && (
@@ -412,12 +438,15 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                             trigger={
                               <Button variant="ghost" size="icon">
                                 <Trash2 className="size-4" aria-hidden="true" />
-                                <span className="sr-only">Eliminar</span>
+                                <span className="sr-only">{t('videos.actions.deleteSr', 'Eliminar')}</span>
                               </Button>
                             }
-                            title={`¿Eliminar "${video.title}"?`}
-                            description="Se borra el video, el análisis, los tracks y los archivos en Storage. No se puede deshacer."
-                            confirmLabel="Eliminar"
+                            title={t('videos.delete.title', '¿Eliminar "{{title}}"?', { title: video.title })}
+                            description={t(
+                              'videos.delete.description',
+                              'Se borra el video, el análisis, los tracks y los archivos en Storage. No se puede deshacer.',
+                            )}
+                            confirmLabel={t('videos.delete.confirm', 'Eliminar')}
                             onConfirm={() => handleDelete(video)}
                           />
                         )}
@@ -436,12 +465,12 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
         <Card>
           <CardHeader>
-            <CardTitle>Resultado del análisis</CardTitle>
+            <CardTitle>{t('videos.result.cardTitle', 'Resultado del análisis')}</CardTitle>
           </CardHeader>
           <div className="mb-4 max-w-sm">
             <Select value={selectedVideoId} onValueChange={setSelectedVideoId}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecciona un video procesado" />
+                <SelectValue placeholder={t('videos.result.selectPlaceholder', 'Selecciona un video procesado')} />
               </SelectTrigger>
               <SelectContent>
                 {doneVideos.map((video) => (
@@ -455,7 +484,9 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
 
           {selectedVideoId && resultVideoUrl && (
             <div className="mb-5">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Video anotado</p>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {t('videos.result.annotatedVideoLabel', 'Video anotado')}
+              </p>
               {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
               <video src={resultVideoUrl} controls playsInline className="mx-auto max-h-[420px] w-full rounded-lg border border-border bg-panel" />
             </div>
@@ -474,22 +505,31 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                 />
               </div>
             ) : (
-              <EmptyState title="Sin datos de posición" description="No se detectaron suficientes posiciones para dibujar el tablero táctico." />
+              <EmptyState
+                title={t('videos.result.emptyPositionsTitle', 'Sin datos de posición')}
+                description={t(
+                  'videos.result.emptyPositionsDescription',
+                  'No se detectaron suficientes posiciones para dibujar el tablero táctico.',
+                )}
+              />
             ))}
 
           {selectedVideoId && tracks.length === 0 && (
-            <EmptyState title="Sin tracks" description="Ese video no tiene tracks registrados." />
+            <EmptyState
+              title={t('videos.result.emptyTracksTitle', 'Sin tracks')}
+              description={t('videos.result.emptyTracksDescription', 'Ese video no tiene tracks registrados.')}
+            />
           )}
           {tracks.length > 0 && (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Track</TableHead>
-                  <TableHead>Jugador</TableHead>
-                  <TableHead>Distancia (m)</TableHead>
-                  <TableHead>Tiempo visible (s)</TableHead>
-                  <TableHead>Vel. media (km/h)</TableHead>
-                  <TableHead>Vel. p95 (km/h)</TableHead>
+                  <TableHead>{t('videos.result.columns.track', 'Track')}</TableHead>
+                  <TableHead>{t('videos.result.columns.player', 'Jugador')}</TableHead>
+                  <TableHead>{t('videos.result.columns.distance', 'Distancia (m)')}</TableHead>
+                  <TableHead>{t('videos.result.columns.timeVisible', 'Tiempo visible (s)')}</TableHead>
+                  <TableHead>{t('videos.result.columns.avgSpeed', 'Vel. media (km/h)')}</TableHead>
+                  <TableHead>{t('videos.result.columns.maxSpeed', 'Vel. p95 (km/h)')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -498,7 +538,9 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                     <TableCell className="font-medium">J{track.track_id}</TableCell>
                     <TableCell>
                       {track.matched_player_id ? (
-                        <Badge variant="success">{rosterNameById.get(track.matched_player_id) ?? 'Jugador'}</Badge>
+                        <Badge variant="success">
+                          {rosterNameById.get(track.matched_player_id) ?? t('videos.result.defaultPlayerBadge', 'Jugador')}
+                        </Badge>
                       ) : (
                         <span className="text-muted-foreground">--</span>
                       )}
@@ -522,10 +564,10 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
       <Dialog open={editingVideo !== null} onOpenChange={(open) => !open && setEditingVideo(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar video</DialogTitle>
+            <DialogTitle>{t('videos.editDialog.title', 'Editar video')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <Field label="Título" htmlFor="edit-video-title">
+            <Field label={t('videos.fields.title', 'Título')} htmlFor="edit-video-title">
               <Input
                 id="edit-video-title"
                 value={editTitle}
@@ -533,7 +575,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                 onKeyDown={(event) => event.key === 'Enter' && handleRenameVideo()}
               />
             </Field>
-            <Field label="Fecha del partido (opcional)" htmlFor="edit-video-match-date">
+            <Field label={t('videos.fields.matchDate', 'Fecha del partido (opcional)')} htmlFor="edit-video-match-date">
               <Input
                 id="edit-video-match-date"
                 type="date"
@@ -542,15 +584,18 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
               />
             </Field>
             <p className="text-xs text-muted-foreground">
-              Se usa para cruzar las métricas de este video con el historial GPS del jugador en su ficha.
+              {t(
+                'videos.editDialog.matchDateHint',
+                'Se usa para cruzar las métricas de este video con el historial GPS del jugador en su ficha.',
+              )}
             </p>
           </div>
           <DialogFooter>
             <Button variant="secondary" size="sm" onClick={() => setEditingVideo(null)}>
-              Cancelar
+              {t('videos.editDialog.cancel', 'Cancelar')}
             </Button>
             <Button size="sm" isLoading={isSavingTitle} disabled={!editTitle.trim()} onClick={handleRenameVideo}>
-              Guardar
+              {t('videos.editDialog.save', 'Guardar')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -559,37 +604,37 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
       <Dialog open={analyzeVideo !== null} onOpenChange={(open) => !open && setAnalyzeVideo(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Elegí el modelo de detección</DialogTitle>
+            <DialogTitle>{t('videos.analyzeDialog.title', 'Elegí el modelo de detección')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <Field label="Modelo" htmlFor="analyze-yolo-model">
+            <Field label={t('videos.analyzeDialog.modelLabel', 'Modelo')} htmlFor="analyze-yolo-model">
               <Select value={selectedYoloModel} onValueChange={(value) => setSelectedYoloModel(value as YoloModelKey)}>
                 <SelectTrigger id="analyze-yolo-model">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="nano">Nano (rápido)</SelectItem>
-                  <SelectItem value="small">Small (más preciso)</SelectItem>
+                  <SelectItem value="nano">{t('videos.yoloModel.nano', 'Nano (rápido)')}</SelectItem>
+                  <SelectItem value="small">{t('videos.yoloModel.small', 'Small (más preciso)')}</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
             <p className="text-xs text-muted-foreground">
-              Nano procesa más rápido y alcanza para video estándar bien encuadrado. Small detecta bastantes
-              más jugadores y la pelota (probado: 4x más detecciones de jugador, 75x más de pelota) — conviene
-              para tomas difíciles (cámara que panea, ángulo elevado, video vertical), a costa de ~30% más
-              tiempo de proceso.
+              {t(
+                'videos.analyzeDialog.hint',
+                'Nano procesa más rápido y alcanza para video estándar bien encuadrado. Small detecta bastantes más jugadores y la pelota (probado: 4x más detecciones de jugador, 75x más de pelota) — conviene para tomas difíciles (cámara que panea, ángulo elevado, video vertical), a costa de ~30% más tiempo de proceso.',
+              )}
             </p>
           </div>
           <DialogFooter>
             <Button variant="secondary" size="sm" onClick={() => setAnalyzeVideo(null)}>
-              Cancelar
+              {t('videos.analyzeDialog.cancel', 'Cancelar')}
             </Button>
             <Button
               size="sm"
               isLoading={analyzingId === analyzeVideo?.id}
               onClick={() => analyzeVideo && handleAnalyze(analyzeVideo, selectedYoloModel)}
             >
-              <Play className="size-4" aria-hidden="true" /> Analizar
+              <Play className="size-4" aria-hidden="true" /> {t('videos.analyzeDialog.confirm', 'Analizar')}
             </Button>
           </DialogFooter>
         </DialogContent>

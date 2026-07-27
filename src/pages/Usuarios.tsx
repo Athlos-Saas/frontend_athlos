@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ShieldAlert, Trash2, UserPlus, Users as UsersIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -27,6 +28,7 @@ import { toast } from '@/store/toastStore';
 import { isAdmin } from '@/utils/permissions';
 
 export default function Usuarios({ orgId, role, currentUserId }: { orgId: string; role: string | null; currentUserId: string }) {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<OrgUser[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
@@ -51,22 +53,28 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
 
   const handleInvite = async () => {
     if (!inviteForm.email || !inviteForm.full_name) {
-      toast({ title: 'Completa email y nombre', variant: 'warning' });
+      toast({ title: t('usuarios.toast.completeFields', 'Completa email y nombre'), variant: 'warning' });
       return;
     }
     setIsInviting(true);
     try {
       await inviteOrgUser(orgId, inviteForm);
       toast({
-        title: 'Invitación enviada',
-        description: `${inviteForm.email} recibirá un correo para establecer su contraseña.`,
+        title: t('usuarios.toast.inviteSentTitle', 'Invitación enviada'),
+        description: t('usuarios.toast.inviteSentDesc', '{{email}} recibirá un correo para establecer su contraseña.', {
+          email: inviteForm.email,
+        }),
         variant: 'success',
       });
       setIsInviteOpen(false);
       setInviteForm({ email: '', full_name: '', role: 'viewer' });
       loadUsers();
     } catch (error) {
-      toast({ title: 'No se pudo invitar', description: error instanceof Error ? error.message : undefined, variant: 'danger' });
+      toast({
+        title: t('usuarios.toast.inviteErrorTitle', 'No se pudo invitar'),
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'danger',
+      });
     } finally {
       setIsInviting(false);
     }
@@ -76,10 +84,19 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
     setUpdatingRoleId(user.user_id);
     try {
       await updateOrgUserRole(orgId, user.user_id, newRole);
-      toast({ title: `Rol actualizado a ${ROLE_LABEL[newRole]}`, variant: 'success' });
+      toast({
+        title: t('usuarios.toast.roleUpdatedTitle', 'Rol actualizado a {{role}}', {
+          role: t(`roles.label.${newRole}`, ROLE_LABEL[newRole]),
+        }),
+        variant: 'success',
+      });
       loadUsers();
     } catch (error) {
-      toast({ title: 'No se pudo cambiar el rol', description: error instanceof Error ? error.message : undefined, variant: 'danger' });
+      toast({
+        title: t('usuarios.toast.roleUpdateErrorTitle', 'No se pudo cambiar el rol'),
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'danger',
+      });
     } finally {
       setUpdatingRoleId(null);
     }
@@ -88,10 +105,18 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
   const handleDelete = async (user: OrgUser) => {
     try {
       await deleteOrgUser(orgId, user.user_id);
-      toast({ title: 'Usuario eliminado', description: 'Su acceso fue revocado por completo.', variant: 'success' });
+      toast({
+        title: t('usuarios.toast.userDeletedTitle', 'Usuario eliminado'),
+        description: t('usuarios.toast.userDeletedDesc', 'Su acceso fue revocado por completo.'),
+        variant: 'success',
+      });
       loadUsers();
     } catch (error) {
-      toast({ title: 'No se pudo eliminar', description: error instanceof Error ? error.message : undefined, variant: 'danger' });
+      toast({
+        title: t('usuarios.toast.deleteErrorTitle', 'No se pudo eliminar'),
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'danger',
+      });
       throw error;
     }
   };
@@ -100,8 +125,8 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
     return (
       <EmptyState
         icon={ShieldAlert}
-        title="Solo administradores"
-        description="La gestión de usuarios de la organización requiere rol de administrador."
+        title={t('usuarios.adminOnly.title', 'Solo administradores')}
+        description={t('usuarios.adminOnly.description', 'La gestión de usuarios de la organización requiere rol de administrador.')}
       />
     );
   }
@@ -110,39 +135,45 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
     <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Usuarios</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('usuarios.title', 'Usuarios')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Miembros de tu organización. Las cuentas se crean por invitación — no hay registro público.
+            {t('usuarios.subtitle', 'Miembros de tu organización. Las cuentas se crean por invitación — no hay registro público.')}
           </p>
         </div>
         <Button onClick={() => setIsInviteOpen(true)}>
-          <UserPlus className="size-4" aria-hidden="true" /> Invitar usuario
+          <UserPlus className="size-4" aria-hidden="true" /> {t('usuarios.inviteButton', 'Invitar usuario')}
         </Button>
       </div>
 
       <Card>
         <CardHeader>
           <div>
-            <CardTitle>Miembros</CardTitle>
+            <CardTitle>{t('usuarios.card.title', 'Miembros')}</CardTitle>
             <CardDescription className="mt-1">
-              {users ? `${users.length} usuarios con acceso` : 'Cargando…'}
+              {users
+                ? t('usuarios.card.count', '{{count}} usuarios con acceso', { count: users.length })
+                : t('usuarios.card.loading', 'Cargando…')}
             </CardDescription>
           </div>
         </CardHeader>
 
         {loadError ? (
-          <ErrorState title="No se pudieron cargar los usuarios" description={loadError} onRetry={loadUsers} />
+          <ErrorState title={t('usuarios.error.title', 'No se pudieron cargar los usuarios')} description={loadError} onRetry={loadUsers} />
         ) : users !== null && users.length === 0 ? (
-          <EmptyState icon={UsersIcon} title="Sin usuarios" description="Invita al primer miembro de tu organización." />
+          <EmptyState
+            icon={UsersIcon}
+            title={t('usuarios.empty.title', 'Sin usuarios')}
+            description={t('usuarios.empty.description', 'Invita al primer miembro de tu organización.')}
+          />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Alta</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                <TableHead>{t('usuarios.col.name', 'Nombre')}</TableHead>
+                <TableHead>{t('usuarios.col.email', 'Email')}</TableHead>
+                <TableHead>{t('usuarios.col.role', 'Rol')}</TableHead>
+                <TableHead>{t('usuarios.col.createdAt', 'Alta')}</TableHead>
+                <TableHead className="text-right">{t('usuarios.col.actions', 'Acciones')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -157,14 +188,14 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
                         {user.full_name ?? '--'}
                         {isSelf && (
                           <Badge variant="ai" className="ml-2">
-                            Tú
+                            {t('usuarios.youBadge', 'Tú')}
                           </Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-muted-foreground">{user.email ?? '--'}</TableCell>
                       <TableCell>
                         {isSelf ? (
-                          <Badge variant={ROLE_BADGE[user.role]}>{ROLE_LABEL[user.role]}</Badge>
+                          <Badge variant={ROLE_BADGE[user.role]}>{t(`roles.label.${user.role}`, ROLE_LABEL[user.role])}</Badge>
                         ) : (
                           <Select
                             value={user.role}
@@ -177,7 +208,7 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
                             <SelectContent>
                               {ALL_ROLES.map((roleOption) => (
                                 <SelectItem key={roleOption} value={roleOption}>
-                                  {ROLE_LABEL[roleOption]}
+                                  {t(`roles.label.${roleOption}`, ROLE_LABEL[roleOption])}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -193,12 +224,17 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
                             trigger={
                               <Button variant="ghost" size="icon">
                                 <Trash2 className="size-4" aria-hidden="true" />
-                                <span className="sr-only">Eliminar</span>
+                                <span className="sr-only">{t('usuarios.deleteSr', 'Eliminar')}</span>
                               </Button>
                             }
-                            title={`¿Eliminar a ${user.full_name ?? user.email ?? 'este usuario'}?`}
-                            description="Se revoca todo su acceso a la plataforma (la cuenta se elimina). No se puede deshacer."
-                            confirmLabel="Eliminar"
+                            title={t('usuarios.confirmDelete.title', '¿Eliminar a {{name}}?', {
+                              name: user.full_name ?? user.email ?? t('usuarios.confirmDelete.fallbackUser', 'este usuario'),
+                            })}
+                            description={t(
+                              'usuarios.confirmDelete.description',
+                              'Se revoca todo su acceso a la plataforma (la cuenta se elimina). No se puede deshacer.'
+                            )}
+                            confirmLabel={t('usuarios.confirmDelete.confirmLabel', 'Eliminar')}
                             onConfirm={() => handleDelete(user)}
                           />
                         )}
@@ -218,29 +254,31 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
       <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Invitar usuario</DialogTitle>
+            <DialogTitle>{t('usuarios.dialog.title', 'Invitar usuario')}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Recibirá un correo de Supabase con un enlace para establecer su contraseña — ninguna
-            contraseña viaja por la app.
+            {t(
+              'usuarios.dialog.description',
+              'Recibirá un correo de Supabase con un enlace para establecer su contraseña — ninguna contraseña viaja por la app.'
+            )}
           </p>
-          <Field label="Email" htmlFor="invite-email">
+          <Field label={t('usuarios.dialog.emailLabel', 'Email')} htmlFor="invite-email">
             <Input
               id="invite-email"
               type="email"
               value={inviteForm.email}
               onChange={(event) => setInviteForm((form) => ({ ...form, email: event.target.value }))}
-              placeholder="persona@club.com"
+              placeholder={t('usuarios.dialog.emailPlaceholder', 'persona@club.com')}
             />
           </Field>
-          <Field label="Nombre completo" htmlFor="invite-name">
+          <Field label={t('usuarios.dialog.nameLabel', 'Nombre completo')} htmlFor="invite-name">
             <Input
               id="invite-name"
               value={inviteForm.full_name}
               onChange={(event) => setInviteForm((form) => ({ ...form, full_name: event.target.value }))}
             />
           </Field>
-          <Field label="Rol" htmlFor="invite-role">
+          <Field label={t('usuarios.dialog.roleLabel', 'Rol')} htmlFor="invite-role">
             <Select
               value={inviteForm.role}
               onValueChange={(value) => setInviteForm((form) => ({ ...form, role: value as OrgUserRole }))}
@@ -251,7 +289,7 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
               <SelectContent>
                 {ALL_ROLES.map((roleOption) => (
                   <SelectItem key={roleOption} value={roleOption}>
-                    {ROLE_LABEL[roleOption]}
+                    {t(`roles.label.${roleOption}`, ROLE_LABEL[roleOption])}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -259,10 +297,10 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
           </Field>
           <DialogFooter>
             <Button variant="secondary" size="sm" onClick={() => setIsInviteOpen(false)}>
-              Cancelar
+              {t('usuarios.dialog.cancel', 'Cancelar')}
             </Button>
             <Button size="sm" isLoading={isInviting} onClick={handleInvite}>
-              Enviar invitación
+              {t('usuarios.dialog.submit', 'Enviar invitación')}
             </Button>
           </DialogFooter>
         </DialogContent>

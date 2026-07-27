@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Pencil, ShieldHalf, Trash2, Trophy } from 'lucide-react';
 
 import { BenchmarkBarChart } from '@/components/charts/BenchmarkBarChart';
@@ -42,7 +44,7 @@ interface EditingRow {
 
 type LoadState = 'loading' | 'error' | 'ready';
 
-const METRIC_LABELS: Record<string, string> = {
+const METRIC_LABEL_DEFAULTS: Record<string, string> = {
   goals_per_game: 'Goles/partido',
   assists_per_game: 'Asist./partido',
   points_per_game: 'Puntos/partido',
@@ -56,59 +58,84 @@ const METRIC_LABELS: Record<string, string> = {
   save_pct: '% atajadas',
 };
 
-function metricLabel(metric: string): string {
-  return METRIC_LABELS[metric] ?? metric;
+function metricLabel(metric: string, t: TFunction): string {
+  const fallback = METRIC_LABEL_DEFAULTS[metric] ?? metric;
+  return t(`liga.metric.${metric}`, fallback);
 }
 
-const ATTACKER_COLUMNS: DataTableColumn<LeagueAttackerStat>[] = [
-  { id: 'player_name', header: 'Jugador', sortable: true, accessor: (row) => row.player_name, className: 'font-medium text-foreground' },
-  { id: 'team_name', header: 'Equipo', sortable: true, accessor: (row) => row.team_name },
-  { id: 'goals', header: 'Goles', sortable: true, align: 'right', accessor: (row) => row.goals },
-  {
-    id: 'proba_top_scorer',
-    header: 'Prob. élite',
-    sortable: true,
-    align: 'right',
-    accessor: (row) => row.proba_top_scorer ?? 0,
-    cell: (row) => (
-      <Badge variant={Number(row.proba_top_scorer) >= 0.5 ? 'success' : 'ai'}>
-        {(Number(row.proba_top_scorer ?? 0) * 100).toFixed(1)}%
-      </Badge>
-    ),
-  },
-  { id: 'role_name', header: 'Rol', sortable: true, accessor: (row) => row.role_name ?? '—' },
-];
-
-const GOALKEEPER_COLUMNS: DataTableColumn<LeagueGoalkeeperStat>[] = [
-  { id: 'player_name', header: 'Jugador', sortable: true, accessor: (row) => row.player_name, className: 'font-medium text-foreground' },
-  { id: 'team_name', header: 'Equipo', sortable: true, accessor: (row) => row.team_name },
-  { id: 'gaa', header: 'GAA', sortable: true, align: 'right', accessor: (row) => row.gaa ?? 0, cell: (row) => (row.gaa ?? 0).toFixed(2) },
-  {
-    id: 'save_pct',
-    header: '% atajadas',
-    sortable: true,
-    align: 'right',
-    accessor: (row) => row.save_pct ?? 0,
-    cell: (row) => `${((row.save_pct ?? 0) * 100).toFixed(1)}%`,
-  },
-  { id: 'gk_role', header: 'Rol', sortable: true, accessor: (row) => row.gk_role ?? '—' },
-];
-
-const BENCHMARK_COLUMNS: DataTableColumn<ConferenceBenchmark>[] = [
-  { id: 'metric', header: 'Métrica', accessor: (row) => metricLabel(row.metric), className: 'font-medium text-foreground' },
-  { id: 'team_value', header: 'Equipo', align: 'right', accessor: (row) => row.team_value ?? 0, cell: (row) => (row.team_value ?? 0).toFixed(3) },
-  { id: 'conference_value', header: 'Conferencia', align: 'right', accessor: (row) => row.conference_value ?? 0, cell: (row) => (row.conference_value ?? 0).toFixed(3) },
-  {
-    id: 'diff',
-    header: 'Diferencia',
-    align: 'right',
-    accessor: (row) => row.diff ?? 0,
-    cell: (row) => {
-      const diff = row.diff ?? 0;
-      return <span className={diff >= 0 ? 'text-success' : 'text-danger'}>{diff >= 0 ? '+' : ''}{diff.toFixed(3)}</span>;
+function getAttackerColumns(t: TFunction): DataTableColumn<LeagueAttackerStat>[] {
+  return [
+    {
+      id: 'player_name',
+      header: t('liga.col.player', 'Jugador'),
+      sortable: true,
+      accessor: (row) => row.player_name,
+      className: 'font-medium text-foreground',
     },
-  },
-];
+    { id: 'team_name', header: t('liga.col.team', 'Equipo'), sortable: true, accessor: (row) => row.team_name },
+    { id: 'goals', header: t('liga.col.goals', 'Goles'), sortable: true, align: 'right', accessor: (row) => row.goals },
+    {
+      id: 'proba_top_scorer',
+      header: t('liga.col.eliteProb', 'Prob. élite'),
+      sortable: true,
+      align: 'right',
+      accessor: (row) => row.proba_top_scorer ?? 0,
+      cell: (row) => (
+        <Badge variant={Number(row.proba_top_scorer) >= 0.5 ? 'success' : 'ai'}>
+          {(Number(row.proba_top_scorer ?? 0) * 100).toFixed(1)}%
+        </Badge>
+      ),
+    },
+    { id: 'role_name', header: t('liga.col.role', 'Rol'), sortable: true, accessor: (row) => row.role_name ?? '—' },
+  ];
+}
+
+function getGoalkeeperColumns(t: TFunction): DataTableColumn<LeagueGoalkeeperStat>[] {
+  return [
+    {
+      id: 'player_name',
+      header: t('liga.col.player', 'Jugador'),
+      sortable: true,
+      accessor: (row) => row.player_name,
+      className: 'font-medium text-foreground',
+    },
+    { id: 'team_name', header: t('liga.col.team', 'Equipo'), sortable: true, accessor: (row) => row.team_name },
+    { id: 'gaa', header: t('liga.col.gaa', 'GAA'), sortable: true, align: 'right', accessor: (row) => row.gaa ?? 0, cell: (row) => (row.gaa ?? 0).toFixed(2) },
+    {
+      id: 'save_pct',
+      header: t('liga.col.savePct', '% atajadas'),
+      sortable: true,
+      align: 'right',
+      accessor: (row) => row.save_pct ?? 0,
+      cell: (row) => `${((row.save_pct ?? 0) * 100).toFixed(1)}%`,
+    },
+    { id: 'gk_role', header: t('liga.col.role', 'Rol'), sortable: true, accessor: (row) => row.gk_role ?? '—' },
+  ];
+}
+
+function getBenchmarkColumns(t: TFunction): DataTableColumn<ConferenceBenchmark>[] {
+  return [
+    { id: 'metric', header: t('liga.col.metric', 'Métrica'), accessor: (row) => metricLabel(row.metric, t), className: 'font-medium text-foreground' },
+    { id: 'team_value', header: t('liga.col.team', 'Equipo'), align: 'right', accessor: (row) => row.team_value ?? 0, cell: (row) => (row.team_value ?? 0).toFixed(3) },
+    {
+      id: 'conference_value',
+      header: t('liga.col.conference', 'Conferencia'),
+      align: 'right',
+      accessor: (row) => row.conference_value ?? 0,
+      cell: (row) => (row.conference_value ?? 0).toFixed(3),
+    },
+    {
+      id: 'diff',
+      header: t('liga.col.diff', 'Diferencia'),
+      align: 'right',
+      accessor: (row) => row.diff ?? 0,
+      cell: (row) => {
+        const diff = row.diff ?? 0;
+        return <span className={diff >= 0 ? 'text-success' : 'text-danger'}>{diff >= 0 ? '+' : ''}{diff.toFixed(3)}</span>;
+      },
+    },
+  ];
+}
 
 function roleDistribution<T extends { role_name?: string | null; gk_role?: string | null }>(
   rows: T[],
@@ -125,6 +152,7 @@ function roleDistribution<T extends { role_name?: string | null; gk_role?: strin
 }
 
 export default function Liga({ orgId, role }: { orgId: string; role: string | null }) {
+  const { t } = useTranslation();
   const globalSeason = useUiStore((state) => state.season);
   const [season, setSeason] = useState(globalSeason ?? '2025');
 
@@ -195,14 +223,18 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
   const attackerTeamName = attackerBenchmarks[0]?.team_name;
   const goalkeeperTeamName = goalkeeperBenchmarks[0]?.team_name;
 
+  const ATTACKER_COLUMNS = useMemo(() => getAttackerColumns(t), [t]);
+  const GOALKEEPER_COLUMNS = useMemo(() => getGoalkeeperColumns(t), [t]);
+  const BENCHMARK_COLUMNS = useMemo(() => getBenchmarkColumns(t), [t]);
+
   const roleFilter: DataTableFilter<LeagueAttackerStat> = useMemo(
     () => ({
       columnId: 'role_name',
-      label: 'Rol',
+      label: t('liga.col.role', 'Rol'),
       options: [...new Set(attackers.map((row) => row.role_name).filter((role): role is string => Boolean(role)))],
       accessor: (row) => row.role_name ?? '',
     }),
-    [attackers],
+    [attackers, t],
   );
 
   const handleConferenceImport = async (parsed: ReturnType<typeof parseConferenceStats>) => {
@@ -252,7 +284,7 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
     return {
       written: attackerRows.length + goalkeeperRows.length,
       skipped: 0,
-      warnings: ['Los roles y la probabilidad de goleador se calculan aparte, con el entrenamiento del backend.'],
+      warnings: [t('liga.import.warningRoles', 'Los roles y la probabilidad de goleador se calculan aparte, con el entrenamiento del backend.')],
     };
   };
 
@@ -260,10 +292,10 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
     if (!editingRow) return;
     const { error } = await supabase.from(editingRow.table).update(values).eq('id', editingRow.id);
     if (error) {
-      toast({ title: 'No se pudo guardar', description: error.message, variant: 'danger' });
+      toast({ title: t('liga.toast.saveError', 'No se pudo guardar'), description: error.message, variant: 'danger' });
       return;
     }
-    toast({ title: 'Fila actualizada', variant: 'success' });
+    toast({ title: t('liga.toast.rowUpdated', 'Fila actualizada'), variant: 'success' });
     setEditingRow(null);
     setReloadToken((n) => n + 1);
   };
@@ -271,10 +303,10 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
   const handleDeleteRow = async (table: EditingRow['table'], id: string) => {
     const { error } = await supabase.from(table).delete().eq('id', id);
     if (error) {
-      toast({ title: 'No se pudo eliminar', description: error.message, variant: 'danger' });
+      toast({ title: t('liga.toast.deleteError', 'No se pudo eliminar'), description: error.message, variant: 'danger' });
       return;
     }
-    toast({ title: 'Fila eliminada', variant: 'success' });
+    toast({ title: t('liga.toast.rowDeleted', 'Fila eliminada'), variant: 'success' });
     setReloadToken((n) => n + 1);
   };
 
@@ -289,32 +321,40 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
           onClick={() =>
             setEditingRow(
               isAttacker
-                ? { table, id: row.id, title: row.player_name, fields: [{ key: 'goals', label: 'Goles', value: (row as LeagueAttackerStat).goals }] }
+                ? {
+                    table,
+                    id: row.id,
+                    title: row.player_name,
+                    fields: [{ key: 'goals', label: t('liga.col.goals', 'Goles'), value: (row as LeagueAttackerStat).goals }],
+                  }
                 : {
                     table,
                     id: row.id,
                     title: row.player_name,
                     fields: [
-                      { key: 'gaa', label: 'GAA', value: (row as LeagueGoalkeeperStat).gaa ?? 0 },
-                      { key: 'save_pct', label: '% atajadas (0-1)', value: (row as LeagueGoalkeeperStat).save_pct ?? 0 },
+                      { key: 'gaa', label: t('liga.col.gaa', 'GAA'), value: (row as LeagueGoalkeeperStat).gaa ?? 0 },
+                      { key: 'save_pct', label: t('liga.field.savePctRatio', '% atajadas (0-1)'), value: (row as LeagueGoalkeeperStat).save_pct ?? 0 },
                     ],
                   },
             )
           }
         >
           <Pencil className="size-4" aria-hidden="true" />
-          <span className="sr-only">Editar</span>
+          <span className="sr-only">{t('liga.action.edit', 'Editar')}</span>
         </Button>
         <ConfirmDialog
           trigger={
             <Button variant="ghost" size="icon">
               <Trash2 className="size-4" aria-hidden="true" />
-              <span className="sr-only">Eliminar</span>
+              <span className="sr-only">{t('liga.action.delete', 'Eliminar')}</span>
             </Button>
           }
-          title={`¿Eliminar a ${row.player_name}?`}
-          description="Se borra esta fila de stats de liga. No afecta al jugador en el roster ni sus sesiones GPS."
-          confirmLabel="Eliminar"
+          title={t('liga.confirmDelete.title', '¿Eliminar a {{name}}?', { name: row.player_name })}
+          description={t(
+            'liga.confirmDelete.description',
+            'Se borra esta fila de stats de liga. No afecta al jugador en el roster ni sus sesiones GPS.',
+          )}
+          confirmLabel={t('liga.action.delete', 'Eliminar')}
           onConfirm={() => handleDeleteRow(table, row.id)}
         />
       </div>
@@ -326,25 +366,27 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Competiciones · goleadores, porteros y roles</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          {t('liga.title', 'Competiciones · goleadores, porteros y roles')}
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Clasificador de goleador de élite (AUC 0.891), clustering de roles y rendimiento vs. media de la conferencia
+          {t('liga.subtitle', 'Clasificador de goleador de élite (AUC 0.891), clustering de roles y rendimiento vs. media de la conferencia')}
         </p>
       </div>
 
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap gap-3">
-          <Field label="Temporada" htmlFor="season" hint="Formato: YYYY" className="max-w-[160px]">
+          <Field label={t('liga.field.season', 'Temporada')} htmlFor="season" hint={t('liga.field.seasonHint', 'Formato: YYYY')} className="max-w-[160px]">
             <Input id="season" value={season} onChange={(event) => setSeason(event.target.value)} />
           </Field>
-          <Field label="Competición" htmlFor="competition" className="max-w-[160px]">
+          <Field label={t('liga.field.competition', 'Competición')} htmlFor="competition" className="max-w-[160px]">
             <Input id="competition" value={competition} onChange={(event) => setCompetition(event.target.value)} />
           </Field>
           {canWrite(role) && (
             <Field
-              label="Equipo propio"
+              label={t('liga.field.homeTeam', 'Equipo propio')}
               htmlFor="home-team-name"
-              hint="Como aparece en la columna Team del Excel, ej. 'John Brown'"
+              hint={t('liga.field.homeTeamHint', "Como aparece en la columna Team del Excel, ej. 'John Brown'")}
               className="max-w-[220px]"
             >
               <Input id="home-team-name" value={homeTeamName} onChange={(event) => setHomeTeamName(event.target.value)} />
@@ -354,13 +396,21 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
         {canWrite(role) && (
           <ImportDialog
             orgId={orgId}
-            triggerLabel="Importar stats de conferencia (Excel)"
-            title="Importar stats de conferencia"
-            description="Sube el Excel con las hojas Game-Scoring, Game-Shooting, Game-Goalkepeer, Season-Scoring, Season-Shooting, Season-Misc y Season-Goalkepeer. Completa 'Equipo propio' para vincular tus jugadores con sus stats de liga."
+            triggerLabel={t('liga.import.triggerLabel', 'Importar stats de conferencia (Excel)')}
+            title={t('liga.import.title', 'Importar stats de conferencia')}
+            description={t(
+              'liga.import.description',
+              "Sube el Excel con las hojas Game-Scoring, Game-Shooting, Game-Goalkepeer, Season-Scoring, Season-Shooting, Season-Misc y Season-Goalkepeer. Completa 'Equipo propio' para vincular tus jugadores con sus stats de liga.",
+            )}
             accept=".xlsx"
             expectedKind="conference"
             parse={parseConferenceStats}
-            describePreview={(parsed) => `Detecté ${parsed.attackers.length} atacantes y ${parsed.goalkeepers.length} porteros.`}
+            describePreview={(parsed) =>
+              t('liga.import.preview', 'Detecté {{attackers}} atacantes y {{goalkeepers}} porteros.', {
+                attackers: parsed.attackers.length,
+                goalkeepers: parsed.goalkeepers.length,
+              })
+            }
             validate={validateConferenceStats}
             onConfirm={handleConferenceImport}
             onDownloadTemplate={downloadConferenceTemplate}
@@ -372,20 +422,24 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
 
       <Tabs defaultValue="atacantes">
         <TabsList>
-          <TabsTrigger value="atacantes">Atacantes</TabsTrigger>
-          <TabsTrigger value="porteros">Porteros</TabsTrigger>
+          <TabsTrigger value="atacantes">{t('liga.tab.attackers', 'Atacantes')}</TabsTrigger>
+          <TabsTrigger value="porteros">{t('liga.tab.goalkeepers', 'Porteros')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="atacantes">
           {state === 'ready' && attackers.length === 0 ? (
-            <EmptyState icon={Trophy} title="Sin estadísticas de atacantes" description="No hay datos para esta temporada todavía." />
+            <EmptyState
+              icon={Trophy}
+              title={t('liga.empty.attackers.title', 'Sin estadísticas de atacantes')}
+              description={t('liga.empty.noSeasonData', 'No hay datos para esta temporada todavía.')}
+            />
           ) : (
             <>
               <Card className="mb-5">
                 <CardHeader>
                   <div>
-                    <CardTitle>Top 30 por probabilidad de goleador de élite</CardTitle>
-                    <CardDescription className="mt-1">Temporada {season}</CardDescription>
+                    <CardTitle>{t('liga.card.topAttackers.title', 'Top 30 por probabilidad de goleador de élite')}</CardTitle>
+                    <CardDescription className="mt-1">{t('liga.card.season', 'Temporada {{season}}', { season })}</CardDescription>
                   </div>
                 </CardHeader>
                 <DataTable
@@ -393,7 +447,7 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
                   data={attackers}
                   getRowId={(row) => row.id}
                   isLoading={state === 'loading'}
-                  searchPlaceholder="Buscar jugador o equipo…"
+                  searchPlaceholder={t('liga.searchPlaceholder', 'Buscar jugador o equipo…')}
                   filters={roleFilter.options.length > 1 ? [roleFilter] : undefined}
                   exportFileName={`liga-goleadores-${season}.csv`}
                   pageSize={10}
@@ -402,27 +456,31 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
               </Card>
 
               {attackerRoleCounts.length > 0 && (
-                <ChartCard title="Distribución de roles (top 30)" isLoading={state === 'loading'} className="mb-5">
-                  <ComparisonBarChart data={attackerRoleCounts} xKey="rol" yKey="jugadores" name="Jugadores" color={colors.green} />
+                <ChartCard title={t('liga.chart.attackerRoles.title', 'Distribución de roles (top 30)')} isLoading={state === 'loading'} className="mb-5">
+                  <ComparisonBarChart data={attackerRoleCounts} xKey="rol" yKey="jugadores" name={t('liga.player_plural', 'Jugadores')} color={colors.green} />
                 </ChartCard>
               )}
 
               {attackerBenchmarks.length > 0 && (
                 <>
                   <ChartCard
-                    title="Rendimiento vs. conferencia"
-                    description={attackerTeamName ? `${attackerTeamName} vs. media del resto de la conferencia` : undefined}
+                    title={t('liga.chart.benchmark.title', 'Rendimiento vs. conferencia')}
+                    description={
+                      attackerTeamName
+                        ? t('liga.chart.benchmark.description', '{{team}} vs. media del resto de la conferencia', { team: attackerTeamName })
+                        : undefined
+                    }
                     isLoading={state === 'loading'}
                     className="mb-5"
                   >
                     <BenchmarkBarChart
-                      data={attackerBenchmarks.map((row) => ({ metric: metricLabel(row.metric), team_value: row.team_value, conference_value: row.conference_value }))}
-                      teamLabel={attackerTeamName ?? 'Equipo'}
+                      data={attackerBenchmarks.map((row) => ({ metric: metricLabel(row.metric, t), team_value: row.team_value, conference_value: row.conference_value }))}
+                      teamLabel={attackerTeamName ?? t('liga.team', 'Equipo')}
                     />
                   </ChartCard>
                   <Card>
                     <CardHeader>
-                      <CardTitle>Detalle equipo vs. conferencia</CardTitle>
+                      <CardTitle>{t('liga.card.benchmarkDetail', 'Detalle equipo vs. conferencia')}</CardTitle>
                     </CardHeader>
                     <DataTable
                       columns={BENCHMARK_COLUMNS}
@@ -441,14 +499,18 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
 
         <TabsContent value="porteros">
           {state === 'ready' && goalkeepers.length === 0 ? (
-            <EmptyState icon={ShieldHalf} title="Sin estadísticas de porteros" description="No hay datos para esta temporada todavía." />
+            <EmptyState
+              icon={ShieldHalf}
+              title={t('liga.empty.goalkeepers.title', 'Sin estadísticas de porteros')}
+              description={t('liga.empty.noSeasonData', 'No hay datos para esta temporada todavía.')}
+            />
           ) : (
             <>
               <Card className="mb-5">
                 <CardHeader>
                   <div>
-                    <CardTitle>Porteros por GAA (goles recibidos por partido)</CardTitle>
-                    <CardDescription className="mt-1">Temporada {season}</CardDescription>
+                    <CardTitle>{t('liga.card.topGoalkeepers.title', 'Porteros por GAA (goles recibidos por partido)')}</CardTitle>
+                    <CardDescription className="mt-1">{t('liga.card.season', 'Temporada {{season}}', { season })}</CardDescription>
                   </div>
                 </CardHeader>
                 <DataTable
@@ -456,7 +518,7 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
                   data={goalkeepers}
                   getRowId={(row) => row.id}
                   isLoading={state === 'loading'}
-                  searchPlaceholder="Buscar jugador o equipo…"
+                  searchPlaceholder={t('liga.searchPlaceholder', 'Buscar jugador o equipo…')}
                   exportFileName={`liga-porteros-${season}.csv`}
                   pageSize={10}
                   rowActions={canWrite(role) ? (row) => rowActions(row, 'league_goalkeeper_stats') : undefined}
@@ -464,27 +526,31 @@ export default function Liga({ orgId, role }: { orgId: string; role: string | nu
               </Card>
 
               {goalkeeperRoleCounts.length > 0 && (
-                <ChartCard title="Distribución de roles de portero" isLoading={state === 'loading'} className="mb-5">
-                  <ComparisonBarChart data={goalkeeperRoleCounts} xKey="rol" yKey="jugadores" name="Porteros" color={colors.blue} />
+                <ChartCard title={t('liga.chart.goalkeeperRoles.title', 'Distribución de roles de portero')} isLoading={state === 'loading'} className="mb-5">
+                  <ComparisonBarChart data={goalkeeperRoleCounts} xKey="rol" yKey="jugadores" name={t('liga.goalkeeper_plural', 'Porteros')} color={colors.blue} />
                 </ChartCard>
               )}
 
               {goalkeeperBenchmarks.length > 0 && (
                 <>
                   <ChartCard
-                    title="Rendimiento vs. conferencia"
-                    description={goalkeeperTeamName ? `${goalkeeperTeamName} vs. media del resto de la conferencia` : undefined}
+                    title={t('liga.chart.benchmark.title', 'Rendimiento vs. conferencia')}
+                    description={
+                      goalkeeperTeamName
+                        ? t('liga.chart.benchmark.description', '{{team}} vs. media del resto de la conferencia', { team: goalkeeperTeamName })
+                        : undefined
+                    }
                     isLoading={state === 'loading'}
                     className="mb-5"
                   >
                     <BenchmarkBarChart
-                      data={goalkeeperBenchmarks.map((row) => ({ metric: metricLabel(row.metric), team_value: row.team_value, conference_value: row.conference_value }))}
-                      teamLabel={goalkeeperTeamName ?? 'Equipo'}
+                      data={goalkeeperBenchmarks.map((row) => ({ metric: metricLabel(row.metric, t), team_value: row.team_value, conference_value: row.conference_value }))}
+                      teamLabel={goalkeeperTeamName ?? t('liga.team', 'Equipo')}
                     />
                   </ChartCard>
                   <Card>
                     <CardHeader>
-                      <CardTitle>Detalle equipo vs. conferencia</CardTitle>
+                      <CardTitle>{t('liga.card.benchmarkDetail', 'Detalle equipo vs. conferencia')}</CardTitle>
                     </CardHeader>
                     <DataTable
                       columns={BENCHMARK_COLUMNS}
@@ -516,6 +582,7 @@ function EditRowDialog({
   onClose: () => void;
   onSave: (values: Record<string, number>) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [values, setValues] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
 
@@ -535,7 +602,7 @@ function EditRowDialog({
     <Dialog open={!!editingRow} onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Editar {editingRow?.title}</DialogTitle>
+          <DialogTitle>{t('liga.editDialog.title', 'Editar {{name}}', { name: editingRow?.title })}</DialogTitle>
         </DialogHeader>
         {editingRow?.fields.map((field) => (
           <Field key={field.key} label={field.label} htmlFor={`edit-${field.key}`}>
@@ -550,10 +617,10 @@ function EditRowDialog({
         ))}
         <DialogFooter>
           <Button variant="secondary" size="sm" onClick={onClose}>
-            Cancelar
+            {t('liga.action.cancel', 'Cancelar')}
           </Button>
           <Button size="sm" isLoading={isSaving} onClick={handleSave}>
-            Guardar
+            {t('liga.action.save', 'Guardar')}
           </Button>
         </DialogFooter>
       </DialogContent>

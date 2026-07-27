@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { HeartPulse } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -60,6 +61,7 @@ function SliderField({ id, label, min, max, step = 1, value, onChange }: SliderF
 }
 
 export default function Wellness({ orgId }: { orgId: string }) {
+  const { t } = useTranslation();
   const [players, setPlayers] = useState<Player[] | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState('');
   const [form, setForm] = useState(INITIAL_FORM);
@@ -111,10 +113,10 @@ export default function Wellness({ orgId }: { orgId: string }) {
     );
     setIsSaving(false);
     if (error) {
-      toast({ title: 'No se pudo guardar', description: error.message, variant: 'danger' });
+      toast({ title: t('wellness.toast.saveErrorTitle', 'No se pudo guardar'), description: error.message, variant: 'danger' });
       return;
     }
-    toast({ title: 'Wellness guardado', variant: 'success' });
+    toast({ title: t('wellness.toast.saveSuccessTitle', 'Wellness guardado'), variant: 'success' });
     loadEntries();
   };
 
@@ -123,7 +125,7 @@ export default function Wellness({ orgId }: { orgId: string }) {
   // Ojo: ningún hook puede ir después de estos returns condicionales.
   if (players === null) return <Spinner />;
   if (players.length === 0) {
-    return <EmptyState icon={HeartPulse} title="Sin jugadores registrados" />;
+    return <EmptyState icon={HeartPulse} title={t('wellness.noPlayersTitle', 'Sin jugadores registrados')} />;
   }
 
   const idToName = Object.fromEntries(players.map((player) => [player.id, player.full_name]));
@@ -131,19 +133,19 @@ export default function Wellness({ orgId }: { orgId: string }) {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Wellness diario</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('wellness.title', 'Wellness diario')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          RPE, sueño y dolor — la variable que falta para modelar riesgo de lesión
+          {t('wellness.subtitle', 'RPE, sueño y dolor — la variable que falta para modelar riesgo de lesión')}
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Registrar</CardTitle>
+            <CardTitle>{t('wellness.registerTitle', 'Registrar')}</CardTitle>
           </CardHeader>
           <form onSubmit={handleSubmit}>
-            <Field label="Jugador" htmlFor="player">
+            <Field label={t('wellness.field.player', 'Jugador')} htmlFor="player">
               <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
                 <SelectTrigger id="player">
                   <SelectValue />
@@ -157,7 +159,7 @@ export default function Wellness({ orgId }: { orgId: string }) {
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Fecha" htmlFor="entry_date">
+            <Field label={t('wellness.field.date', 'Fecha')} htmlFor="entry_date">
               <Input
                 id="entry_date"
                 type="date"
@@ -165,10 +167,10 @@ export default function Wellness({ orgId }: { orgId: string }) {
                 onChange={(event) => setField('entry_date')(event.target.value)}
               />
             </Field>
-            <SliderField id="rpe" label="RPE (esfuerzo percibido)" min={0} max={10} value={form.rpe} onChange={setField('rpe')} />
+            <SliderField id="rpe" label={t('wellness.slider.rpe', 'RPE (esfuerzo percibido)')} min={0} max={10} value={form.rpe} onChange={setField('rpe')} />
             <SliderField
               id="sleep_hours"
-              label="Horas de sueño"
+              label={t('wellness.slider.sleepHours', 'Horas de sueño')}
               min={0}
               max={14}
               step={0.5}
@@ -177,39 +179,39 @@ export default function Wellness({ orgId }: { orgId: string }) {
             />
             <SliderField
               id="sleep_quality"
-              label="Calidad de sueño"
+              label={t('wellness.slider.sleepQuality', 'Calidad de sueño')}
               min={1}
               max={5}
               value={form.sleep_quality}
               onChange={setField('sleep_quality')}
             />
-            <SliderField id="soreness" label="Dolor muscular" min={0} max={10} value={form.soreness} onChange={setField('soreness')} />
-            <SliderField id="mood" label="Ánimo" min={1} max={5} value={form.mood} onChange={setField('mood')} />
-            <Field label="Notas" htmlFor="notes">
+            <SliderField id="soreness" label={t('wellness.slider.soreness', 'Dolor muscular')} min={0} max={10} value={form.soreness} onChange={setField('soreness')} />
+            <SliderField id="mood" label={t('wellness.slider.mood', 'Ánimo')} min={1} max={5} value={form.mood} onChange={setField('mood')} />
+            <Field label={t('wellness.field.notes', 'Notas')} htmlFor="notes">
               <Textarea id="notes" rows={2} value={form.notes} onChange={(event) => setField('notes')(event.target.value)} />
             </Field>
             <Button type="submit" isLoading={isSaving} className="w-full">
-              Guardar
+              {t('wellness.saveButton', 'Guardar')}
             </Button>
           </form>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Últimos registros</CardTitle>
+            <CardTitle>{t('wellness.recentTitle', 'Últimos registros')}</CardTitle>
           </CardHeader>
           {entries.length === 0 ? (
-            <EmptyState title="Sin registros" description="Todavía no hay registros de wellness." />
+            <EmptyState title={t('wellness.noEntriesTitle', 'Sin registros')} description={t('wellness.noEntriesDescription', 'Todavía no hay registros de wellness.')} />
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Jugador</TableHead>
-                  <TableHead>RPE</TableHead>
-                  <TableHead>Sueño</TableHead>
-                  <TableHead>Dolor</TableHead>
-                  <TableHead>Ánimo</TableHead>
+                  <TableHead>{t('wellness.col.date', 'Fecha')}</TableHead>
+                  <TableHead>{t('wellness.col.player', 'Jugador')}</TableHead>
+                  <TableHead>{t('wellness.col.rpe', 'RPE')}</TableHead>
+                  <TableHead>{t('wellness.col.sleep', 'Sueño')}</TableHead>
+                  <TableHead>{t('wellness.col.soreness', 'Dolor')}</TableHead>
+                  <TableHead>{t('wellness.col.mood', 'Ánimo')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

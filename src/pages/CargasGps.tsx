@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Activity, AlertTriangle, Gauge } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Trash2 } from 'lucide-react';
 
@@ -30,13 +31,14 @@ import { canWrite } from '@/utils/permissions';
 import type { GpsSession, MlPrediction, Player } from '@/types/domain';
 
 const ALERT_LABELS = ['alto', 'anomala', 'sobre_esfuerzo'];
-const TYPE_LABEL: Record<string, string> = {
-  fatigue_risk: 'Fatiga',
-  anomaly: 'Anomalía',
-  player_load_expected: 'Sobre-esfuerzo',
-};
 
 export default function CargasGps({ orgId, role }: { orgId: string; role: string | null }) {
+  const { t } = useTranslation();
+  const TYPE_LABEL: Record<string, string> = {
+    fatigue_risk: t('cargasGps.type.fatigue', 'Fatiga'),
+    anomaly: t('cargasGps.type.anomaly', 'Anomalía'),
+    player_load_expected: t('cargasGps.type.overload', 'Sobre-esfuerzo'),
+  };
   const [players, setPlayers] = useState<Player[] | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState('');
   const [sessions, setSessions] = useState<GpsSession[]>([]);
@@ -115,10 +117,10 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
   const handleDeleteSession = async (sessionId: string) => {
     const { error } = await supabase.from('gps_sessions').delete().eq('id', sessionId);
     if (error) {
-      toast({ title: 'No se pudo eliminar la sesión', description: error.message, variant: 'danger' });
+      toast({ title: t('cargasGps.toast.deleteErrorTitle', 'No se pudo eliminar la sesión'), description: error.message, variant: 'danger' });
       return;
     }
-    toast({ title: 'Sesión eliminada', variant: 'success' });
+    toast({ title: t('cargasGps.toast.deleteSuccessTitle', 'Sesión eliminada'), variant: 'success' });
     setReloadToken((n) => n + 1);
   };
 
@@ -134,15 +136,15 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
     <div>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Cargas GPS</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Monitoreo físico por sesión con alertas del modelo</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('cargasGps.title', 'Cargas GPS')}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t('cargasGps.subtitle', 'Monitoreo físico por sesión con alertas del modelo')}</p>
         </div>
         {canWrite(role) && (
           <div className="flex items-center gap-2">
             {teams.length > 1 && (
               <Select value={teamId} onValueChange={setTeamId}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Equipo" />
+                  <SelectValue placeholder={t('cargasGps.teamPlaceholder', 'Equipo')} />
                 </SelectTrigger>
                 <SelectContent>
                   {teams.map((team) => (
@@ -155,14 +157,14 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
             )}
             <ImportDialog
               orgId={orgId}
-              triggerLabel="Importar sesiones GPS (Catapult)"
-              title="Importar sesiones GPS"
-              description="Sube el export CSV de Catapult (columnas Player Name, Player Load, Distance (km)...)."
+              triggerLabel={t('cargasGps.import.triggerLabel', 'Importar sesiones GPS (Catapult)')}
+              title={t('cargasGps.import.title', 'Importar sesiones GPS')}
+              description={t('cargasGps.import.description', 'Sube el export CSV de Catapult (columnas Player Name, Player Load, Distance (km)...).')}
               accept=".csv"
               expectedKind="catapult"
               disabled={!teamId}
               parse={parseCatapult}
-              describePreview={(parsed) => `Detecté ${parsed.length} sesiones.`}
+              describePreview={(parsed) => t('cargasGps.import.previewSummary', 'Detecté {{count}} sesiones.', { count: parsed.length })}
               validate={validateCatapult}
               onConfirm={handleCatapultImport}
               onDownloadTemplate={downloadCatapultTemplate}
@@ -174,13 +176,13 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
       {canWrite(role) && <ImportHistory orgId={orgId} kind="catapult" reloadToken={reloadToken} />}
 
       {players.length === 0 ? (
-        <EmptyState icon={Activity} title="Aún no hay jugadores" description="Corre el seed del backend para poblar la organización." />
+        <EmptyState icon={Activity} title={t('cargasGps.noPlayersTitle', 'Aún no hay jugadores')} description={t('cargasGps.noPlayersDescription', 'Corre el seed del backend para poblar la organización.')} />
       ) : (
         <>
           <div className="mb-5 max-w-xs">
             <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecciona un jugador" />
+                <SelectValue placeholder={t('cargasGps.selectPlayerPlaceholder', 'Selecciona un jugador')} />
               </SelectTrigger>
               <SelectContent>
                 {players.map((player) => (
@@ -193,14 +195,14 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
           </div>
 
           {sessions.length === 0 && !isLoadingDetail ? (
-            <EmptyState icon={Activity} title="Sin sesiones registradas" description="Este jugador todavía no tiene sesiones GPS." />
+            <EmptyState icon={Activity} title={t('cargasGps.noSessionsTitle', 'Sin sesiones registradas')} description={t('cargasGps.noSessionsDescription', 'Este jugador todavía no tiene sesiones GPS.')} />
           ) : (
             <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <ChartCard title="Player Load por sesión" isLoading={isLoadingDetail}>
+              <ChartCard title={t('cargasGps.chart.playerLoad', 'Player Load por sesión')} isLoading={isLoadingDetail}>
                 <TrendLineChart data={sessions} xKey="session_date" yKey="player_load" name="Player Load" color={colors.green} />
               </ChartCard>
-              <ChartCard title="Velocidad máxima (km/h)" isLoading={isLoadingDetail}>
-                <ComparisonBarChart data={sessions} xKey="session_date" yKey="top_speed_kmh" name="Vel. máx" color={colors.blue} />
+              <ChartCard title={t('cargasGps.chart.topSpeed', 'Velocidad máxima (km/h)')} isLoading={isLoadingDetail}>
+                <ComparisonBarChart data={sessions} xKey="session_date" yKey="top_speed_kmh" name={t('cargasGps.chart.topSpeedSeries', 'Vel. máx')} color={colors.blue} />
               </ChartCard>
             </div>
           )}
@@ -208,15 +210,15 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
           {sessions.length > 0 && (
             <Card className="mb-5">
               <CardHeader>
-                <CardTitle>Sesiones</CardTitle>
+                <CardTitle>{t('cargasGps.sessionsTitle', 'Sesiones')}</CardTitle>
               </CardHeader>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead className="text-right">Distancia (km)</TableHead>
-                    <TableHead className="text-right">Player Load</TableHead>
-                    <TableHead className="text-right">Vel. máx (km/h)</TableHead>
+                    <TableHead>{t('cargasGps.col.date', 'Fecha')}</TableHead>
+                    <TableHead className="text-right">{t('cargasGps.col.distance', 'Distancia (km)')}</TableHead>
+                    <TableHead className="text-right">{t('cargasGps.col.playerLoad', 'Player Load')}</TableHead>
+                    <TableHead className="text-right">{t('cargasGps.col.topSpeed', 'Vel. máx (km/h)')}</TableHead>
                     {canWrite(role) && <TableHead className="w-10" />}
                   </TableRow>
                 </TableHeader>
@@ -233,12 +235,12 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
                             trigger={
                               <Button variant="ghost" size="icon">
                                 <Trash2 className="size-4" aria-hidden="true" />
-                                <span className="sr-only">Eliminar</span>
+                                <span className="sr-only">{t('cargasGps.deleteSr', 'Eliminar')}</span>
                               </Button>
                             }
-                            title="¿Eliminar esta sesión?"
-                            description="Se borra la sesión GPS completa (todas sus columnas y zonas). Si el dato está mal, puedes reimportar el archivo corregido después."
-                            confirmLabel="Eliminar"
+                            title={t('cargasGps.deleteConfirm.title', '¿Eliminar esta sesión?')}
+                            description={t('cargasGps.deleteConfirm.description', 'Se borra la sesión GPS completa (todas sus columnas y zonas). Si el dato está mal, puedes reimportar el archivo corregido después.')}
+                            confirmLabel={t('cargasGps.deleteConfirm.confirmLabel', 'Eliminar')}
                             onConfirm={() => handleDeleteSession(session.id)}
                           />
                         </TableCell>
@@ -253,32 +255,36 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
 
           <Card>
             <CardHeader>
-              <CardTitle>Alertas del modelo</CardTitle>
-              {activeAlerts.length > 0 && <Badge variant="danger">{activeAlerts.length} activas</Badge>}
+              <CardTitle>{t('cargasGps.alertsTitle', 'Alertas del modelo')}</CardTitle>
+              {activeAlerts.length > 0 && (
+                <Badge variant="danger">{t('cargasGps.activeCount', '{{count}} activas', { count: activeAlerts.length })}</Badge>
+              )}
             </CardHeader>
 
             {!isLoadingDetail && alerts.length === 0 && (
               <EmptyState
                 icon={Gauge}
-                title="Sin predicciones aún"
+                title={t('cargasGps.noPredictionsTitle', 'Sin predicciones aún')}
                 description={
                   <>
-                    Corre <code>run_training.py</code>.
+                    {t('cargasGps.noPredictionsDescriptionPrefix', 'Corre ')}
+                    <code>run_training.py</code>
+                    {t('cargasGps.noPredictionsDescriptionSuffix', '.')}
                   </>
                 }
               />
             )}
             {!isLoadingDetail && alerts.length > 0 && activeAlerts.length === 0 && (
-              <EmptyState icon={AlertTriangle} title="Sin alertas activas" description="No hay fatiga, sobre-esfuerzo ni sesiones anómalas recientes." />
+              <EmptyState icon={AlertTriangle} title={t('cargasGps.noActiveAlertsTitle', 'Sin alertas activas')} description={t('cargasGps.noActiveAlertsDescription', 'No hay fatiga, sobre-esfuerzo ni sesiones anómalas recientes.')} />
             )}
             {activeAlerts.length > 0 && (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Etiqueta</TableHead>
-                    <TableHead>Score</TableHead>
-                    <TableHead>Fecha</TableHead>
+                    <TableHead>{t('cargasGps.col.type', 'Tipo')}</TableHead>
+                    <TableHead>{t('cargasGps.col.label', 'Etiqueta')}</TableHead>
+                    <TableHead>{t('cargasGps.col.score', 'Score')}</TableHead>
+                    <TableHead>{t('cargasGps.col.date', 'Fecha')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

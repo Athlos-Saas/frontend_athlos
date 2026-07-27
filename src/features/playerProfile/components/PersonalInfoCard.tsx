@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { calculateAge, calculateBmi, formatDate } from '../format';
 import type { PlayerCore } from '../queries';
@@ -18,29 +20,39 @@ function InfoRow({ label, value }: { label: string; value: string | number | nul
  * genéricas) se muestran fijos en "--" — ver la tabla de gaps del plan.
  */
 export function PersonalInfoCard({ player }: { player: PlayerCore }) {
+  const { t } = useTranslation();
   const age = calculateAge(player.birthdate);
   const bmi = calculateBmi(player.height_cm, player.weight_kg);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Información personal</CardTitle>
+        <CardTitle>{t('personalInfoCard.title', 'Información personal')}</CardTitle>
       </CardHeader>
       <div>
-        <InfoRow label="Nombre completo" value={player.full_name} />
-        <InfoRow label="Fecha de nacimiento" value={formatDate(player.birthdate)} />
-        <InfoRow label="Edad" value={age !== null ? `${age} años` : null} />
-        <InfoRow label="Altura" value={player.height_cm ? `${player.height_cm} cm` : null} />
-        <InfoRow label="Peso" value={player.weight_kg ? `${player.weight_kg} kg` : null} />
-        <InfoRow label="BMI" value={bmi} />
-        <InfoRow label="Nacionalidad" value={null} />
-        <InfoRow label="Pie dominante" value={null} />
-        <InfoRow label="Posición principal" value={player.position} />
-        <InfoRow label="Posiciones secundarias" value={null} />
-        <InfoRow label="Contrato" value={null} />
-        <InfoRow label="Valor estimado" value={null} />
-        <InfoRow label="Agente" value={null} />
-        <InfoRow label="Notas" value={null} />
+        <InfoRow label={t('personalInfoCard.fullName', 'Nombre completo')} value={player.full_name} />
+        <InfoRow label={t('personalInfoCard.birthdate', 'Fecha de nacimiento')} value={formatDate(player.birthdate)} />
+        <InfoRow
+          label={t('personalInfoCard.age', 'Edad')}
+          value={age !== null ? t('personalInfoCard.ageValue', '{{age}} años', { age }) : null}
+        />
+        <InfoRow
+          label={t('personalInfoCard.height', 'Altura')}
+          value={player.height_cm ? t('personalInfoCard.heightValue', '{{value}} cm', { value: player.height_cm }) : null}
+        />
+        <InfoRow
+          label={t('personalInfoCard.weight', 'Peso')}
+          value={player.weight_kg ? t('personalInfoCard.weightValue', '{{value}} kg', { value: player.weight_kg }) : null}
+        />
+        <InfoRow label={t('personalInfoCard.bmi', 'BMI')} value={bmi} />
+        <InfoRow label={t('personalInfoCard.nationality', 'Nacionalidad')} value={null} />
+        <InfoRow label={t('personalInfoCard.dominantFoot', 'Pie dominante')} value={null} />
+        <InfoRow label={t('personalInfoCard.mainPosition', 'Posición principal')} value={player.position} />
+        <InfoRow label={t('personalInfoCard.secondaryPositions', 'Posiciones secundarias')} value={null} />
+        <InfoRow label={t('personalInfoCard.contract', 'Contrato')} value={null} />
+        <InfoRow label={t('personalInfoCard.estimatedValue', 'Valor estimado')} value={null} />
+        <InfoRow label={t('personalInfoCard.agent', 'Agente')} value={null} />
+        <InfoRow label={t('personalInfoCard.notes', 'Notas')} value={null} />
       </div>
     </Card>
   );

@@ -1,0 +1,95 @@
+{
+  "modulePreviews": {
+    "equipos": {
+      "description": "Rosters, coaching staff, and squad by team.",
+      "bullets": [
+        "Full team roster with position and physical status",
+        "Coaching staff and assigned personnel",
+        "Recent results history and streak"
+      ],
+      "kpis": ["Active teams", "Players per squad", "Registered staff"]
+    },
+    "temporadas": {
+      "description": "Competition calendar and season cycles.",
+      "bullets": [
+        "Start and end dates per season",
+        "Metric comparison across seasons",
+        "Direct link with Competitions and AI Models"
+      ],
+      "kpis": ["Registered seasons", "Active season", "Matchdays played"]
+    },
+    "pronosticos": {
+      "description": "Future performance projections based on trained models.",
+      "bullets": [
+        "Injury risk projection for upcoming sessions",
+        "Performance probability per player and per match",
+        "Comparison between forecast and actual outcome"
+      ],
+      "kpis": ["Forecasts generated", "Historical accuracy", "Projection horizon"]
+    },
+    "scouting": {
+      "description": "Prospect profiles and scouting comparisons.",
+      "bullets": [
+        "External player profile with comparable metrics",
+        "Side-by-side comparison against the current squad",
+        "Watchlist with coaching staff notes"
+      ],
+      "kpis": ["Prospects tracked", "Active comparisons", "Updated profiles"]
+    },
+    "reportes": {
+      "description": "Custom reports by athlete, team, or competition.",
+      "bullets": [
+        "PDF/Excel export of any dashboard",
+        "Scheduled reports by email",
+        "Templates by role (coaching staff, management, medical)"
+      ],
+      "kpis": ["Reports generated", "Active schedules", "Available templates"]
+    },
+    "dispositivos": {
+      "description": "GPS sensors, wearables, and their sync status.",
+      "bullets": [
+        "Battery status and last sync per device",
+        "Device-to-player assignment",
+        "Failure or disconnection history"
+      ],
+      "kpis": ["Active devices", "Synced today", "With alert"]
+    },
+    "integraciones": {
+      "description": "Connections with other platforms and providers.",
+      "bullets": [
+        "Calendars, wearables, and external video platforms",
+        "Connection status and last sync",
+        "Webhooks and API keys per integration"
+      ],
+      "kpis": ["Connected integrations", "Available", "With error"]
+    },
+    "alertas": {
+      "description": "Unified center for fatigue, injury, and anomaly alerts.",
+      "bullets": [
+        "All ml_predictions alerts in a single feed",
+        "Notification rules by severity",
+        "Alert history and resolution per player"
+      ],
+      "kpis": ["Active alerts", "Resolved (30d)", "Configured rules"]
+    },
+    "clientes": {
+      "description": "Organizations (multi-tenant) using the platform.",
+      "bullets": [
+        "List of client organizations and their plan",
+        "Usage and limits per organization",
+        "Billing and account status"
+      ],
+      "kpis": ["Active organizations", "On trial", "Average plan"]
+    },
+    "configuracion": {
+      "description": "Organization preferences, notifications, and security.",
+      "bullets": [
+        "Organization data and branding",
+        "Notification preferences by channel",
+        "Security: active sessions and authentication"
+      ],
+      "kpis": ["Active notifications", "Open sessions", "Last update"]
+    },
+    "fallbackDescription": "{{label}} view for your organization."
+  }
+}

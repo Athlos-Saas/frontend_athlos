@@ -1,0 +1,45 @@
+{
+  "analisis": {
+    "title": "Analysis",
+    "subtitle": "GPS loads and video analysis in one place. (Full visual redesign in Phase 7 — the internal content of these tabs still uses the previous styles.)",
+    "tabs": {
+      "gps": "GPS Loads",
+      "video": "Video Analysis",
+      "riesgo": "Injury Risk"
+    }
+  },
+  "riesgoLesion": {
+    "title": "Injury Risk",
+    "subtitle": "Heuristic score based on ACWR (7-day acute load / 28-day chronic load) + injury history — this is not a trained model, it improves with more daily wellness data and typified injuries.",
+    "unknownPlayer": "Unknown player",
+    "backendUrlRequired": "Configure VITE_API_URL to enable this.",
+    "updateAssessment": "Update assessment",
+    "evaluatedPlayers": "Evaluated players",
+    "evaluatedPlayersDescription": "Excludes players with an active injury (they're already injured, not \"at risk\").",
+    "searchPlaceholder": "Search player…",
+    "insufficientData": "Not enough data",
+    "noHistory": "No history",
+    "daysAgo": "{{count}} days ago",
+    "col": {
+      "player": "Player",
+      "riskLevel": "Risk level",
+      "acwr": "ACWR (7d/28d)",
+      "lastInjury": "Last injury",
+      "injuries365": "Injuries (365 days)",
+      "confidence": "Confidence"
+    },
+    "toast": {
+      "updated": {
+        "title": "Assessment updated",
+        "description": "{{count}} players evaluated."
+      },
+      "failed": {
+        "title": "Could not update"
+      }
+    },
+    "empty": {
+      "title": "No assessment yet",
+      "description": "Run the assessment to see your squad's injury risk."
+    }
+  }
+}

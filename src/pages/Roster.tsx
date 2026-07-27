@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Pencil, Power, UserRound, UserSearch } from 'lucide-react';
 
 import { Badge } from '@/components/ui/Badge';
@@ -21,6 +23,7 @@ import { supabase } from '@/lib/supabase';
 import { getOrCreatePlayers } from '@/lib/importers/playerLookup';
 import { parseRoster, validateRoster, type ParsedRoster } from '@/lib/importers/roster';
 import { downloadRosterTemplate } from '@/lib/importers/templates';
+import { uploadPlayerPhoto } from '@/features/playerProfile/mediaStorage';
 import { useTeamSelection } from '@/lib/importers/useTeamSelection';
 import { toast } from '@/store/toastStore';
 import { canWrite } from '@/utils/permissions';
@@ -41,10 +44,18 @@ interface RosterRow extends Player {
   league?: LeagueSummary;
 }
 
-function leagueSummaryText(summary?: LeagueSummary): string {
+function leagueSummaryText(t: TFunction, summary?: LeagueSummary): string {
   if (!summary) return '—';
-  if (summary.kind === 'attacker') return `${summary.goals ?? 0} goles · ${summary.role_name ?? '—'}`;
-  return `GAA ${(summary.gaa ?? 0).toFixed(2)} · ${summary.gk_role ?? '—'}`;
+  if (summary.kind === 'attacker') {
+    return t('roster.league.attackerSummary', '{{goals}} goles · {{role}}', {
+      goals: summary.goals ?? 0,
+      role: summary.role_name ?? '—',
+    });
+  }
+  return t('roster.league.goalkeeperSummary', 'GAA {{gaa}} · {{role}}', {
+    gaa: (summary.gaa ?? 0).toFixed(2),
+    role: summary.gk_role ?? '—',
+  });
 }
 
 function ageFromBirthdate(birthdate?: string | null): number | null {
@@ -62,6 +73,7 @@ const SEVERITY_VARIANT: Record<Injury['severity'], 'warning' | 'danger'> = {
 };
 
 function buildColumns(
+  t: TFunction,
   canEdit: boolean,
   onMarkRecovered: (injury: Injury) => void,
   onDeleteInjury: (injury: Injury) => void,
@@ -70,7 +82,7 @@ function buildColumns(
   return [
     {
       id: 'full_name',
-      header: 'Jugador',
+      header: t('roster.col.fullName', 'Jugador'),
       sortable: true,
       accessor: (row) => row.full_name,
       className: 'font-medium text-foreground',
@@ -84,25 +96,25 @@ function buildColumns(
         </button>
       ),
     },
-    { id: 'position', header: 'Posición', sortable: true, accessor: (row) => row.position ?? '—' },
-    { id: 'height_cm', header: 'Altura (cm)', align: 'right', sortable: true, accessor: (row) => row.height_cm ?? 0, cell: (row) => (row.height_cm ? row.height_cm.toFixed(0) : '—') },
-    { id: 'weight_kg', header: 'Peso (kg)', align: 'right', sortable: true, accessor: (row) => row.weight_kg ?? 0, cell: (row) => (row.weight_kg ? row.weight_kg.toFixed(0) : '—') },
-    { id: 'age', header: 'Edad', align: 'right', sortable: true, accessor: (row) => ageFromBirthdate(row.birthdate) ?? 0, cell: (row) => ageFromBirthdate(row.birthdate) ?? '—' },
-    { id: 'league', header: 'Liga', accessor: (row) => leagueSummaryText(row.league) },
+    { id: 'position', header: t('roster.col.position', 'Posición'), sortable: true, accessor: (row) => row.position ?? '—' },
+    { id: 'height_cm', header: t('roster.col.height', 'Altura (cm)'), align: 'right', sortable: true, accessor: (row) => row.height_cm ?? 0, cell: (row) => (row.height_cm ? row.height_cm.toFixed(0) : '—') },
+    { id: 'weight_kg', header: t('roster.col.weight', 'Peso (kg)'), align: 'right', sortable: true, accessor: (row) => row.weight_kg ?? 0, cell: (row) => (row.weight_kg ? row.weight_kg.toFixed(0) : '—') },
+    { id: 'age', header: t('roster.col.age', 'Edad'), align: 'right', sortable: true, accessor: (row) => ageFromBirthdate(row.birthdate) ?? 0, cell: (row) => ageFromBirthdate(row.birthdate) ?? '—' },
+    { id: 'league', header: t('roster.col.league', 'Liga'), accessor: (row) => leagueSummaryText(t, row.league) },
     {
       id: 'injury',
-      header: 'Estado',
+      header: t('roster.col.status', 'Estado'),
       accessor: (row) => (row.injury ? row.injury.severity : 'ok'),
       cell: (row) => {
-        if (!row.injury) return <Badge variant="success">Disponible</Badge>;
+        if (!row.injury) return <Badge variant="success">{t('roster.status.available', 'Disponible')}</Badge>;
         const badge = (
           <Tooltip>
             <TooltipTrigger asChild>
               <Badge variant={SEVERITY_VARIANT[row.injury.severity]} className={canEdit ? 'cursor-pointer' : undefined}>
-                Lesionado
+                {t('roster.status.injured', 'Lesionado')}
               </Badge>
             </TooltipTrigger>
-            <TooltipContent>{row.injury.notes ?? 'Sin detalle'}</TooltipContent>
+            <TooltipContent>{row.injury.notes ?? t('roster.status.noDetail', 'Sin detalle')}</TooltipContent>
           </Tooltip>
         );
         if (!canEdit) return <TooltipProvider>{badge}</TooltipProvider>;
@@ -111,9 +123,11 @@ function buildColumns(
             <DropdownMenu>
               <DropdownMenuTrigger asChild>{badge}</DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => onMarkRecovered(row.injury as Injury)}>Marcar recuperado</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onMarkRecovered(row.injury as Injury)}>
+                  {t('roster.status.markRecovered', 'Marcar recuperado')}
+                </DropdownMenuItem>
                 <DropdownMenuItem destructive onClick={() => onDeleteInjury(row.injury as Injury)}>
-                  Eliminar registro
+                  {t('roster.status.deleteRecord', 'Eliminar registro')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -126,6 +140,7 @@ function buildColumns(
 
 export default function Roster({ orgId, role }: { orgId: string; role: string | null }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   useScrollRestoration('roster');
   const [players, setPlayers] = useState<Player[]>([]);
   const [injuries, setInjuries] = useState<Injury[]>([]);
@@ -143,7 +158,7 @@ export default function Roster({ orgId, role }: { orgId: string; role: string | 
     Promise.all([
       supabase
         .from('players')
-        .select('id, full_name, position, height_cm, weight_kg, birthdate')
+        .select('id, full_name, position, height_cm, weight_kg, birthdate, photo_url')
         .eq('org_id', orgId)
         .eq('is_active', !showInactive)
         .order('full_name'),
@@ -236,7 +251,10 @@ export default function Roster({ orgId, role }: { orgId: string; role: string | 
     return {
       written,
       skipped,
-      warnings: injuryRows.length > 0 ? [`${injuryRows.length} lesiones registradas.`] : [],
+      warnings:
+        injuryRows.length > 0
+          ? [t('roster.import.injuriesRegistered', '{{count}} lesiones registradas.', { count: injuryRows.length })]
+          : [],
     };
   };
 
@@ -244,31 +262,45 @@ export default function Roster({ orgId, role }: { orgId: string; role: string | 
     if (!editingPlayer) return;
     const { error } = await supabase.from('players').update(updated).eq('id', editingPlayer.id);
     if (error) {
-      toast({ title: 'No se pudo guardar', description: error.message, variant: 'danger' });
+      toast({ title: t('roster.toast.saveError', 'No se pudo guardar'), description: error.message, variant: 'danger' });
       return;
     }
-    toast({ title: 'Jugador actualizado', variant: 'success' });
+    toast({ title: t('roster.toast.playerUpdated', 'Jugador actualizado'), variant: 'success' });
     setEditingPlayer(null);
+    setReloadToken((n) => n + 1);
+  };
+
+  const handleEditingPlayerPhotoChange = async (blob: Blob) => {
+    if (!editingPlayer) return;
+    const path = await uploadPlayerPhoto(orgId, editingPlayer.id, blob);
+    const { error } = await supabase.from('players').update({ photo_url: path }).eq('id', editingPlayer.id);
+    if (error) throw error;
     setReloadToken((n) => n + 1);
   };
 
   const handleDeactivate = async (player: RosterRow) => {
     const { error } = await supabase.from('players').update({ is_active: false }).eq('id', player.id);
     if (error) {
-      toast({ title: 'No se pudo desactivar', description: error.message, variant: 'danger' });
+      toast({ title: t('roster.toast.deactivateError', 'No se pudo desactivar'), description: error.message, variant: 'danger' });
       return;
     }
-    toast({ title: `${player.full_name} desactivado`, variant: 'success' });
+    toast({
+      title: t('roster.toast.deactivated', '{{name}} desactivado', { name: player.full_name }),
+      variant: 'success',
+    });
     setReloadToken((n) => n + 1);
   };
 
   const handleReactivate = async (player: RosterRow) => {
     const { error } = await supabase.from('players').update({ is_active: true }).eq('id', player.id);
     if (error) {
-      toast({ title: 'No se pudo reactivar', description: error.message, variant: 'danger' });
+      toast({ title: t('roster.toast.reactivateError', 'No se pudo reactivar'), description: error.message, variant: 'danger' });
       return;
     }
-    toast({ title: `${player.full_name} reactivado`, variant: 'success' });
+    toast({
+      title: t('roster.toast.reactivated', '{{name}} reactivado', { name: player.full_name }),
+      variant: 'success',
+    });
     setReloadToken((n) => n + 1);
   };
 
@@ -278,28 +310,28 @@ export default function Roster({ orgId, role }: { orgId: string; role: string | 
       .update({ return_date: new Date().toISOString().slice(0, 10) })
       .eq('id', injury.id);
     if (error) {
-      toast({ title: 'No se pudo actualizar', description: error.message, variant: 'danger' });
+      toast({ title: t('roster.toast.updateError', 'No se pudo actualizar'), description: error.message, variant: 'danger' });
       return;
     }
-    toast({ title: 'Lesión marcada como recuperada', variant: 'success' });
+    toast({ title: t('roster.toast.injuryRecovered', 'Lesión marcada como recuperada'), variant: 'success' });
     setReloadToken((n) => n + 1);
   };
 
   const handleDeleteInjury = async (injury: Injury) => {
     const { error } = await supabase.from('injuries').delete().eq('id', injury.id);
     if (error) {
-      toast({ title: 'No se pudo eliminar', description: error.message, variant: 'danger' });
+      toast({ title: t('roster.toast.deleteError', 'No se pudo eliminar'), description: error.message, variant: 'danger' });
       return;
     }
-    toast({ title: 'Registro de lesión eliminado', variant: 'success' });
+    toast({ title: t('roster.toast.injuryDeleted', 'Registro de lesión eliminado'), variant: 'success' });
     setReloadToken((n) => n + 1);
   };
 
   const handleOpenProfile = (playerId: string) => navigate(`/atletas/${playerId}`);
 
   const columns = useMemo(
-    () => buildColumns(canWrite(role), handleMarkRecovered, handleDeleteInjury, handleOpenProfile),
-    [role],
+    () => buildColumns(t, canWrite(role), handleMarkRecovered, handleDeleteInjury, handleOpenProfile),
+    [t, role],
   );
 
   if (state === 'error') return <ErrorState onRetry={() => setReloadToken((n) => n + 1)} />;
@@ -308,19 +340,21 @@ export default function Roster({ orgId, role }: { orgId: string; role: string | 
     <div>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Roster físico</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Posición, altura, peso y estado de lesión por jugador</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('roster.title', 'Roster físico')}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t('roster.subtitle', 'Posición, altura, peso y estado de lesión por jugador')}
+          </p>
         </div>
         {canWrite(role) && (
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2 text-sm text-muted-foreground">
               <Switch checked={showInactive} onCheckedChange={setShowInactive} />
-              Ver inactivos
+              {t('roster.showInactive', 'Ver inactivos')}
             </label>
             {teams.length > 1 && (
               <Select value={teamId} onValueChange={setTeamId}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Equipo" />
+                  <SelectValue placeholder={t('roster.teamPlaceholder', 'Equipo')} />
                 </SelectTrigger>
                 <SelectContent>
                   {teams.map((team) => (
@@ -333,15 +367,21 @@ export default function Roster({ orgId, role }: { orgId: string; role: string | 
             )}
             <ImportDialog
               orgId={orgId}
-              triggerLabel="Importar roster (Excel)"
-              title="Importar roster físico"
-              description="Sube el Excel con columnas Name/Position/Weight/Height/Age/Recent injuries."
+              triggerLabel={t('roster.import.triggerLabel', 'Importar roster (Excel)')}
+              title={t('roster.import.title', 'Importar roster físico')}
+              description={t(
+                'roster.import.description',
+                'Sube el Excel con columnas Name/Position/Weight/Height/Age/Recent injuries.',
+              )}
               accept=".xlsx"
               expectedKind="roster"
               disabled={!teamId}
               parse={(workbook) => parseRoster(workbook, season)}
               describePreview={(parsed) =>
-                `Detecté ${parsed.players.length} jugadores y ${parsed.injuries.length} lesiones.`
+                t('roster.import.preview', 'Detecté {{players}} jugadores y {{injuries}} lesiones.', {
+                  players: parsed.players.length,
+                  injuries: parsed.injuries.length,
+                })
               }
               validate={validateRoster}
               onConfirm={handleRosterImport}
@@ -354,13 +394,19 @@ export default function Roster({ orgId, role }: { orgId: string; role: string | 
       {canWrite(role) && <ImportHistory orgId={orgId} kind="roster" reloadToken={reloadToken} />}
 
       {state === 'ready' && rows.length === 0 ? (
-        <EmptyState icon={UserRound} title="Sin roster todavía" description="Corre el seed con --roster en el backend." />
+        <EmptyState
+          icon={UserRound}
+          title={t('roster.empty.title', 'Sin roster todavía')}
+          description={t('roster.empty.description', 'Corre el seed con --roster en el backend.')}
+        />
       ) : (
         <Card>
           <CardHeader>
             <div>
-              <CardTitle>Jugadores</CardTitle>
-              <CardDescription className="mt-1">{rows.length} jugadores registrados</CardDescription>
+              <CardTitle>{t('roster.playersCard.title', 'Jugadores')}</CardTitle>
+              <CardDescription className="mt-1">
+                {t('roster.playersCard.description', '{{count}} jugadores registrados', { count: rows.length })}
+              </CardDescription>
             </div>
           </CardHeader>
           <DataTable
@@ -368,7 +414,7 @@ export default function Roster({ orgId, role }: { orgId: string; role: string | 
             data={rows}
             getRowId={(row) => row.id}
             isLoading={state === 'loading'}
-            searchPlaceholder="Buscar jugador…"
+            searchPlaceholder={t('roster.searchPlaceholder', 'Buscar jugador…')}
             exportFileName="roster-fisico.csv"
             pageSize={15}
             showRowNumber
@@ -377,29 +423,32 @@ export default function Roster({ orgId, role }: { orgId: string; role: string | 
               <div className="flex justify-end gap-1">
                 <Button variant="ghost" size="icon" onClick={() => handleOpenProfile(row.id)}>
                   <UserSearch className="size-4" aria-hidden="true" />
-                  <span className="sr-only">Ver ficha</span>
+                  <span className="sr-only">{t('roster.action.viewProfile', 'Ver ficha')}</span>
                 </Button>
                 {canWrite(role) &&
                   (showInactive ? (
                     <Button variant="ghost" size="sm" onClick={() => handleReactivate(row)}>
-                      <Power className="size-4" aria-hidden="true" /> Reactivar
+                      <Power className="size-4" aria-hidden="true" /> {t('roster.action.reactivate', 'Reactivar')}
                     </Button>
                   ) : (
                     <>
                       <Button variant="ghost" size="icon" onClick={() => setEditingPlayer(row)}>
                         <Pencil className="size-4" aria-hidden="true" />
-                        <span className="sr-only">Editar</span>
+                        <span className="sr-only">{t('roster.action.edit', 'Editar')}</span>
                       </Button>
                       <ConfirmDialog
                         trigger={
                           <Button variant="ghost" size="icon">
                             <Power className="size-4" aria-hidden="true" />
-                            <span className="sr-only">Desactivar</span>
+                            <span className="sr-only">{t('roster.action.deactivate', 'Desactivar')}</span>
                           </Button>
                         }
-                        title={`¿Desactivar a ${row.full_name}?`}
-                        description="Deja de aparecer en el roster activo; sus datos históricos (sesiones, stats) no se borran."
-                        confirmLabel="Desactivar"
+                        title={t('roster.confirmDeactivate.title', '¿Desactivar a {{name}}?', { name: row.full_name })}
+                        description={t(
+                          'roster.confirmDeactivate.description',
+                          'Deja de aparecer en el roster activo; sus datos históricos (sesiones, stats) no se borran.',
+                        )}
+                        confirmLabel={t('roster.confirmDeactivate.confirmLabel', 'Desactivar')}
                         onConfirm={() => handleDeactivate(row)}
                       />
                     </>
@@ -410,7 +459,12 @@ export default function Roster({ orgId, role }: { orgId: string; role: string | 
         </Card>
       )}
 
-      <EditPlayerDialog player={editingPlayer} onClose={() => setEditingPlayer(null)} onSave={handleSavePlayer} />
+      <EditPlayerDialog
+        player={editingPlayer}
+        onClose={() => setEditingPlayer(null)}
+        onSave={handleSavePlayer}
+        onPhotoChange={handleEditingPlayerPhotoChange}
+      />
     </div>
   );
 }

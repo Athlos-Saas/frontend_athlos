@@ -1,0 +1,171 @@
+{
+  "modelosIa": {
+    "title": "Modelos IA",
+    "subtitlePrefix": "Registro de modelos entrenados por el pipeline de Machine Learning (",
+    "subtitleSuffix": ").",
+    "seasonLabel": "Temporada",
+    "retrainDisabledHint": "Configura VITE_API_URL para habilitar esto (ver .env.example).",
+    "retrainButton": "Reentrenar modelos",
+    "retrainHintPrefix": "\"Reentrenar modelos\" necesita un backend FastAPI accesible desde el navegador (VITE_API_URL). Mientras tanto, corre ",
+    "retrainHintSuffix": " desde el backend.",
+    "cardTitle": "Modelos entrenados",
+    "cardDescription": "Últimas 50 versiones registradas para tu organización",
+    "searchPlaceholder": "Buscar modelo o tarea…",
+    "emptyTitle": "Sin modelos entrenados aún",
+    "emptyDescriptionPrefix": "Corre ",
+    "emptyDescriptionSuffix": " en el backend para generar la primera versión.",
+    "col": {
+      "model": "Modelo",
+      "task": "Tarea",
+      "version": "Versión",
+      "metrics": "Métricas clave",
+      "trained": "Entrenado"
+    },
+    "toast": {
+      "retrainSuccessTitle": "Reentrenamiento completo",
+      "retrainSuccessDescription": "{{count}} modelos actualizados.",
+      "retrainErrorTitle": "No se pudo reentrenar",
+      "unexpectedError": "Error inesperado."
+    }
+  },
+  "perfilesMl": {
+    "title": "Perfiles físicos",
+    "subtitle": "Clusters K-Means sobre medias por jugador (distancia, sprint, velocidad, Player Load)",
+    "emptyTitle": "Sin perfiles todavía",
+    "emptyDescriptionPrefix": "Corre ",
+    "emptyDescriptionSuffix": " en el backend.",
+    "chartTitle": "Sprint vs Player Load",
+    "chartDescription": "Tamaño del punto = velocidad máxima",
+    "axis": {
+      "sprint": "Sprint (m)",
+      "topSpeed": "Vel. máx"
+    },
+    "tableTitle": "Jugadores por perfil",
+    "tableDescription": "Promedios de carga física por jugador",
+    "col": {
+      "player": "Jugador",
+      "profile": "Perfil",
+      "avgDistance": "Dist. media (km)",
+      "avgSprint": "Sprint medio (m)",
+      "avgTopSpeed": "Vel. máx media",
+      "avgPlayerLoad": "Player Load medio"
+    }
+  },
+  "scoutingPage": {
+    "title": "Scouting",
+    "subtitle": "Prospectos de la liga rankeados por los modelos de IA (probabilidad de goleador élite y roles)",
+    "emptyTitle": "Sin datos de scouting",
+    "emptyDescription": "Importa estadísticas de conferencia y reentrena los modelos técnicos para generar los rankings.",
+    "seasonPlaceholder": "Temporada",
+    "rolePlaceholder": "Rol",
+    "allRoles": "Todos los roles",
+    "teamSearchPlaceholder": "Filtrar por equipo…",
+    "attackersTitle": "Prospectos ofensivos",
+    "attackersDescription": "{{count}} jugadores · ordenados por probabilidad de goleador élite (clasificador entrenado con datos de la liga)",
+    "noResultsTitle": "Sin resultados",
+    "noResultsDescription": "Ningún jugador coincide con los filtros actuales.",
+    "goalkeepersTitle": "Porteros",
+    "goalkeepersDescription": "{{count}} porteros · ordenados por porcentaje de atajadas",
+    "col": {
+      "player": "Jugador",
+      "team": "Equipo",
+      "gp": "PJ",
+      "goals": "Goles",
+      "points": "Pts",
+      "role": "Rol",
+      "eliteProb": "Prob. élite",
+      "gaa": "GAA",
+      "savePct": "% atajadas"
+    },
+    "toast": {
+      "loadErrorTitle": "No se pudo cargar scouting"
+    }
+  },
+  "cargasGps": {
+    "title": "Cargas GPS",
+    "subtitle": "Monitoreo físico por sesión con alertas del modelo",
+    "teamPlaceholder": "Equipo",
+    "noPlayersTitle": "Aún no hay jugadores",
+    "noPlayersDescription": "Corre el seed del backend para poblar la organización.",
+    "selectPlayerPlaceholder": "Selecciona un jugador",
+    "noSessionsTitle": "Sin sesiones registradas",
+    "noSessionsDescription": "Este jugador todavía no tiene sesiones GPS.",
+    "sessionsTitle": "Sesiones",
+    "alertsTitle": "Alertas del modelo",
+    "activeCount": "{{count}} activas",
+    "noPredictionsTitle": "Sin predicciones aún",
+    "noPredictionsDescriptionPrefix": "Corre ",
+    "noPredictionsDescriptionSuffix": ".",
+    "noActiveAlertsTitle": "Sin alertas activas",
+    "noActiveAlertsDescription": "No hay fatiga, sobre-esfuerzo ni sesiones anómalas recientes.",
+    "deleteSr": "Eliminar",
+    "chart": {
+      "playerLoad": "Player Load por sesión",
+      "topSpeed": "Velocidad máxima (km/h)",
+      "topSpeedSeries": "Vel. máx"
+    },
+    "col": {
+      "date": "Fecha",
+      "distance": "Distancia (km)",
+      "playerLoad": "Player Load",
+      "topSpeed": "Vel. máx (km/h)",
+      "type": "Tipo",
+      "label": "Etiqueta",
+      "score": "Score"
+    },
+    "deleteConfirm": {
+      "title": "¿Eliminar esta sesión?",
+      "description": "Se borra la sesión GPS completa (todas sus columnas y zonas). Si el dato está mal, puedes reimportar el archivo corregido después.",
+      "confirmLabel": "Eliminar"
+    },
+    "type": {
+      "fatigue": "Fatiga",
+      "anomaly": "Anomalía",
+      "overload": "Sobre-esfuerzo"
+    },
+    "import": {
+      "triggerLabel": "Importar sesiones GPS (Catapult)",
+      "title": "Importar sesiones GPS",
+      "description": "Sube el export CSV de Catapult (columnas Player Name, Player Load, Distance (km)...).",
+      "previewSummary": "Detecté {{count}} sesiones."
+    },
+    "toast": {
+      "deleteErrorTitle": "No se pudo eliminar la sesión",
+      "deleteSuccessTitle": "Sesión eliminada"
+    }
+  },
+  "wellness": {
+    "title": "Wellness diario",
+    "subtitle": "RPE, sueño y dolor — la variable que falta para modelar riesgo de lesión",
+    "noPlayersTitle": "Sin jugadores registrados",
+    "registerTitle": "Registrar",
+    "recentTitle": "Últimos registros",
+    "noEntriesTitle": "Sin registros",
+    "noEntriesDescription": "Todavía no hay registros de wellness.",
+    "saveButton": "Guardar",
+    "field": {
+      "player": "Jugador",
+      "date": "Fecha",
+      "notes": "Notas"
+    },
+    "slider": {
+      "rpe": "RPE (esfuerzo percibido)",
+      "sleepHours": "Horas de sueño",
+      "sleepQuality": "Calidad de sueño",
+      "soreness": "Dolor muscular",
+      "mood": "Ánimo"
+    },
+    "col": {
+      "date": "Fecha",
+      "player": "Jugador",
+      "rpe": "RPE",
+      "sleep": "Sueño",
+      "soreness": "Dolor",
+      "mood": "Ánimo"
+    },
+    "toast": {
+      "saveErrorTitle": "No se pudo guardar",
+      "saveSuccessTitle": "Wellness guardado"
+    }
+  }
+}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Building2, UserRound } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -29,6 +30,7 @@ const ROLE_LABEL: Record<string, string> = {
  * ninguna tabla que las respalde.
  */
 export default function Configuracion({ orgId, role }: { orgId: string; role: string | null }) {
+  const { t } = useTranslation();
   const [org, setOrg] = useState<Organization | null>(null);
   const [orgForm, setOrgForm] = useState({ name: '', country: '' });
   const [isSavingOrg, setIsSavingOrg] = useState(false);
@@ -62,7 +64,7 @@ export default function Configuracion({ orgId, role }: { orgId: string; role: st
 
   const handleSaveOrg = async () => {
     if (!orgForm.name.trim()) {
-      toast({ title: 'El nombre no puede quedar vacío', variant: 'warning' });
+      toast({ title: t('configuracion.toast.nameRequired', 'El nombre no puede quedar vacío'), variant: 'warning' });
       return;
     }
     setIsSavingOrg(true);
@@ -72,10 +74,10 @@ export default function Configuracion({ orgId, role }: { orgId: string; role: st
       .eq('id', orgId);
     setIsSavingOrg(false);
     if (error) {
-      toast({ title: 'No se pudo guardar', description: error.message, variant: 'danger' });
+      toast({ title: t('configuracion.toast.saveOrgError', 'No se pudo guardar'), description: error.message, variant: 'danger' });
       return;
     }
-    toast({ title: 'Organización actualizada', variant: 'success' });
+    toast({ title: t('configuracion.toast.orgUpdated', 'Organización actualizada'), variant: 'success' });
   };
 
   const handleSaveProfile = async () => {
@@ -84,10 +86,14 @@ export default function Configuracion({ orgId, role }: { orgId: string; role: st
     const { error } = await supabase.from('profiles').update({ full_name: profileName.trim() || null }).eq('user_id', userId);
     setIsSavingProfile(false);
     if (error) {
-      toast({ title: 'No se pudo guardar tu perfil', description: error.message, variant: 'danger' });
+      toast({ title: t('configuracion.toast.saveProfileError', 'No se pudo guardar tu perfil'), description: error.message, variant: 'danger' });
       return;
     }
-    toast({ title: 'Perfil actualizado', description: 'Se verá reflejado al recargar.', variant: 'success' });
+    toast({
+      title: t('configuracion.toast.profileUpdated', 'Perfil actualizado'),
+      description: t('configuracion.toast.profileUpdatedDesc', 'Se verá reflejado al recargar.'),
+      variant: 'success',
+    });
   };
 
   if (!isLoaded) return <Skeleton className="h-96 w-full" />;
@@ -95,8 +101,8 @@ export default function Configuracion({ orgId, role }: { orgId: string; role: st
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Configuración</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Datos de tu organización y de tu cuenta</p>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('configuracion.title', 'Configuración')}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t('configuracion.subtitle', 'Datos de tu organización y de tu cuenta')}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
@@ -104,15 +110,17 @@ export default function Configuracion({ orgId, role }: { orgId: string; role: st
           <CardHeader>
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Building2 className="size-4 text-ai" aria-hidden="true" /> Organización
+                <Building2 className="size-4 text-ai" aria-hidden="true" /> {t('configuracion.org.title', 'Organización')}
               </CardTitle>
               <CardDescription className="mt-1">
-                {isAdminUser ? 'Solo los administradores pueden editar estos datos.' : 'Solo lectura — requiere rol de administrador para editar.'}
+                {isAdminUser
+                  ? t('configuracion.org.descriptionAdmin', 'Solo los administradores pueden editar estos datos.')
+                  : t('configuracion.org.descriptionReadonly', 'Solo lectura — requiere rol de administrador para editar.')}
               </CardDescription>
             </div>
-            {org?.plan && <Badge variant="purple">Plan {org.plan}</Badge>}
+            {org?.plan && <Badge variant="purple">{t('configuracion.org.plan', 'Plan {{plan}}', { plan: org.plan })}</Badge>}
           </CardHeader>
-          <Field label="Nombre" htmlFor="org-name">
+          <Field label={t('configuracion.org.nameLabel', 'Nombre')} htmlFor="org-name">
             <Input
               id="org-name"
               value={orgForm.name}
@@ -120,18 +128,18 @@ export default function Configuracion({ orgId, role }: { orgId: string; role: st
               onChange={(event) => setOrgForm((form) => ({ ...form, name: event.target.value }))}
             />
           </Field>
-          <Field label="País" htmlFor="org-country">
+          <Field label={t('configuracion.org.countryLabel', 'País')} htmlFor="org-country">
             <Input
               id="org-country"
               value={orgForm.country}
               disabled={!isAdminUser}
-              placeholder="--"
+              placeholder={t('configuracion.org.countryPlaceholder', '--')}
               onChange={(event) => setOrgForm((form) => ({ ...form, country: event.target.value }))}
             />
           </Field>
           {isAdminUser && (
             <Button size="sm" isLoading={isSavingOrg} onClick={handleSaveOrg}>
-              Guardar organización
+              {t('configuracion.org.save', 'Guardar organización')}
             </Button>
           )}
         </Card>
@@ -140,17 +148,17 @@ export default function Configuracion({ orgId, role }: { orgId: string; role: st
           <CardHeader>
             <div>
               <CardTitle className="flex items-center gap-2">
-                <UserRound className="size-4 text-ai" aria-hidden="true" /> Mi cuenta
+                <UserRound className="size-4 text-ai" aria-hidden="true" /> {t('configuracion.account.title', 'Mi cuenta')}
               </CardTitle>
               <CardDescription className="mt-1">{email ?? '--'}</CardDescription>
             </div>
-            {role && <Badge variant="ai">{ROLE_LABEL[role] ?? role}</Badge>}
+            {role && <Badge variant="ai">{t(`roles.label.${role}`, ROLE_LABEL[role] ?? role)}</Badge>}
           </CardHeader>
-          <Field label="Nombre completo" htmlFor="profile-name">
+          <Field label={t('configuracion.account.nameLabel', 'Nombre completo')} htmlFor="profile-name">
             <Input id="profile-name" value={profileName} onChange={(event) => setProfileName(event.target.value)} />
           </Field>
           <Button size="sm" isLoading={isSavingProfile} onClick={handleSaveProfile}>
-            Guardar perfil
+            {t('configuracion.account.save', 'Guardar perfil')}
           </Button>
         </Card>
       </div>

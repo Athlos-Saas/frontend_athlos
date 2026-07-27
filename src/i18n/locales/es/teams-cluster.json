@@ -1,0 +1,205 @@
+{
+  "equipos": {
+    "toast": {
+      "loadTeamsError": "No se pudieron cargar los equipos",
+      "loadRosterError": "No se pudo cargar el plantel"
+    },
+    "noPosition": "Sin posición",
+    "player": "Jugador",
+    "player_plural": "Jugadores",
+    "team": "Equipo",
+    "season": "Temporada",
+    "title": "Equipos",
+    "subtitle": "Estado agregado del plantel — el detalle individual vive en Atletas",
+    "selectPlaceholder": "Equipo",
+    "viewRoster": "Ver plantel",
+    "stat": {
+      "activePlayers": "Jugadores activos",
+      "availability": "Disponibilidad",
+      "gpsSessions": "Sesiones GPS ({{days}}d)",
+      "totalDistance": "Distancia total ({{days}}d)"
+    },
+    "chart": {
+      "rosterComposition": {
+        "title": "Composición del plantel",
+        "description": "Jugadores activos por posición"
+      },
+      "benchmark": {
+        "title": "Rendimiento vs. conferencia",
+        "description": "{{team}} vs. media de la conferencia (stats ofensivas de liga)"
+      }
+    },
+    "card": {
+      "topLoad": {
+        "title": "Mayor carga ({{days}} días)",
+        "description": "Top 5 por distancia acumulada — click abre la ficha"
+      },
+      "wellness": {
+        "title": "Wellness del plantel ({{days}} días)",
+        "avgEntries": "Promedio de {{count}} registros diarios",
+        "noRecent": "Sin registros recientes"
+      },
+      "injured": {
+        "title": "Lesionados",
+        "description": "Sin fecha de retorno registrada"
+      }
+    },
+    "empty": {
+      "title": "Sin equipos",
+      "description": "Importa un roster para crear el primer equipo de la organización.",
+      "noGpsSessions": {
+        "title": "Sin sesiones GPS",
+        "description": "No hay sesiones registradas en los últimos {{days}} días."
+      },
+      "noWellness": {
+        "title": "Sin wellness",
+        "description": "El plantel no registró wellness diario en la última semana."
+      },
+      "noInjuries": {
+        "title": "Plantel completo disponible",
+        "description": "No hay lesiones activas en este equipo."
+      }
+    },
+    "metric": {
+      "rpe": "RPE",
+      "sleep": "Sueño (h)",
+      "soreness": "Dolor",
+      "mood": "Ánimo"
+    }
+  },
+  "competiciones": {
+    "title": "Competiciones",
+    "subtitle": "Goleadores y roles ofensivos por liga y temporada. (Rediseño visual completo en Fase 7.)"
+  },
+  "temporadas": {
+    "toast": {
+      "loadError": "No se pudieron cargar las temporadas"
+    },
+    "title": "Temporadas",
+    "subtitle": "Resumen por temporada de equipos, plantel y datos de liga",
+    "season": "Temporada",
+    "leagueOnly": "Solo datos de liga (sin equipo propio registrado)",
+    "sessions": "Sesiones",
+    "stat": {
+      "teams": "Equipos",
+      "players": "Jugadores",
+      "league": "Liga"
+    },
+    "badge": {
+      "attackers": "{{count}} atacantes de liga",
+      "goalkeepers": "{{count}} porteros de liga"
+    },
+    "chart": {
+      "gpsActivity": {
+        "title": "Actividad GPS por mes",
+        "description": "Sesiones registradas en toda la organización (las sesiones no llevan temporada — se muestran por fecha real)"
+      }
+    },
+    "empty": {
+      "title": "Sin temporadas",
+      "description": "Las temporadas aparecen al importar un roster (equipo + temporada) o estadísticas de liga."
+    }
+  },
+  "liga": {
+    "title": "Competiciones · goleadores, porteros y roles",
+    "subtitle": "Clasificador de goleador de élite (AUC 0.891), clustering de roles y rendimiento vs. media de la conferencia",
+    "player_plural": "Jugadores",
+    "goalkeeper_plural": "Porteros",
+    "team": "Equipo",
+    "searchPlaceholder": "Buscar jugador o equipo…",
+    "metric": {
+      "goals_per_game": "Goles/partido",
+      "assists_per_game": "Asist./partido",
+      "points_per_game": "Puntos/partido",
+      "shots_per_game": "Tiros/partido",
+      "sh_pct_per_game": "% tiro",
+      "sog_per_game": "Tiros a puerta/partido",
+      "sog_pct_per_game": "% tiro a puerta",
+      "ga_per_game": "Goles recibidos/partido",
+      "gaa": "GAA",
+      "saves_per_game": "Atajadas/partido",
+      "save_pct": "% atajadas"
+    },
+    "col": {
+      "player": "Jugador",
+      "team": "Equipo",
+      "goals": "Goles",
+      "eliteProb": "Prob. élite",
+      "role": "Rol",
+      "gaa": "GAA",
+      "savePct": "% atajadas",
+      "metric": "Métrica",
+      "conference": "Conferencia",
+      "diff": "Diferencia"
+    },
+    "field": {
+      "savePctRatio": "% atajadas (0-1)",
+      "season": "Temporada",
+      "seasonHint": "Formato: YYYY",
+      "competition": "Competición",
+      "homeTeam": "Equipo propio",
+      "homeTeamHint": "Como aparece en la columna Team del Excel, ej. 'John Brown'"
+    },
+    "action": {
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "cancel": "Cancelar",
+      "save": "Guardar"
+    },
+    "toast": {
+      "saveError": "No se pudo guardar",
+      "rowUpdated": "Fila actualizada",
+      "deleteError": "No se pudo eliminar",
+      "rowDeleted": "Fila eliminada"
+    },
+    "import": {
+      "warningRoles": "Los roles y la probabilidad de goleador se calculan aparte, con el entrenamiento del backend.",
+      "triggerLabel": "Importar stats de conferencia (Excel)",
+      "title": "Importar stats de conferencia",
+      "description": "Sube el Excel con las hojas Game-Scoring, Game-Shooting, Game-Goalkepeer, Season-Scoring, Season-Shooting, Season-Misc y Season-Goalkepeer. Completa 'Equipo propio' para vincular tus jugadores con sus stats de liga.",
+      "preview": "Detecté {{attackers}} atacantes y {{goalkeepers}} porteros."
+    },
+    "confirmDelete": {
+      "title": "¿Eliminar a {{name}}?",
+      "description": "Se borra esta fila de stats de liga. No afecta al jugador en el roster ni sus sesiones GPS."
+    },
+    "tab": {
+      "attackers": "Atacantes",
+      "goalkeepers": "Porteros"
+    },
+    "empty": {
+      "attackers": {
+        "title": "Sin estadísticas de atacantes"
+      },
+      "goalkeepers": {
+        "title": "Sin estadísticas de porteros"
+      },
+      "noSeasonData": "No hay datos para esta temporada todavía."
+    },
+    "card": {
+      "topAttackers": {
+        "title": "Top 30 por probabilidad de goleador de élite"
+      },
+      "topGoalkeepers": {
+        "title": "Porteros por GAA (goles recibidos por partido)"
+      },
+      "season": "Temporada {{season}}",
+      "benchmarkDetail": "Detalle equipo vs. conferencia"
+    },
+    "chart": {
+      "attackerRoles": {
+        "title": "Distribución de roles (top 30)"
+      },
+      "goalkeeperRoles": {
+        "title": "Distribución de roles de portero"
+      },
+      "benchmark": {
+        "title": "Rendimiento vs. conferencia",
+        "description": "{{team}} vs. media del resto de la conferencia"
+      }
+    },
+    "editDialog": {
+      "title": "Editar {{name}}"
+    }
+  }
+}

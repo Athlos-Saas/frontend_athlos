@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Activity, AlertTriangle, BrainCircuit, Gauge, UserRound, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { DistributionDonutChart, type DonutDatum } from '@/components/charts/DistributionDonutChart';
 import { TrendAreaChart } from '@/components/charts/TrendAreaChart';
@@ -73,6 +74,7 @@ function buildDonutData(predictions: MlPrediction[]): DonutDatum[] {
 }
 
 export default function Dashboard({ orgId }: { orgId: string }) {
+  const { t } = useTranslation();
   const [state, setState] = useState<LoadState>('loading');
   const [kpis, setKpis] = useState<Kpis | null>(null);
   const [models, setModels] = useState<MlModel[]>([]);
@@ -152,27 +154,47 @@ export default function Dashboard({ orgId }: { orgId: string }) {
     <div>
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Centro de inteligencia deportiva</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Resumen en tiempo real de tu organización</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            {t('dashboard.title', 'Centro de inteligencia deportiva')}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t('dashboard.subtitle', 'Resumen en tiempo real de tu organización')}</p>
         </div>
         <Badge variant="ai" className="gap-1.5">
-          <span className="size-1.5 rounded-full bg-ai" /> Datos en vivo
+          <span className="size-1.5 rounded-full bg-ai" /> {t('dashboard.liveData', 'Datos en vivo')}
         </Badge>
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <StatCard label="Atletas monitoreados" value={kpis?.players ?? 0} icon={UserRound} accent="ai" isLoading={state === 'loading'} />
-        <StatCard label="Sesiones GPS" value={kpis?.sessions ?? 0} icon={Activity} accent="purple" isLoading={state === 'loading'} />
-        <StatCard label="Videos analizados" value={kpis?.videos ?? 0} icon={Video} accent="ai" isLoading={state === 'loading'} />
         <StatCard
-          label="Predicciones IA"
+          label={t('dashboard.kpi.players', 'Atletas monitoreados')}
+          value={kpis?.players ?? 0}
+          icon={UserRound}
+          accent="ai"
+          isLoading={state === 'loading'}
+        />
+        <StatCard
+          label={t('dashboard.kpi.sessions', 'Sesiones GPS')}
+          value={kpis?.sessions ?? 0}
+          icon={Activity}
+          accent="purple"
+          isLoading={state === 'loading'}
+        />
+        <StatCard
+          label={t('dashboard.kpi.videos', 'Videos analizados')}
+          value={kpis?.videos ?? 0}
+          icon={Video}
+          accent="ai"
+          isLoading={state === 'loading'}
+        />
+        <StatCard
+          label={t('dashboard.kpi.predictions', 'Predicciones IA')}
           value={kpis?.predictionsTotal ?? 0}
           icon={BrainCircuit}
           accent="purple"
           isLoading={state === 'loading'}
         />
         <StatCard
-          label="Alertas activas"
+          label={t('dashboard.kpi.activeAlerts', 'Alertas activas')}
           value={kpis?.activeAlerts ?? 0}
           icon={AlertTriangle}
           accent={kpis && kpis.activeAlerts > 0 ? 'danger' : 'success'}
@@ -182,21 +204,27 @@ export default function Dashboard({ orgId }: { orgId: string }) {
 
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <ChartCard
-          title="Sesiones GPS · últimos 14 días"
-          description="Volumen de sesiones registradas por toda la organización"
+          title={t('dashboard.chart.sessions.title', 'Sesiones GPS · últimos 14 días')}
+          description={t('dashboard.chart.sessions.description', 'Volumen de sesiones registradas por toda la organización')}
           isLoading={state === 'loading'}
           className="lg:col-span-2"
         >
-          <TrendAreaChart data={sessionSeries} xKey="date" yKey="sesiones" name="Sesiones" color={colors.blue} />
+          <TrendAreaChart
+            data={sessionSeries}
+            xKey="date"
+            yKey="sesiones"
+            name={t('dashboard.chart.sessions.seriesName', 'Sesiones')}
+            color={colors.blue}
+          />
         </ChartCard>
 
         <ChartCard
-          title="Distribución de predicciones"
-          description="Últimas 120 predicciones del modelo, por etiqueta"
+          title={t('dashboard.chart.predictions.title', 'Distribución de predicciones')}
+          description={t('dashboard.chart.predictions.description', 'Últimas 120 predicciones del modelo, por etiqueta')}
           isLoading={state === 'loading'}
         >
           {donutData.length === 0 ? (
-            <EmptyState icon={Gauge} title="Sin predicciones recientes" />
+            <EmptyState icon={Gauge} title={t('dashboard.chart.predictions.empty', 'Sin predicciones recientes')} />
           ) : (
             <DistributionDonutChart data={donutData} />
           )}
@@ -207,20 +235,23 @@ export default function Dashboard({ orgId }: { orgId: string }) {
         <Card className="lg:col-span-2">
           <CardHeader>
             <div>
-              <CardTitle>Modelos entrenados recientes</CardTitle>
-              <CardDescription className="mt-1">Últimas versiones registradas por el pipeline de ML</CardDescription>
+              <CardTitle>{t('dashboard.recentModels.title', 'Modelos entrenados recientes')}</CardTitle>
+              <CardDescription className="mt-1">
+                {t('dashboard.recentModels.description', 'Últimas versiones registradas por el pipeline de ML')}
+              </CardDescription>
             </div>
             <Link to="/modelos" className="text-xs font-medium text-ai hover:underline">
-              Ver todos →
+              {t('dashboard.recentModels.viewAll', 'Ver todos →')}
             </Link>
           </CardHeader>
           {state === 'ready' && models.length === 0 ? (
             <EmptyState
               icon={BrainCircuit}
-              title="Sin modelos aún"
+              title={t('dashboard.recentModels.empty.title', 'Sin modelos aún')}
               description={
                 <>
-                  Corre <code>run_training.py</code> en el backend.
+                  {t('dashboard.recentModels.empty.descriptionPrefix', 'Corre')} <code>run_training.py</code>{' '}
+                  {t('dashboard.recentModels.empty.descriptionSuffix', 'en el backend.')}
                 </>
               }
             />
@@ -228,10 +259,10 @@ export default function Dashboard({ orgId }: { orgId: string }) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Modelo</TableHead>
-                  <TableHead>Tarea</TableHead>
-                  <TableHead>Versión</TableHead>
-                  <TableHead>Métricas clave</TableHead>
+                  <TableHead>{t('dashboard.col.model', 'Modelo')}</TableHead>
+                  <TableHead>{t('dashboard.col.task', 'Tarea')}</TableHead>
+                  <TableHead>{t('dashboard.col.version', 'Versión')}</TableHead>
+                  <TableHead>{t('dashboard.col.metrics', 'Métricas clave')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -261,10 +292,10 @@ export default function Dashboard({ orgId }: { orgId: string }) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Actividad reciente</CardTitle>
+            <CardTitle>{t('dashboard.recentActivity.title', 'Actividad reciente')}</CardTitle>
           </CardHeader>
           {state === 'ready' && predictionFeed.length === 0 && (
-            <EmptyState icon={Activity} title="Sin actividad reciente" />
+            <EmptyState icon={Activity} title={t('dashboard.recentActivity.empty', 'Sin actividad reciente')} />
           )}
           <ul className="space-y-3">
             {state === 'loading'

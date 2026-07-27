@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { ChartCard } from '@/components/ui/ChartCard';
 import { RadarComparisonChart } from '@/components/charts/RadarComparisonChart';
 import { colors } from '@/constants/tokens';
@@ -16,10 +18,15 @@ export interface RadarDatum {
  * número.
  */
 export function PlayerRadar({ data, playerName }: { data: RadarDatum[]; playerName: string }) {
+  const { t } = useTranslation();
   if (data.length === 0) return null;
 
   return (
-    <ChartCard title="Radar físico" description="Promedios del jugador, normalizados sobre su propio historial de sesiones" height={320}>
+    <ChartCard
+      title={t('playerRadar.title', 'Radar físico')}
+      description={t('playerRadar.description', 'Promedios del jugador, normalizados sobre su propio historial de sesiones')}
+      height={320}
+    >
       <RadarComparisonChart data={data} dataKey="value" angleKey="metric" name={playerName} color={colors.purple} />
     </ChartCard>
   );

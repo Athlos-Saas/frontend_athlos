@@ -1,0 +1,45 @@
+{
+  "analisis": {
+    "title": "Análisis",
+    "subtitle": "Cargas GPS y video análisis en un mismo lugar. (Rediseño visual completo en Fase 7 — el contenido interno de estas pestañas aún usa los estilos anteriores.)",
+    "tabs": {
+      "gps": "Cargas GPS",
+      "video": "Video análisis",
+      "riesgo": "Riesgo de lesión"
+    }
+  },
+  "riesgoLesion": {
+    "title": "Riesgo de lesión",
+    "subtitle": "Puntaje heurístico basado en ACWR (carga aguda 7 días / carga crónica 28 días) + historial de lesiones — no es un modelo entrenado, mejora con más wellness diario y lesiones tipificadas.",
+    "unknownPlayer": "Jugador desconocido",
+    "backendUrlRequired": "Configura VITE_API_URL para habilitar esto.",
+    "updateAssessment": "Actualizar evaluación",
+    "evaluatedPlayers": "Jugadores evaluados",
+    "evaluatedPlayersDescription": "Excluye jugadores con una lesión activa (ya están lesionados, no \"en riesgo\").",
+    "searchPlaceholder": "Buscar jugador…",
+    "insufficientData": "Sin datos suficientes",
+    "noHistory": "Sin historial",
+    "daysAgo": "Hace {{count}} días",
+    "col": {
+      "player": "Jugador",
+      "riskLevel": "Nivel de riesgo",
+      "acwr": "ACWR (7d/28d)",
+      "lastInjury": "Última lesión",
+      "injuries365": "Lesiones (365 días)",
+      "confidence": "Confianza"
+    },
+    "toast": {
+      "updated": {
+        "title": "Evaluación actualizada",
+        "description": "{{count}} jugadores evaluados."
+      },
+      "failed": {
+        "title": "No se pudo actualizar"
+      }
+    },
+    "empty": {
+      "title": "Sin evaluación todavía",
+      "description": "Corré la evaluación para ver el riesgo de lesión de tu plantilla."
+    }
+  }
+}

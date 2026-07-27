@@ -1,0 +1,205 @@
+{
+  "equipos": {
+    "toast": {
+      "loadTeamsError": "Couldn't load teams",
+      "loadRosterError": "Couldn't load the roster"
+    },
+    "noPosition": "No position",
+    "player": "Player",
+    "player_plural": "Players",
+    "team": "Team",
+    "season": "Season",
+    "title": "Teams",
+    "subtitle": "Aggregated roster status — individual detail lives in Athletes",
+    "selectPlaceholder": "Team",
+    "viewRoster": "View roster",
+    "stat": {
+      "activePlayers": "Active players",
+      "availability": "Availability",
+      "gpsSessions": "GPS sessions ({{days}}d)",
+      "totalDistance": "Total distance ({{days}}d)"
+    },
+    "chart": {
+      "rosterComposition": {
+        "title": "Roster composition",
+        "description": "Active players by position"
+      },
+      "benchmark": {
+        "title": "Performance vs. conference",
+        "description": "{{team}} vs. conference average (offensive league stats)"
+      }
+    },
+    "card": {
+      "topLoad": {
+        "title": "Highest load ({{days}} days)",
+        "description": "Top 5 by accumulated distance — click opens the profile"
+      },
+      "wellness": {
+        "title": "Roster wellness ({{days}} days)",
+        "avgEntries": "Average of {{count}} daily entries",
+        "noRecent": "No recent entries"
+      },
+      "injured": {
+        "title": "Injured",
+        "description": "No return date recorded"
+      }
+    },
+    "empty": {
+      "title": "No teams",
+      "description": "Import a roster to create the organization's first team.",
+      "noGpsSessions": {
+        "title": "No GPS sessions",
+        "description": "No sessions recorded in the last {{days}} days."
+      },
+      "noWellness": {
+        "title": "No wellness data",
+        "description": "The roster didn't log daily wellness in the last week."
+      },
+      "noInjuries": {
+        "title": "Full roster available",
+        "description": "No active injuries on this team."
+      }
+    },
+    "metric": {
+      "rpe": "RPE",
+      "sleep": "Sleep (h)",
+      "soreness": "Soreness",
+      "mood": "Mood"
+    }
+  },
+  "competiciones": {
+    "title": "Competitions",
+    "subtitle": "Scorers and offensive roles by league and season. (Full visual redesign in Phase 7.)"
+  },
+  "temporadas": {
+    "toast": {
+      "loadError": "Couldn't load seasons"
+    },
+    "title": "Seasons",
+    "subtitle": "Season-by-season summary of teams, roster and league data",
+    "season": "Season",
+    "leagueOnly": "League data only (no own team registered)",
+    "sessions": "Sessions",
+    "stat": {
+      "teams": "Teams",
+      "players": "Players",
+      "league": "League"
+    },
+    "badge": {
+      "attackers": "{{count}} league attackers",
+      "goalkeepers": "{{count}} league goalkeepers"
+    },
+    "chart": {
+      "gpsActivity": {
+        "title": "GPS activity by month",
+        "description": "Sessions recorded across the organization (sessions don't carry a season — shown by actual date)"
+      }
+    },
+    "empty": {
+      "title": "No seasons",
+      "description": "Seasons appear when you import a roster (team + season) or league statistics."
+    }
+  },
+  "liga": {
+    "title": "Competitions · scorers, goalkeepers and roles",
+    "subtitle": "Elite scorer classifier (AUC 0.891), role clustering and performance vs. conference average",
+    "player_plural": "Players",
+    "goalkeeper_plural": "Goalkeepers",
+    "team": "Team",
+    "searchPlaceholder": "Search player or team…",
+    "metric": {
+      "goals_per_game": "Goals/game",
+      "assists_per_game": "Assists/game",
+      "points_per_game": "Points/game",
+      "shots_per_game": "Shots/game",
+      "sh_pct_per_game": "Shot %",
+      "sog_per_game": "Shots on goal/game",
+      "sog_pct_per_game": "Shots on goal %",
+      "ga_per_game": "Goals against/game",
+      "gaa": "GAA",
+      "saves_per_game": "Saves/game",
+      "save_pct": "Save %"
+    },
+    "col": {
+      "player": "Player",
+      "team": "Team",
+      "goals": "Goals",
+      "eliteProb": "Elite prob.",
+      "role": "Role",
+      "gaa": "GAA",
+      "savePct": "Save %",
+      "metric": "Metric",
+      "conference": "Conference",
+      "diff": "Diff."
+    },
+    "field": {
+      "savePctRatio": "Save % (0-1)",
+      "season": "Season",
+      "seasonHint": "Format: YYYY",
+      "competition": "Competition",
+      "homeTeam": "Own team",
+      "homeTeamHint": "As it appears in the Team column of the Excel file, e.g. 'John Brown'"
+    },
+    "action": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "toast": {
+      "saveError": "Couldn't save",
+      "rowUpdated": "Row updated",
+      "deleteError": "Couldn't delete",
+      "rowDeleted": "Row deleted"
+    },
+    "import": {
+      "warningRoles": "Roles and scorer probability are calculated separately, via backend training.",
+      "triggerLabel": "Import conference stats (Excel)",
+      "title": "Import conference stats",
+      "description": "Upload the Excel file with the Game-Scoring, Game-Shooting, Game-Goalkepeer, Season-Scoring, Season-Shooting, Season-Misc and Season-Goalkepeer sheets. Fill in 'Own team' to link your players with their league stats.",
+      "preview": "Detected {{attackers}} attackers and {{goalkeepers}} goalkeepers."
+    },
+    "confirmDelete": {
+      "title": "Delete {{name}}?",
+      "description": "This removes this league stats row. It doesn't affect the player's roster entry or their GPS sessions."
+    },
+    "tab": {
+      "attackers": "Attackers",
+      "goalkeepers": "Goalkeepers"
+    },
+    "empty": {
+      "attackers": {
+        "title": "No attacker statistics"
+      },
+      "goalkeepers": {
+        "title": "No goalkeeper statistics"
+      },
+      "noSeasonData": "No data for this season yet."
+    },
+    "card": {
+      "topAttackers": {
+        "title": "Top 30 by elite scorer probability"
+      },
+      "topGoalkeepers": {
+        "title": "Goalkeepers by GAA (goals against per game)"
+      },
+      "season": "Season {{season}}",
+      "benchmarkDetail": "Team vs. conference detail"
+    },
+    "chart": {
+      "attackerRoles": {
+        "title": "Role distribution (top 30)"
+      },
+      "goalkeeperRoles": {
+        "title": "Goalkeeper role distribution"
+      },
+      "benchmark": {
+        "title": "Performance vs. conference",
+        "description": "{{team}} vs. rest of conference average"
+      }
+    },
+    "editDialog": {
+      "title": "Edit {{name}}"
+    }
+  }
+}

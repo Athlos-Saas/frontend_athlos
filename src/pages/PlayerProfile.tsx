@@ -1,6 +1,7 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Download, MoreVertical, Pencil, Share2, UserRound } from 'lucide-react';
 
 import { Badge } from '@/components/ui/Badge';
@@ -34,13 +35,17 @@ const TabMultimedia = lazy(() => import('@/features/playerProfile/tabs/TabMultim
 
 const TAB_FALLBACK = <Skeleton className="h-64 w-full" />;
 
-const NOT_IMPLEMENTED_MESSAGE = 'No implementado todavía: no hay librería de exportación/compartición instalada en el proyecto.';
-
 export default function PlayerProfile({ orgId, role }: { orgId: string; role: string | null }) {
+  const { t } = useTranslation();
   const { playerId } = useParams<{ playerId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
+
+  const notImplementedMessage = t(
+    'playerProfile.notImplemented',
+    'No implementado todavía: no hay librería de exportación/compartición instalada en el proyecto.',
+  );
 
   const core = usePlayerCore(orgId, playerId ?? '');
   const injuries = usePlayerInjuries(orgId, playerId ?? '');
@@ -53,10 +58,10 @@ export default function PlayerProfile({ orgId, role }: { orgId: string; role: st
     if (!core.data) return;
     const { error } = await supabase.from('players').update(updated).eq('id', core.data.id);
     if (error) {
-      toast({ title: 'No se pudo guardar el jugador', description: error.message, variant: 'danger' });
+      toast({ title: t('playerProfile.saveError', 'No se pudo guardar el jugador'), description: error.message, variant: 'danger' });
       return;
     }
-    toast({ title: 'Jugador actualizado', variant: 'success' });
+    toast({ title: t('playerProfile.playerUpdated', 'Jugador actualizado'), variant: 'success' });
     setIsEditing(false);
     core.refetch();
   };
@@ -79,20 +84,23 @@ export default function PlayerProfile({ orgId, role }: { orgId: string; role: st
     core.refetch();
   };
 
-  if (!playerId) return <ErrorState title="Jugador no especificado" />;
+  if (!playerId) return <ErrorState title={t('playerProfile.playerNotSpecified', 'Jugador no especificado')} />;
 
   return (
     <div className="space-y-6 pb-10">
       <Button variant="ghost" size="sm" onClick={() => navigate('/atletas')}>
-        <ArrowLeft className="size-4" aria-hidden="true" /> Volver al roster
+        <ArrowLeft className="size-4" aria-hidden="true" /> {t('playerProfile.backToRoster', 'Volver al roster')}
       </Button>
 
       {core.isLoading ? (
         <Skeleton className="h-40 w-full" />
       ) : core.isError ? (
-        <ErrorState title="No se pudo cargar el jugador" onRetry={() => core.refetch()} />
+        <ErrorState title={t('playerProfile.loadError', 'No se pudo cargar el jugador')} onRetry={() => core.refetch()} />
       ) : !core.data ? (
-        <ErrorState title="Jugador no encontrado" description="Puede que no exista o no pertenezca a tu organización." />
+        <ErrorState
+          title={t('playerProfile.playerNotFound', 'Jugador no encontrado')}
+          description={t('playerProfile.playerNotFoundDescription', 'Puede que no exista o no pertenezca a tu organización.')}
+        />
       ) : (
         <>
           <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-6 shadow-subtle sm:flex-row sm:items-center sm:justify-between">
@@ -110,30 +118,36 @@ export default function PlayerProfile({ orgId, role }: { orgId: string; role: st
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-2xl font-bold tracking-tight text-foreground">{core.data.full_name}</h1>
                   <StatusBadge status={status} />
-                  {!core.data.is_active && <Badge variant="neutral">Inactivo</Badge>}
+                  {!core.data.is_active && <Badge variant="neutral">{t('playerProfile.inactive', 'Inactivo')}</Badge>}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                   {core.data.position && <Badge variant="ai">{core.data.position}</Badge>}
-                  <span>{core.data.team_name ?? 'Sin equipo asignado'}</span>
+                  <span>{core.data.team_name ?? t('playerProfile.noTeamAssigned', 'Sin equipo asignado')}</span>
                   {core.data.team_season && <span>· {core.data.team_season}</span>}
-                  {age !== null && <span>· {age} años</span>}
+                  {age !== null && (
+                    <span>
+                      · {age} {t('playerProfile.years', 'años')}
+                    </span>
+                  )}
                   {core.data.height_cm && <span>· {core.data.height_cm} cm</span>}
                   {core.data.weight_kg && <span>· {core.data.weight_kg} kg</span>}
                 </div>
-                <p className="text-xs text-muted-foreground">Última actualización: {formatDateTime(core.data.updated_at)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t('playerProfile.lastUpdated', 'Última actualización: {{date}}', { date: formatDateTime(core.data.updated_at) })}
+                </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               {canWrite(role) && (
                 <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
-                  <Pencil className="size-4" aria-hidden="true" /> Editar jugador
+                  <Pencil className="size-4" aria-hidden="true" /> {t('playerProfile.editPlayer', 'Editar jugador')}
                 </Button>
               )}
               <TooltipProvider>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" size="icon" aria-label="Más acciones">
+                    <Button variant="secondary" size="icon" aria-label={t('playerProfile.moreActions', 'Más acciones')}>
                       <MoreVertical className="size-4" aria-hidden="true" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -142,21 +156,21 @@ export default function PlayerProfile({ orgId, role }: { orgId: string; role: st
                       <TooltipTrigger asChild>
                         <div>
                           <DropdownMenuItem disabled onSelect={(event) => event.preventDefault()}>
-                            <Share2 className="size-4" aria-hidden="true" /> Compartir ficha
+                            <Share2 className="size-4" aria-hidden="true" /> {t('playerProfile.shareRecord', 'Compartir ficha')}
                           </DropdownMenuItem>
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent>{NOT_IMPLEMENTED_MESSAGE}</TooltipContent>
+                      <TooltipContent>{notImplementedMessage}</TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div>
                           <DropdownMenuItem disabled onSelect={(event) => event.preventDefault()}>
-                            <Download className="size-4" aria-hidden="true" /> Exportar PDF
+                            <Download className="size-4" aria-hidden="true" /> {t('playerProfile.exportPdf', 'Exportar PDF')}
                           </DropdownMenuItem>
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent>{NOT_IMPLEMENTED_MESSAGE}</TooltipContent>
+                      <TooltipContent>{notImplementedMessage}</TooltipContent>
                     </Tooltip>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -179,14 +193,14 @@ export default function PlayerProfile({ orgId, role }: { orgId: string; role: st
 
             <Tabs defaultValue="resumen">
               <TabsList className="flex flex-wrap">
-                <TabsTrigger value="resumen">Resumen</TabsTrigger>
-                <TabsTrigger value="estadisticas">Estadísticas</TabsTrigger>
-                <TabsTrigger value="rendimiento">Rendimiento</TabsTrigger>
-                <TabsTrigger value="historial">Historial</TabsTrigger>
-                <TabsTrigger value="salud">Salud</TabsTrigger>
-                <TabsTrigger value="scouting">Scouting</TabsTrigger>
-                <TabsTrigger value="documentos">Documentos</TabsTrigger>
-                <TabsTrigger value="multimedia">Multimedia</TabsTrigger>
+                <TabsTrigger value="resumen">{t('playerProfile.tabs.resumen', 'Resumen')}</TabsTrigger>
+                <TabsTrigger value="estadisticas">{t('playerProfile.tabs.estadisticas', 'Estadísticas')}</TabsTrigger>
+                <TabsTrigger value="rendimiento">{t('playerProfile.tabs.rendimiento', 'Rendimiento')}</TabsTrigger>
+                <TabsTrigger value="historial">{t('playerProfile.tabs.historial', 'Historial')}</TabsTrigger>
+                <TabsTrigger value="salud">{t('playerProfile.tabs.salud', 'Salud')}</TabsTrigger>
+                <TabsTrigger value="scouting">{t('playerProfile.tabs.scouting', 'Scouting')}</TabsTrigger>
+                <TabsTrigger value="documentos">{t('playerProfile.tabs.documentos', 'Documentos')}</TabsTrigger>
+                <TabsTrigger value="multimedia">{t('playerProfile.tabs.multimedia', 'Multimedia')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="resumen">
@@ -232,7 +246,12 @@ export default function PlayerProfile({ orgId, role }: { orgId: string; role: st
             </Tabs>
           </div>
 
-          <EditPlayerDialog player={isEditing ? core.data : null} onClose={() => setIsEditing(false)} onSave={handleSave} />
+          <EditPlayerDialog
+            player={isEditing ? core.data : null}
+            onClose={() => setIsEditing(false)}
+            onSave={handleSave}
+            onPhotoChange={handlePhotoChange}
+          />
         </>
       )}
     </div>

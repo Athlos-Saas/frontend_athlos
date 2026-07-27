@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors } from '@/constants/tokens';
 import type { Injury } from '@/types/domain';
@@ -34,6 +36,7 @@ function matchZone(bodyArea: string): Zone | undefined {
  * nunca inventa una lesión donde no la hay.
  */
 export function BodyMap({ injuries }: { injuries: Injury[] }) {
+  const { t } = useTranslation();
   const withArea = injuries.filter((injury): injury is Injury & { body_area: string } => !!injury.body_area);
   const activeZoneKeys = new Set(
     withArea.filter((injury) => !injury.return_date).flatMap((injury) => matchZone(injury.body_area)?.key ?? []),
@@ -55,14 +58,17 @@ export function BodyMap({ injuries }: { injuries: Injury[] }) {
         })}
       </svg>
       {withArea.length === 0 ? (
-        <EmptyState title="Sin información de zona corporal" description="Las lesiones registradas no tienen una zona del cuerpo capturada todavía." />
+        <EmptyState
+          title={t('bodyMap.emptyTitle', 'Sin información de zona corporal')}
+          description={t('bodyMap.emptyDescription', 'Las lesiones registradas no tienen una zona del cuerpo capturada todavía.')}
+        />
       ) : (
         <div className="flex flex-wrap justify-center gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
-            <span className="size-2.5 rounded-full" style={{ backgroundColor: colors.red }} /> Lesión activa
+            <span className="size-2.5 rounded-full" style={{ backgroundColor: colors.red }} /> {t('bodyMap.activeInjury', 'Lesión activa')}
           </span>
           <span className="flex items-center gap-1">
-            <span className="size-2.5 rounded-full" style={{ backgroundColor: colors.orange }} /> Historial
+            <span className="size-2.5 rounded-full" style={{ backgroundColor: colors.orange }} /> {t('bodyMap.history', 'Historial')}
           </span>
         </div>
       )}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, HeartPulse, RefreshCw } from 'lucide-react';
 
 import { DataTable, type DataTableColumn } from '@/components/tables/DataTable';
@@ -36,6 +37,7 @@ interface RiskRow {
 }
 
 export default function RiesgoLesion({ orgId, role }: { orgId: string; role: string | null }) {
+  const { t } = useTranslation();
   const [rows, setRows] = useState<RiskRow[]>([]);
   const [state, setState] = useState<LoadState>('loading');
   const [reloadToken, setReloadToken] = useState(0);
@@ -73,7 +75,7 @@ export default function RiesgoLesion({ orgId, role }: { orgId: string; role: str
           const features = (p.features ?? {}) as Record<string, number | string | null>;
           return {
             player_id: p.player_id!,
-            full_name: nameById.get(p.player_id!) ?? 'Jugador desconocido',
+            full_name: nameById.get(p.player_id!) ?? t('riesgoLesion.unknownPlayer', 'Jugador desconocido'),
             label: p.label,
             score: p.score ?? null,
             acwr: (features.acwr as number | null) ?? null,
@@ -100,47 +102,66 @@ export default function RiesgoLesion({ orgId, role }: { orgId: string; role: str
       const written = results[0]?.predictions_written ?? 0;
       const metrics = results[0]?.metrics as Record<string, unknown> | undefined;
       setWarning(typeof metrics?.advertencia === 'string' ? metrics.advertencia : null);
-      toast({ title: 'Evaluación actualizada', description: `${written} jugadores evaluados.`, variant: 'success' });
+      toast({
+        title: t('riesgoLesion.toast.updated.title', 'Evaluación actualizada'),
+        description: t('riesgoLesion.toast.updated.description', '{{count}} jugadores evaluados.', {
+          count: written,
+        }),
+        variant: 'success',
+      });
       setReloadToken((n) => n + 1);
     } catch (error) {
-      toast({ title: 'No se pudo actualizar', description: error instanceof Error ? error.message : undefined, variant: 'danger' });
+      toast({
+        title: t('riesgoLesion.toast.failed.title', 'No se pudo actualizar'),
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'danger',
+      });
     } finally {
       setIsTraining(false);
     }
   };
 
   const columns: DataTableColumn<RiskRow>[] = [
-    { id: 'full_name', header: 'Jugador', sortable: true, accessor: (row) => row.full_name, className: 'font-medium text-foreground' },
+    {
+      id: 'full_name',
+      header: t('riesgoLesion.col.player', 'Jugador'),
+      sortable: true,
+      accessor: (row) => row.full_name,
+      className: 'font-medium text-foreground',
+    },
     {
       id: 'label',
-      header: 'Nivel de riesgo',
+      header: t('riesgoLesion.col.riskLevel', 'Nivel de riesgo'),
       sortable: true,
       accessor: (row) => row.label,
       cell: (row) => <Badge variant={RISK_BADGE[row.label as RiskLevel] ?? 'neutral'}>{row.label}</Badge>,
     },
     {
       id: 'acwr',
-      header: 'ACWR (7d/28d)',
+      header: t('riesgoLesion.col.acwr', 'ACWR (7d/28d)'),
       sortable: true,
       accessor: (row) => row.acwr ?? '',
-      cell: (row) => (row.acwr != null ? row.acwr.toFixed(2) : 'Sin datos suficientes'),
+      cell: (row) => (row.acwr != null ? row.acwr.toFixed(2) : t('riesgoLesion.insufficientData', 'Sin datos suficientes')),
     },
     {
       id: 'dias_desde_ultima_lesion',
-      header: 'Última lesión',
+      header: t('riesgoLesion.col.lastInjury', 'Última lesión'),
       sortable: true,
       accessor: (row) => row.dias_desde_ultima_lesion ?? '',
-      cell: (row) => (row.dias_desde_ultima_lesion != null ? `Hace ${row.dias_desde_ultima_lesion} días` : 'Sin historial'),
+      cell: (row) =>
+        row.dias_desde_ultima_lesion != null
+          ? t('riesgoLesion.daysAgo', 'Hace {{count}} días', { count: row.dias_desde_ultima_lesion })
+          : t('riesgoLesion.noHistory', 'Sin historial'),
     },
     {
       id: 'lesiones_ultimos_365_dias',
-      header: 'Lesiones (365 días)',
+      header: t('riesgoLesion.col.injuries365', 'Lesiones (365 días)'),
       sortable: true,
       accessor: (row) => row.lesiones_ultimos_365_dias ?? 0,
     },
     {
       id: 'confianza',
-      header: 'Confianza',
+      header: t('riesgoLesion.col.confidence', 'Confianza'),
       sortable: true,
       accessor: (row) => row.confianza ?? '',
       cell: (row) =>
@@ -158,10 +179,14 @@ export default function RiesgoLesion({ orgId, role }: { orgId: string; role: str
     <div>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Riesgo de lesión</h2>
+          <h2 className="text-lg font-semibold text-foreground">
+            {t('riesgoLesion.title', 'Riesgo de lesión')}
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Puntaje heurístico basado en ACWR (carga aguda 7 días / carga crónica 28 días) + historial de
-            lesiones — no es un modelo entrenado, mejora con más wellness diario y lesiones tipificadas.
+            {t(
+              'riesgoLesion.subtitle',
+              'Puntaje heurístico basado en ACWR (carga aguda 7 días / carga crónica 28 días) + historial de lesiones — no es un modelo entrenado, mejora con más wellness diario y lesiones tipificadas.'
+            )}
           </p>
         </div>
         {canWrite(role) && (
@@ -171,9 +196,14 @@ export default function RiesgoLesion({ orgId, role }: { orgId: string; role: str
             disabled={!backendUrl}
             isLoading={isTraining}
             onClick={handleAssess}
-            title={backendUrl ? undefined : 'Configura VITE_API_URL para habilitar esto.'}
+            title={
+              backendUrl
+                ? undefined
+                : t('riesgoLesion.backendUrlRequired', 'Configura VITE_API_URL para habilitar esto.')
+            }
           >
-            <RefreshCw className="size-4" aria-hidden="true" /> Actualizar evaluación
+            <RefreshCw className="size-4" aria-hidden="true" />{' '}
+            {t('riesgoLesion.updateAssessment', 'Actualizar evaluación')}
           </Button>
         )}
       </div>
@@ -188,9 +218,12 @@ export default function RiesgoLesion({ orgId, role }: { orgId: string; role: str
       <Card>
         <CardHeader>
           <div>
-            <CardTitle>Jugadores evaluados</CardTitle>
+            <CardTitle>{t('riesgoLesion.evaluatedPlayers', 'Jugadores evaluados')}</CardTitle>
             <CardDescription className="mt-1">
-              Excluye jugadores con una lesión activa (ya están lesionados, no "en riesgo").
+              {t(
+                'riesgoLesion.evaluatedPlayersDescription',
+                'Excluye jugadores con una lesión activa (ya están lesionados, no "en riesgo").'
+              )}
             </CardDescription>
           </div>
         </CardHeader>
@@ -200,13 +233,16 @@ export default function RiesgoLesion({ orgId, role }: { orgId: string; role: str
           data={rows}
           getRowId={(row) => row.player_id}
           isLoading={state === 'loading'}
-          searchPlaceholder="Buscar jugador…"
+          searchPlaceholder={t('riesgoLesion.searchPlaceholder', 'Buscar jugador…')}
           exportFileName="riesgo-lesion.csv"
           emptyState={
             <EmptyState
               icon={HeartPulse}
-              title="Sin evaluación todavía"
-              description="Corré la evaluación para ver el riesgo de lesión de tu plantilla."
+              title={t('riesgoLesion.empty.title', 'Sin evaluación todavía')}
+              description={t(
+                'riesgoLesion.empty.description',
+                'Corré la evaluación para ver el riesgo de lesión de tu plantilla.'
+              )}
             />
           }
         />

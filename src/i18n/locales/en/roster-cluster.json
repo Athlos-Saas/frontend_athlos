@@ -1,0 +1,124 @@
+{
+  "roster": {
+    "title": "Physical roster",
+    "subtitle": "Position, height, weight and injury status per player",
+    "showInactive": "Show inactive",
+    "teamPlaceholder": "Team",
+    "searchPlaceholder": "Search player…",
+    "col": {
+      "fullName": "Player",
+      "position": "Position",
+      "height": "Height (cm)",
+      "weight": "Weight (kg)",
+      "age": "Age",
+      "league": "League",
+      "status": "Status"
+    },
+    "league": {
+      "attackerSummary": "{{goals}} goals · {{role}}",
+      "goalkeeperSummary": "GAA {{gaa}} · {{role}}"
+    },
+    "status": {
+      "available": "Available",
+      "injured": "Injured",
+      "noDetail": "No details",
+      "markRecovered": "Mark as recovered",
+      "deleteRecord": "Delete record"
+    },
+    "import": {
+      "triggerLabel": "Import roster (Excel)",
+      "title": "Import physical roster",
+      "description": "Upload the Excel file with columns Name/Position/Weight/Height/Age/Recent injuries.",
+      "preview": "Detected {{players}} players and {{injuries}} injuries.",
+      "injuriesRegistered": "{{count}} injuries registered."
+    },
+    "empty": {
+      "title": "No roster yet",
+      "description": "Run the seed with --roster on the backend."
+    },
+    "playersCard": {
+      "title": "Players",
+      "description": "{{count}} players registered"
+    },
+    "action": {
+      "viewProfile": "View profile",
+      "reactivate": "Reactivate",
+      "edit": "Edit",
+      "deactivate": "Deactivate"
+    },
+    "confirmDeactivate": {
+      "title": "Deactivate {{name}}?",
+      "description": "They will stop appearing in the active roster; their historical data (sessions, stats) is not deleted.",
+      "confirmLabel": "Deactivate"
+    },
+    "toast": {
+      "saveError": "Could not save",
+      "playerUpdated": "Player updated",
+      "deactivateError": "Could not deactivate",
+      "deactivated": "{{name}} deactivated",
+      "reactivateError": "Could not reactivate",
+      "reactivated": "{{name}} reactivated",
+      "updateError": "Could not update",
+      "injuryRecovered": "Injury marked as recovered",
+      "deleteError": "Could not delete",
+      "injuryDeleted": "Injury record deleted"
+    }
+  },
+  "editPlayerDialog": {
+    "title": "Edit {{name}}",
+    "photoPreviewAlt": "Preview",
+    "photo": {
+      "replaceNotice": "You are about to replace the current photo.",
+      "saveNotice": "You are about to save this photo.",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "change": "Change photo",
+      "privacyNote": "Saved in your organization's private storage (automatically compressed) — only staff with access can view it."
+    },
+    "field": {
+      "position": "Position",
+      "height": "Height (cm)",
+      "weight": "Weight (kg)",
+      "birthdate": "Date of birth"
+    },
+    "cancel": "Cancel",
+    "save": "Save",
+    "toast": {
+      "photoProcessError": "Could not process the image",
+      "photoUpdated": "Photo updated",
+      "photoSaveError": "Could not save the photo"
+    }
+  },
+  "importDialog": {
+    "kind": {
+      "roster": "physical roster",
+      "catapult": "Catapult GPS sessions",
+      "conference": "conference stats",
+      "unknown": "unknown"
+    },
+    "kindMismatch": "I detected a {{detected}} file, but this section expects {{expected}}.",
+    "readError": "I couldn't read the file.",
+    "downloadTemplate": "Download template",
+    "fileLabel": "File:",
+    "analyzing": "Analyzing…",
+    "cancel": "Cancel",
+    "confirm": "Confirm and import",
+    "toast": {
+      "completeTitle": "Import complete",
+      "completeDescription": "{{written}} rows written{{skipped}}.{{warnings}}",
+      "skippedFragment": ", {{skipped}} skipped",
+      "errorTitle": "Import error",
+      "unexpectedError": "An unexpected error occurred."
+    }
+  },
+  "importHistory": {
+    "title": "Recent imports",
+    "subtitle": "Last 5 uploads of this type",
+    "col": {
+      "file": "File",
+      "written": "Written",
+      "skipped": "Skipped",
+      "date": "Date"
+    }
+  }
+}

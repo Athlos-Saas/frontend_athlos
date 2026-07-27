@@ -1,4 +1,5 @@
 import { BarChart3 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -9,6 +10,7 @@ import { usePagedRows } from '@/hooks/usePagedRows';
 import { usePlayerLeagueStats } from '../queries';
 
 export default function TabEstadisticas({ orgId, playerId }: { orgId: string; playerId: string }) {
+  const { t } = useTranslation();
   const { data, isLoading } = usePlayerLeagueStats(orgId, playerId);
 
   const attacker = data?.attacker ?? [];
@@ -22,8 +24,11 @@ export default function TabEstadisticas({ orgId, playerId }: { orgId: string; pl
     return (
       <EmptyState
         icon={BarChart3}
-        title="Sin estadísticas de liga"
-        description="Este jugador no está reconciliado con ninguna fila de league_attacker_stats/league_goalkeeper_stats todavía (se vincula por nombre al importar stats de conferencia)."
+        title={t('tabEstadisticas.empty.title', 'Sin estadísticas de liga')}
+        description={t(
+          'tabEstadisticas.empty.description',
+          'Este jugador no está reconciliado con ninguna fila de league_attacker_stats/league_goalkeeper_stats todavía (se vincula por nombre al importar stats de conferencia).',
+        )}
       />
     );
   }
@@ -34,20 +39,20 @@ export default function TabEstadisticas({ orgId, playerId }: { orgId: string; pl
         <Card>
           <CardHeader>
             <div>
-              <CardTitle>Stats ofensivas</CardTitle>
-              <CardDescription className="mt-1">Por temporada/competición</CardDescription>
+              <CardTitle>{t('tabEstadisticas.offensive.title', 'Stats ofensivas')}</CardTitle>
+              <CardDescription className="mt-1">{t('tabEstadisticas.bySeasonCompetition', 'Por temporada/competición')}</CardDescription>
             </div>
           </CardHeader>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Temporada</TableHead>
-                <TableHead>Competición</TableHead>
-                <TableHead className="text-right">PJ</TableHead>
-                <TableHead className="text-right">Goles</TableHead>
-                <TableHead className="text-right">Asist.</TableHead>
-                <TableHead className="text-right">Puntos</TableHead>
-                <TableHead>Rol</TableHead>
+                <TableHead>{t('tabEstadisticas.col.season', 'Temporada')}</TableHead>
+                <TableHead>{t('tabEstadisticas.col.competition', 'Competición')}</TableHead>
+                <TableHead className="text-right">{t('tabEstadisticas.col.gp', 'PJ')}</TableHead>
+                <TableHead className="text-right">{t('tabEstadisticas.col.goals', 'Goles')}</TableHead>
+                <TableHead className="text-right">{t('tabEstadisticas.col.assists', 'Asist.')}</TableHead>
+                <TableHead className="text-right">{t('tabEstadisticas.col.points', 'Puntos')}</TableHead>
+                <TableHead>{t('tabEstadisticas.col.role', 'Rol')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -72,20 +77,20 @@ export default function TabEstadisticas({ orgId, playerId }: { orgId: string; pl
         <Card>
           <CardHeader>
             <div>
-              <CardTitle>Stats de portero</CardTitle>
-              <CardDescription className="mt-1">Por temporada/competición</CardDescription>
+              <CardTitle>{t('tabEstadisticas.goalkeeper.title', 'Stats de portero')}</CardTitle>
+              <CardDescription className="mt-1">{t('tabEstadisticas.bySeasonCompetition', 'Por temporada/competición')}</CardDescription>
             </div>
           </CardHeader>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Temporada</TableHead>
-                <TableHead>Competición</TableHead>
-                <TableHead className="text-right">PJ</TableHead>
-                <TableHead className="text-right">GAA</TableHead>
-                <TableHead className="text-right">Atajadas</TableHead>
-                <TableHead className="text-right">% atajadas</TableHead>
-                <TableHead>Rol</TableHead>
+                <TableHead>{t('tabEstadisticas.col.season', 'Temporada')}</TableHead>
+                <TableHead>{t('tabEstadisticas.col.competition', 'Competición')}</TableHead>
+                <TableHead className="text-right">{t('tabEstadisticas.col.gp', 'PJ')}</TableHead>
+                <TableHead className="text-right">{t('tabEstadisticas.col.gaa', 'GAA')}</TableHead>
+                <TableHead className="text-right">{t('tabEstadisticas.col.saves', 'Atajadas')}</TableHead>
+                <TableHead className="text-right">{t('tabEstadisticas.col.savePct', '% atajadas')}</TableHead>
+                <TableHead>{t('tabEstadisticas.col.role', 'Rol')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

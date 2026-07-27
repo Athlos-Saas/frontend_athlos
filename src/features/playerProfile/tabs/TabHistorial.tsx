@@ -1,4 +1,5 @@
 import { History } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -13,6 +14,7 @@ import { usePlayerInjuries } from '../queries';
  * autor+rol+fecha) — no se muestra, ver gaps del plan.
  */
 export default function TabHistorial({ orgId, playerId }: { orgId: string; playerId: string }) {
+  const { t } = useTranslation();
   const { data, isLoading } = usePlayerInjuries(orgId, playerId);
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
@@ -20,15 +22,23 @@ export default function TabHistorial({ orgId, playerId }: { orgId: string; playe
   const injuries = data ?? [];
 
   if (injuries.length === 0) {
-    return <EmptyState icon={History} title="Sin historial" description="Este jugador no tiene lesiones registradas." />;
+    return (
+      <EmptyState
+        icon={History}
+        title={t('tabHistorial.empty.title', 'Sin historial')}
+        description={t('tabHistorial.empty.description', 'Este jugador no tiene lesiones registradas.')}
+      />
+    );
   }
 
   return (
     <Card>
       <CardHeader>
         <div>
-          <CardTitle>Historial de lesiones</CardTitle>
-          <CardDescription className="mt-1">{injuries.length} registros</CardDescription>
+          <CardTitle>{t('tabHistorial.title', 'Historial de lesiones')}</CardTitle>
+          <CardDescription className="mt-1">
+            {t('tabHistorial.recordsCount', '{{count}} registros', { count: injuries.length })}
+          </CardDescription>
         </div>
       </CardHeader>
       <InjuryTimeline injuries={injuries} />

@@ -1,4 +1,5 @@
 import { HeartPulse } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -12,6 +13,7 @@ import { formatDate } from '../format';
 import { usePlayerInjuries, usePlayerWellness } from '../queries';
 
 export default function TabSalud({ orgId, playerId }: { orgId: string; playerId: string }) {
+  const { t } = useTranslation();
   const wellness = usePlayerWellness(orgId, playerId);
   const injuries = usePlayerInjuries(orgId, playerId);
 
@@ -25,31 +27,41 @@ export default function TabSalud({ orgId, playerId }: { orgId: string; playerId:
   return (
     <div className="space-y-5">
       {entries.length === 0 ? (
-        <EmptyState icon={HeartPulse} title="Sin registros de wellness" description="Este jugador no tiene entradas de wellness diario todavía." />
+        <EmptyState
+          icon={HeartPulse}
+          title={t('tabSalud.emptyTitle', 'Sin registros de wellness')}
+          description={t('tabSalud.emptyDescription', 'Este jugador no tiene entradas de wellness diario todavía.')}
+        />
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="RPE (último registro)" value={latest.rpe} accent="purple" />
-            <StatCard label="Sueño" value={`${latest.sleep_hours}h`} accent="ai" />
-            <StatCard label="Dolor muscular" value={latest.soreness} accent={latest.soreness >= 6 ? 'danger' : 'success'} />
-            <StatCard label="Ánimo" value={latest.mood} accent="success" />
+            <StatCard label={t('tabSalud.rpeLatest', 'RPE (último registro)')} value={latest.rpe} accent="purple" />
+            <StatCard label={t('tabSalud.sleep', 'Sueño')} value={`${latest.sleep_hours}h`} accent="ai" />
+            <StatCard
+              label={t('tabSalud.sorenessStat', 'Dolor muscular')}
+              value={latest.soreness}
+              accent={latest.soreness >= 6 ? 'danger' : 'success'}
+            />
+            <StatCard label={t('tabSalud.mood', 'Ánimo')} value={latest.mood} accent="success" />
           </div>
 
           <Card>
             <CardHeader>
               <div>
-                <CardTitle>Últimos registros</CardTitle>
-                <CardDescription className="mt-1">{entries.length} entradas</CardDescription>
+                <CardTitle>{t('tabSalud.recentEntries', 'Últimos registros')}</CardTitle>
+                <CardDescription className="mt-1">
+                  {t('tabSalud.entriesCount', '{{count}} entradas', { count: entries.length })}
+                </CardDescription>
               </div>
             </CardHeader>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead className="text-right">RPE</TableHead>
-                  <TableHead className="text-right">Sueño</TableHead>
-                  <TableHead className="text-right">Dolor</TableHead>
-                  <TableHead className="text-right">Ánimo</TableHead>
+                  <TableHead>{t('tabSalud.date', 'Fecha')}</TableHead>
+                  <TableHead className="text-right">{t('tabSalud.rpe', 'RPE')}</TableHead>
+                  <TableHead className="text-right">{t('tabSalud.sleep', 'Sueño')}</TableHead>
+                  <TableHead className="text-right">{t('tabSalud.soreness', 'Dolor')}</TableHead>
+                  <TableHead className="text-right">{t('tabSalud.mood', 'Ánimo')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -72,7 +84,7 @@ export default function TabSalud({ orgId, playerId }: { orgId: string; playerId:
 
       <Card>
         <CardHeader>
-          <CardTitle>Mapa de lesiones</CardTitle>
+          <CardTitle>{t('tabSalud.bodyMapTitle', 'Mapa de lesiones')}</CardTitle>
         </CardHeader>
         <BodyMap injuries={injuries.data ?? []} />
       </Card>

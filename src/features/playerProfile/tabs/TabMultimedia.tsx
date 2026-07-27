@@ -1,4 +1,5 @@
 import { Film, UserRound } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -10,6 +11,7 @@ import { formatDate, formatNumber } from '../format';
 import { usePlayerMediaUrl, usePlayerVideoTracks } from '../queries';
 
 export default function TabMultimedia({ orgId, playerId, photoPath }: { orgId: string; playerId: string; photoPath?: string | null }) {
+  const { t } = useTranslation();
   const { data, isLoading } = usePlayerVideoTracks(orgId, playerId);
   const photoUrl = usePlayerMediaUrl(photoPath);
 
@@ -22,10 +24,10 @@ export default function TabMultimedia({ orgId, playerId, photoPath }: { orgId: s
     <div className="space-y-5">
       <Card>
         <CardHeader>
-          <CardTitle>Foto</CardTitle>
+          <CardTitle>{t('tabMultimedia.photoTitle', 'Foto')}</CardTitle>
         </CardHeader>
         {photoUrl.data ? (
-          <img src={photoUrl.data} alt="Foto del jugador" className="h-48 w-48 rounded-xl object-cover" />
+          <img src={photoUrl.data} alt={t('tabMultimedia.photoAlt', 'Foto del jugador')} className="h-48 w-48 rounded-xl object-cover" />
         ) : (
           <div className="flex h-48 w-48 items-center justify-center rounded-xl bg-border/40">
             <UserRound className="h-16 w-16 text-muted-foreground" />
@@ -36,25 +38,30 @@ export default function TabMultimedia({ orgId, playerId, photoPath }: { orgId: s
       {tracks.length === 0 ? (
         <EmptyState
           icon={Film}
-          title="Sin video/tracking"
-          description="Este jugador no está vinculado (matched_player_id) a ningún tracking de video analizado todavía."
+          title={t('tabMultimedia.emptyTitle', 'Sin video/tracking')}
+          description={t(
+            'tabMultimedia.emptyDescription',
+            'Este jugador no está vinculado (matched_player_id) a ningún tracking de video analizado todavía.',
+          )}
         />
       ) : (
         <Card>
           <CardHeader>
             <div>
-              <CardTitle>Tracking de video</CardTitle>
-              <CardDescription className="mt-1">{tracks.length} registros</CardDescription>
+              <CardTitle>{t('tabMultimedia.trackingTitle', 'Tracking de video')}</CardTitle>
+              <CardDescription className="mt-1">
+                {t('tabMultimedia.recordsCount', '{{count}} registros', { count: tracks.length })}
+              </CardDescription>
             </div>
           </CardHeader>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Video</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead className="text-right">Distancia (m)</TableHead>
-                <TableHead className="text-right">Vel. media (km/h)</TableHead>
-                <TableHead className="text-right">Vel. p95 (km/h)</TableHead>
+                <TableHead>{t('tabMultimedia.videoColumn', 'Video')}</TableHead>
+                <TableHead>{t('tabMultimedia.dateColumn', 'Fecha')}</TableHead>
+                <TableHead className="text-right">{t('tabMultimedia.distanceColumn', 'Distancia (m)')}</TableHead>
+                <TableHead className="text-right">{t('tabMultimedia.avgSpeedColumn', 'Vel. media (km/h)')}</TableHead>
+                <TableHead className="text-right">{t('tabMultimedia.maxSpeedColumn', 'Vel. p95 (km/h)')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

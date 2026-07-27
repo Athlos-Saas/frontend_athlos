@@ -1,0 +1,171 @@
+{
+  "modelosIa": {
+    "title": "AI Models",
+    "subtitlePrefix": "Log of models trained by the Machine Learning pipeline (",
+    "subtitleSuffix": ").",
+    "seasonLabel": "Season",
+    "retrainDisabledHint": "Set VITE_API_URL to enable this (see .env.example).",
+    "retrainButton": "Retrain models",
+    "retrainHintPrefix": "\"Retrain models\" needs a FastAPI backend reachable from the browser (VITE_API_URL). In the meantime, run ",
+    "retrainHintSuffix": " from the backend.",
+    "cardTitle": "Trained models",
+    "cardDescription": "Last 50 versions registered for your organization",
+    "searchPlaceholder": "Search model or task…",
+    "emptyTitle": "No trained models yet",
+    "emptyDescriptionPrefix": "Run ",
+    "emptyDescriptionSuffix": " on the backend to generate the first version.",
+    "col": {
+      "model": "Model",
+      "task": "Task",
+      "version": "Version",
+      "metrics": "Key metrics",
+      "trained": "Trained"
+    },
+    "toast": {
+      "retrainSuccessTitle": "Retraining complete",
+      "retrainSuccessDescription": "{{count}} models updated.",
+      "retrainErrorTitle": "Could not retrain",
+      "unexpectedError": "Unexpected error."
+    }
+  },
+  "perfilesMl": {
+    "title": "Physical profiles",
+    "subtitle": "K-Means clusters over per-player averages (distance, sprint, speed, Player Load)",
+    "emptyTitle": "No profiles yet",
+    "emptyDescriptionPrefix": "Run ",
+    "emptyDescriptionSuffix": " on the backend.",
+    "chartTitle": "Sprint vs Player Load",
+    "chartDescription": "Point size = top speed",
+    "axis": {
+      "sprint": "Sprint (m)",
+      "topSpeed": "Top speed"
+    },
+    "tableTitle": "Players by profile",
+    "tableDescription": "Average physical load per player",
+    "col": {
+      "player": "Player",
+      "profile": "Profile",
+      "avgDistance": "Avg. distance (km)",
+      "avgSprint": "Avg. sprint (m)",
+      "avgTopSpeed": "Avg. top speed",
+      "avgPlayerLoad": "Avg. Player Load"
+    }
+  },
+  "scoutingPage": {
+    "title": "Scouting",
+    "subtitle": "League prospects ranked by AI models (elite scorer probability and roles)",
+    "emptyTitle": "No scouting data",
+    "emptyDescription": "Import conference stats and retrain the technical models to generate the rankings.",
+    "seasonPlaceholder": "Season",
+    "rolePlaceholder": "Role",
+    "allRoles": "All roles",
+    "teamSearchPlaceholder": "Filter by team…",
+    "attackersTitle": "Offensive prospects",
+    "attackersDescription": "{{count}} players · ranked by elite scorer probability (classifier trained on league data)",
+    "noResultsTitle": "No results",
+    "noResultsDescription": "No player matches the current filters.",
+    "goalkeepersTitle": "Goalkeepers",
+    "goalkeepersDescription": "{{count}} goalkeepers · ranked by save percentage",
+    "col": {
+      "player": "Player",
+      "team": "Team",
+      "gp": "GP",
+      "goals": "Goals",
+      "points": "Pts",
+      "role": "Role",
+      "eliteProb": "Elite prob.",
+      "gaa": "GAA",
+      "savePct": "Save %"
+    },
+    "toast": {
+      "loadErrorTitle": "Could not load scouting"
+    }
+  },
+  "cargasGps": {
+    "title": "GPS Loads",
+    "subtitle": "Per-session physical monitoring with model alerts",
+    "teamPlaceholder": "Team",
+    "noPlayersTitle": "No players yet",
+    "noPlayersDescription": "Run the backend seed to populate the organization.",
+    "selectPlayerPlaceholder": "Select a player",
+    "noSessionsTitle": "No sessions recorded",
+    "noSessionsDescription": "This player doesn't have any GPS sessions yet.",
+    "sessionsTitle": "Sessions",
+    "alertsTitle": "Model alerts",
+    "activeCount": "{{count}} active",
+    "noPredictionsTitle": "No predictions yet",
+    "noPredictionsDescriptionPrefix": "Run ",
+    "noPredictionsDescriptionSuffix": ".",
+    "noActiveAlertsTitle": "No active alerts",
+    "noActiveAlertsDescription": "No fatigue, overload, or anomalous sessions recently.",
+    "deleteSr": "Delete",
+    "chart": {
+      "playerLoad": "Player Load per session",
+      "topSpeed": "Top speed (km/h)",
+      "topSpeedSeries": "Top speed"
+    },
+    "col": {
+      "date": "Date",
+      "distance": "Distance (km)",
+      "playerLoad": "Player Load",
+      "topSpeed": "Top speed (km/h)",
+      "type": "Type",
+      "label": "Label",
+      "score": "Score"
+    },
+    "deleteConfirm": {
+      "title": "Delete this session?",
+      "description": "This deletes the entire GPS session (all its columns and zones). If the data is wrong, you can re-import the corrected file afterwards.",
+      "confirmLabel": "Delete"
+    },
+    "type": {
+      "fatigue": "Fatigue",
+      "anomaly": "Anomaly",
+      "overload": "Overload"
+    },
+    "import": {
+      "triggerLabel": "Import GPS sessions (Catapult)",
+      "title": "Import GPS sessions",
+      "description": "Upload the Catapult CSV export (Player Name, Player Load, Distance (km)... columns).",
+      "previewSummary": "Detected {{count}} sessions."
+    },
+    "toast": {
+      "deleteErrorTitle": "Could not delete the session",
+      "deleteSuccessTitle": "Session deleted"
+    }
+  },
+  "wellness": {
+    "title": "Daily wellness",
+    "subtitle": "RPE, sleep and soreness — the missing variable for modeling injury risk",
+    "noPlayersTitle": "No players registered",
+    "registerTitle": "Log entry",
+    "recentTitle": "Recent entries",
+    "noEntriesTitle": "No entries",
+    "noEntriesDescription": "There are no wellness entries yet.",
+    "saveButton": "Save",
+    "field": {
+      "player": "Player",
+      "date": "Date",
+      "notes": "Notes"
+    },
+    "slider": {
+      "rpe": "RPE (perceived exertion)",
+      "sleepHours": "Sleep hours",
+      "sleepQuality": "Sleep quality",
+      "soreness": "Muscle soreness",
+      "mood": "Mood"
+    },
+    "col": {
+      "date": "Date",
+      "player": "Player",
+      "rpe": "RPE",
+      "sleep": "Sleep",
+      "soreness": "Soreness",
+      "mood": "Mood"
+    },
+    "toast": {
+      "saveErrorTitle": "Could not save",
+      "saveSuccessTitle": "Wellness saved"
+    }
+  }
+}

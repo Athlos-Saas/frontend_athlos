@@ -1,4 +1,5 @@
 import { ShieldAlert } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
@@ -17,12 +18,17 @@ export default function Administracion({
   role: string | null;
   currentUserId: string;
 }) {
+  const { t } = useTranslation();
+
   if (!isAdmin(role)) {
     return (
       <EmptyState
         icon={ShieldAlert}
-        title="Solo administradores"
-        description="Roles, permisos y usuarios de la organización requieren rol de administrador."
+        title={t('administracion.adminOnly.title', 'Solo administradores')}
+        description={t(
+          'administracion.adminOnly.description',
+          'Roles, permisos y usuarios de la organización requieren rol de administrador.'
+        )}
       />
     );
   }
@@ -30,16 +36,16 @@ export default function Administracion({
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Administración</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('administracion.title', 'Administración')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Roles, permisos y usuarios de tu organización — todo en un solo lugar.
+          {t('administracion.subtitle', 'Roles, permisos y usuarios de tu organización — todo en un solo lugar.')}
         </p>
       </div>
       <Tabs defaultValue="permisos">
         <TabsList>
-          <TabsTrigger value="permisos">Matriz de permisos</TabsTrigger>
-          <TabsTrigger value="roles">Roles</TabsTrigger>
-          <TabsTrigger value="usuarios">Usuarios</TabsTrigger>
+          <TabsTrigger value="permisos">{t('administracion.tab.permisos', 'Matriz de permisos')}</TabsTrigger>
+          <TabsTrigger value="roles">{t('administracion.tab.roles', 'Roles')}</TabsTrigger>
+          <TabsTrigger value="usuarios">{t('administracion.tab.usuarios', 'Usuarios')}</TabsTrigger>
         </TabsList>
         <TabsContent value="permisos">
           <MatrizPermisos orgId={orgId} viewerRole={role} />

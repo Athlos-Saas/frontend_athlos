@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CalendarRange, Shield, Trophy, Users } from 'lucide-react';
 
 import { TrendAreaChart } from '@/components/charts/TrendAreaChart';
@@ -28,6 +29,7 @@ interface SeasonSummary {
  * mensual real (por fecha), sin asociarlas artificialmente a una temporada.
  */
 export default function Temporadas({ orgId }: { orgId: string }) {
+  const { t } = useTranslation();
   const [summaries, setSummaries] = useState<SeasonSummary[] | null>(null);
   const [monthlySessions, setMonthlySessions] = useState<{ mes: string; sesiones: number }[]>([]);
 
@@ -40,7 +42,7 @@ export default function Temporadas({ orgId }: { orgId: string }) {
       supabase.from('gps_sessions').select('session_date').eq('org_id', orgId).order('session_date'),
     ]).then(([teamsRes, playersRes, attackerRes, gkRes, gpsRes]) => {
       if (teamsRes.error) {
-        toast({ title: 'No se pudieron cargar las temporadas', description: teamsRes.error.message, variant: 'danger' });
+        toast({ title: t('temporadas.toast.loadError', 'No se pudieron cargar las temporadas'), description: teamsRes.error.message, variant: 'danger' });
         setSummaries([]);
         return;
       }
@@ -89,8 +91,11 @@ export default function Temporadas({ orgId }: { orgId: string }) {
     return (
       <EmptyState
         icon={CalendarRange}
-        title="Sin temporadas"
-        description="Las temporadas aparecen al importar un roster (equipo + temporada) o estadísticas de liga."
+        title={t('temporadas.empty.title', 'Sin temporadas')}
+        description={t(
+          'temporadas.empty.description',
+          'Las temporadas aparecen al importar un roster (equipo + temporada) o estadísticas de liga.',
+        )}
       />
     );
   }
@@ -98,8 +103,10 @@ export default function Temporadas({ orgId }: { orgId: string }) {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Temporadas</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Resumen por temporada de equipos, plantel y datos de liga</p>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('temporadas.title', 'Temporadas')}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {t('temporadas.subtitle', 'Resumen por temporada de equipos, plantel y datos de liga')}
+        </p>
       </div>
 
       <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -113,19 +120,19 @@ export default function Temporadas({ orgId }: { orgId: string }) {
             <CardHeader>
               <div>
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <CalendarRange className="size-4 text-ai" aria-hidden="true" /> Temporada {summary.season}
+                  <CalendarRange className="size-4 text-ai" aria-hidden="true" /> {t('temporadas.season', 'Temporada')} {summary.season}
                 </CardTitle>
                 <CardDescription className="mt-1">
                   {summary.teams.length > 0
                     ? summary.teams.map((team) => team.name).join(', ')
-                    : 'Solo datos de liga (sin equipo propio registrado)'}
+                    : t('temporadas.leagueOnly', 'Solo datos de liga (sin equipo propio registrado)')}
                 </CardDescription>
               </div>
             </CardHeader>
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-md bg-panel px-3 py-2.5">
                 <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  <Shield className="size-3" aria-hidden="true" /> Equipos
+                  <Shield className="size-3" aria-hidden="true" /> {t('temporadas.stat.teams', 'Equipos')}
                 </p>
                 <p className="mt-1 text-xl font-bold text-foreground">
                   <AnimatedNumber value={summary.teams.length} />
@@ -133,7 +140,7 @@ export default function Temporadas({ orgId }: { orgId: string }) {
               </div>
               <div className="rounded-md bg-panel px-3 py-2.5">
                 <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  <Users className="size-3" aria-hidden="true" /> Jugadores
+                  <Users className="size-3" aria-hidden="true" /> {t('temporadas.stat.players', 'Jugadores')}
                 </p>
                 <p className="mt-1 text-xl font-bold text-foreground">
                   <AnimatedNumber value={summary.playerCount} />
@@ -141,7 +148,7 @@ export default function Temporadas({ orgId }: { orgId: string }) {
               </div>
               <div className="rounded-md bg-panel px-3 py-2.5">
                 <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  <Trophy className="size-3" aria-hidden="true" /> Liga
+                  <Trophy className="size-3" aria-hidden="true" /> {t('temporadas.stat.league', 'Liga')}
                 </p>
                 <p className="mt-1 text-xl font-bold text-foreground">
                   <AnimatedNumber value={summary.leagueAttackerRows + summary.leagueGoalkeeperRows} />
@@ -150,8 +157,12 @@ export default function Temporadas({ orgId }: { orgId: string }) {
             </div>
             {(summary.leagueAttackerRows > 0 || summary.leagueGoalkeeperRows > 0) && (
               <div className="mt-3 flex gap-2">
-                {summary.leagueAttackerRows > 0 && <Badge variant="ai">{summary.leagueAttackerRows} atacantes de liga</Badge>}
-                {summary.leagueGoalkeeperRows > 0 && <Badge variant="purple">{summary.leagueGoalkeeperRows} porteros de liga</Badge>}
+                {summary.leagueAttackerRows > 0 && (
+                  <Badge variant="ai">{t('temporadas.badge.attackers', '{{count}} atacantes de liga', { count: summary.leagueAttackerRows })}</Badge>
+                )}
+                {summary.leagueGoalkeeperRows > 0 && (
+                  <Badge variant="purple">{t('temporadas.badge.goalkeepers', '{{count}} porteros de liga', { count: summary.leagueGoalkeeperRows })}</Badge>
+                )}
               </div>
             )}
           </Card>
@@ -160,10 +171,13 @@ export default function Temporadas({ orgId }: { orgId: string }) {
 
       {monthlySessions.length > 0 && (
         <ChartCard
-          title="Actividad GPS por mes"
-          description="Sesiones registradas en toda la organización (las sesiones no llevan temporada — se muestran por fecha real)"
+          title={t('temporadas.chart.gpsActivity.title', 'Actividad GPS por mes')}
+          description={t(
+            'temporadas.chart.gpsActivity.description',
+            'Sesiones registradas en toda la organización (las sesiones no llevan temporada — se muestran por fecha real)',
+          )}
         >
-          <TrendAreaChart data={monthlySessions} xKey="mes" yKey="sesiones" name="Sesiones" color={colors.green} />
+          <TrendAreaChart data={monthlySessions} xKey="mes" yKey="sesiones" name={t('temporadas.sessions', 'Sesiones')} color={colors.green} />
         </ChartCard>
       )}
     </div>

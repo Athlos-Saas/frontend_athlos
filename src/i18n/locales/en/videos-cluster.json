@@ -1,0 +1,160 @@
+{
+  "videos": {
+    "defaultTitle": "Untitled match",
+    "title": "Video analysis",
+    "subtitle": "Computer vision: player tracking from standard video",
+    "toast": {
+      "loadError": "Couldn't load the videos",
+      "uploadError": "Error uploading the video",
+      "registerError": "Error registering the video",
+      "uploaded": {
+        "title": "Video uploaded",
+        "description": "You can now hit \"Analyze\" in the table."
+      },
+      "analyzeStartError": "Couldn't start the analysis",
+      "deleteError": "Couldn't delete the video",
+      "deleted": "Video deleted",
+      "renameError": "Couldn't save the changes",
+      "renamed": "Video updated",
+      "assignError": "Couldn't save the assignment",
+      "assigned": {
+        "title": "{{count}} reading(s) assigned",
+        "description": "That data now counts toward the player's profile."
+      },
+      "released": {
+        "title": "{{count}} reading(s) released"
+      }
+    },
+    "upload": {
+      "cardTitle": "Upload video",
+      "matchDateHint": "Used to cross this video's metrics with the player's GPS history in their profile. Without a date, the video won't appear in that comparison.",
+      "submit": "Upload and register"
+    },
+    "fields": {
+      "title": "Title",
+      "matchDate": "Match date (optional)"
+    },
+    "list": {
+      "cardTitle": "Organization videos",
+      "cardDescription": "Processing pipeline status",
+      "emptyTitle": "No videos yet",
+      "emptyDescription": "Upload the first video to start the analysis.",
+      "columns": {
+        "title": "Title",
+        "status": "Status",
+        "date": "Date",
+        "action": "Action"
+      }
+    },
+    "status": {
+      "analyzingLabel": "Analyzing video…",
+      "uploaded": "Uploaded",
+      "processing": "Analyzing",
+      "done": "Ready",
+      "failed": "Failed"
+    },
+    "yoloModel": {
+      "nano": "Nano (fast)",
+      "small": "Small (more accurate)"
+    },
+    "actions": {
+      "retry": "Retry",
+      "analyze": "Analyze",
+      "viewResult": "View result",
+      "editTitleSr": "Edit title",
+      "deleteSr": "Delete"
+    },
+    "delete": {
+      "title": "Delete \"{{title}}\"?",
+      "description": "This deletes the video, the analysis, the tracks, and the files in Storage. This can't be undone.",
+      "confirm": "Delete"
+    },
+    "result": {
+      "cardTitle": "Analysis result",
+      "selectPlaceholder": "Select a processed video",
+      "annotatedVideoLabel": "Annotated video",
+      "emptyPositionsTitle": "No position data",
+      "emptyPositionsDescription": "Not enough positions were detected to draw the tactical board.",
+      "emptyTracksTitle": "No tracks",
+      "emptyTracksDescription": "That video has no registered tracks.",
+      "columns": {
+        "track": "Track",
+        "player": "Player",
+        "distance": "Distance (m)",
+        "timeVisible": "Time visible (s)",
+        "avgSpeed": "Avg. speed (km/h)",
+        "maxSpeed": "P95 speed (km/h)"
+      },
+      "defaultPlayerBadge": "Player"
+    },
+    "editDialog": {
+      "title": "Edit video",
+      "matchDateHint": "Used to cross this video's metrics with the player's GPS history in their profile.",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "analyzeDialog": {
+      "title": "Choose the detection model",
+      "modelLabel": "Model",
+      "hint": "Nano processes faster and is enough for standard, well-framed video. Small detects a lot more players and the ball (tested: 4x more player detections, 75x more ball detections) — worth it for harder shots (panning camera, high angle, vertical video), at the cost of ~30% more processing time.",
+      "cancel": "Cancel",
+      "confirm": "Analyze"
+    }
+  },
+  "tacticalBoard": {
+    "speedChart": {
+      "notEnoughData": "Not enough speed data.",
+      "title": "Speed over time",
+      "subtitle": "Instantaneous speed of J{{trackId}}"
+    },
+    "zoneDistance": {
+      "notEnoughData": "Not enough distance covered to break down.",
+      "title": "Distance by zone",
+      "subtitle": "Where J{{trackId}} covered their distance"
+    },
+    "zones": {
+      "portero": "Goalkeeper",
+      "defensa": "Defense",
+      "medio": "Midfield",
+      "delantero": "Forward"
+    },
+    "identitySelect": {
+      "placeholder": "Identity",
+      "all": "All identities"
+    },
+    "flipSides": "Flip sides",
+    "team": "Team {{label}}",
+    "playerSelect": {
+      "placeholder": "Roster player…"
+    },
+    "assignSingle": "Assign J{{trackId}} to {{name}}",
+    "assignZone": "Assign {{count}} from {{zone}}",
+    "unassignSingle": "Remove J{{trackId}}",
+    "suggestedByPosition": "Suggested by position ({{zone}}):",
+    "heatmap": {
+      "title": "Heat map",
+      "densityOf": "Density of J{{trackId}}",
+      "densityTeam": "Density of Team {{team}}",
+      "densityAll": "Density of all identities",
+      "noData": "Not enough data for the heat map"
+    },
+    "movement": {
+      "title": "Captured movement",
+      "realPath": "Real path of J{{trackId}} at video speed",
+      "teamFilterHint": "Showing Team {{team}} — tap an identity to animate its path",
+      "tapHint": "Tap an identity to animate its path"
+    },
+    "markerAriaLabelAssigned": "Identity J{{trackId}} assigned to {{name}}",
+    "markerAriaLabel": "Identity J{{trackId}}",
+    "assignedGroups": {
+      "defaultPlayerBadge": "Player",
+      "identitiesCount": "{{count}} identity(ies): {{trackIds}}",
+      "removeAll": "Remove all"
+    },
+    "teamShape": {
+      "title": "Team shape",
+      "subtitle": "Center of gravity and spread — average across the whole run",
+      "notEnough": "Not enough identified jerseys yet to group the two teams."
+    }
+  }
+}
