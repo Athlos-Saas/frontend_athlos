@@ -27,10 +27,15 @@ interface ActiveModel {
 /**
  * Prioridad de lo que se muestra: modelo local recién elegido > modelo 3D
  * guardado del jugador (`players.model_3d_url`, bucket privado `player-media`)
- * > foto (`players.photo_url`, mismo bucket) > avatar genérico 3D (bajo
+ * > foto (`photoPath`, que el caller resuelve como `action_photo_url` con
+ * respaldo a `photo_url` — ver PlayerProfile.tsx) > avatar genérico 3D (bajo
  * demanda, con rótulo explícito de que no es este jugador) > silueta.
- * "Cambiar imagen" y "Subir modelo 3D" persisten de verdad ahora que existe
- * el bucket — antes de esto solo había vista previa en memoria.
+ * "Cambiar foto de jugador" y "Subir modelo 3D" persisten de verdad ahora
+ * que existe el bucket — antes de esto solo había vista previa en memoria.
+ * Ojo: la foto que se sube desde acá (`onPhotoChange`) es deliberadamente
+ * distinta de la foto de perfil/avatar que se edita desde "Editar jugador"
+ * — este componente no sabe ni le importa cuál columna es, solo recibe
+ * `photoPath`/`onPhotoChange` ya resueltos por el caller.
  */
 export function PlayerMedia({
   photoPath,
@@ -235,11 +240,14 @@ export function PlayerMedia({
         <div className="grid grid-cols-2 gap-2">
           <MediaActionButton
             icon={ImagePlus}
-            label={t('playerMedia.changePhotoLabel', 'Cambiar imagen')}
+            label={t('playerMedia.changePhotoLabel', 'Cambiar foto de jugador')}
             disabled={!canEdit}
             tooltip={
               canEdit
-                ? t('playerMedia.changePhotoTooltipEnabled', 'Sube una foto — se guarda en Storage y en el perfil del jugador.')
+                ? t(
+                    'playerMedia.changePhotoTooltipEnabled',
+                    'Se usa acá cuando no hay modelo 3D cargado — es distinta de la foto de perfil (avatar del encabezado, se edita desde "Editar jugador").',
+                  )
                 : t('playerMedia.changePhotoTooltipDisabled', 'Necesitas rol admin/coach/medical/analyst para cambiar la foto.')
             }
             isLoading={isSavingPhoto}

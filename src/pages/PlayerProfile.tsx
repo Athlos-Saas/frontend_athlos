@@ -21,7 +21,7 @@ import { PlayerMedia } from '@/features/playerProfile/components/PlayerMedia';
 import { StatusBadge } from '@/features/playerProfile/components/StatusBadge';
 import { calculateAge, formatDateTime, type Model3DExtension } from '@/features/playerProfile/format';
 import { deriveStatus } from '@/features/playerProfile/insights';
-import { uploadPlayerModel, uploadPlayerPhoto } from '@/features/playerProfile/mediaStorage';
+import { uploadPlayerActionPhoto, uploadPlayerModel, uploadPlayerPhoto } from '@/features/playerProfile/mediaStorage';
 import { usePlayerCore, usePlayerInjuries, usePlayerMediaUrl } from '@/features/playerProfile/queries';
 
 const TabResumen = lazy(() => import('@/features/playerProfile/tabs/TabResumen'));
@@ -50,6 +50,8 @@ export default function PlayerProfile({ orgId, role }: { orgId: string; role: st
   const core = usePlayerCore(orgId, playerId ?? '');
   const injuries = usePlayerInjuries(orgId, playerId ?? '');
   const headerPhoto = usePlayerMediaUrl(core.data?.photo_url);
+  // Visor de media: prioriza la foto de jugador dedicada; si no existe, cae de respaldo a la foto de perfil (nunca al revés).
+  const mediaPhotoPath = core.data?.action_photo_url ?? core.data?.photo_url ?? null;
 
   const status = useMemo(() => deriveStatus(injuries.data ?? []), [injuries.data]);
   const age = calculateAge(core.data?.birthdate);
@@ -70,6 +72,18 @@ export default function PlayerProfile({ orgId, role }: { orgId: string; role: st
     if (!core.data) return;
     const path = await uploadPlayerPhoto(orgId, core.data.id, blob);
     const { error } = await supabase.from('players').update({ photo_url: path }).eq('id', core.data.id);
+    if (error) throw error;
+    queryClient.invalidateQueries({ queryKey: ['playerProfile', 'mediaUrl', path] });
+    core.refetch();
+  };
+
+  // Foto del visor de media (PlayerMedia) — deliberadamente separada de la
+  // foto de perfil de arriba: son dos objetos de Storage distintos
+  // (`action_photo_url` vs `photo_url`), así que subir una no pisa la otra.
+  const handleActionPhotoChange = async (blob: Blob) => {
+    if (!core.data) return;
+    const path = await uploadPlayerActionPhoto(orgId, core.data.id, blob);
+    const { error } = await supabase.from('players').update({ action_photo_url: path }).eq('id', core.data.id);
     if (error) throw error;
     queryClient.invalidateQueries({ queryKey: ['playerProfile', 'mediaUrl', path] });
     core.refetch();
@@ -181,11 +195,11 @@ export default function PlayerProfile({ orgId, role }: { orgId: string; role: st
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
             <div className="space-y-6">
               <PlayerMedia
-                photoPath={core.data.photo_url}
+                photoPath={mediaPhotoPath}
                 modelPath={core.data.model_3d_url}
                 playerName={core.data.full_name}
                 canEdit={canWrite(role)}
-                onPhotoChange={handlePhotoChange}
+                onPhotoChange={handleActionPhotoChange}
                 onModelUpload={handleModelUpload}
               />
               <PersonalInfoCard player={core.data} />
@@ -240,7 +254,7 @@ export default function PlayerProfile({ orgId, role }: { orgId: string; role: st
               </TabsContent>
               <TabsContent value="multimedia">
                 <Suspense fallback={TAB_FALLBACK}>
-                  <TabMultimedia orgId={orgId} playerId={playerId} photoPath={core.data.photo_url} />
+                  <TabMultimedia orgId={orgId} playerId={playerId} photoPath={mediaPhotoPath} />
                 </Suspense>
               </TabsContent>
             </Tabs>

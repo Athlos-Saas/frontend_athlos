@@ -45,6 +45,8 @@ export interface Player {
   weight_kg?: number | null;
   birthdate?: string | null;
   photo_url?: string | null;
+  /** Foto para el visor de media (PlayerMedia.tsx) — distinta de photo_url (avatar de perfil). Si no está seteada, el visor cae de respaldo a photo_url. */
+  action_photo_url?: string | null;
   model_3d_url?: string | null;
   is_active?: boolean;
   team_id?: string;

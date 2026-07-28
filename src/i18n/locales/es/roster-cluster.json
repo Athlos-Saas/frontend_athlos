@@ -68,6 +68,7 @@
     "title": "Editar {{name}}",
     "photoPreviewAlt": "Vista previa",
     "photo": {
+      "sectionLabel": "Foto de perfil (avatar en encabezado y listados)",
       "replaceNotice": "Vas a reemplazar la foto actual.",
       "saveNotice": "Vas a guardar esta foto.",
       "confirm": "Confirmar",

@@ -19,6 +19,18 @@ export async function uploadPlayerPhoto(orgId: string, playerId: string, blob: B
   return path;
 }
 
+/**
+ * Sube la foto del jugador para el visor de media (`players.action_photo_url`)
+ * — objeto de Storage distinto a `uploadPlayerPhoto` (foto de perfil/avatar),
+ * a propósito: son dos fotos separadas, una no debe pisar a la otra.
+ */
+export async function uploadPlayerActionPhoto(orgId: string, playerId: string, blob: Blob): Promise<string> {
+  const path = `${orgId}/players/${playerId}/action-photo.${imageExtension(blob.type)}`;
+  const { error } = await supabase.storage.from(BUCKET).upload(path, blob, { upsert: true, contentType: blob.type });
+  if (error) throw error;
+  return path;
+}
+
 /** Sube el modelo 3D tal cual (sin recomprimir) y devuelve la ruta guardada en `players.model_3d_url`. */
 export async function uploadPlayerModel(orgId: string, playerId: string, file: File, format: Model3DExtension): Promise<string> {
   const path = `${orgId}/players/${playerId}/model.${format}`;

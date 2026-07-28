@@ -147,6 +147,9 @@ export function EditPlayerDialog({
             </div>
 
             <div className="min-w-0 flex-1">
+              <p className="mb-1 text-xs font-medium text-foreground">
+                {t('editPlayerDialog.photo.sectionLabel', 'Foto de perfil (avatar en encabezado y listados)')}
+              </p>
               <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoSelected} />
 
               {pendingPhoto ? (

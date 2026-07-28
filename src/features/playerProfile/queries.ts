@@ -33,7 +33,9 @@ export function usePlayerCore(orgId: string, playerId: string) {
     queryFn: async (): Promise<PlayerCore | null> => {
       const { data: player, error } = await supabase
         .from('players')
-        .select('id, full_name, position, birthdate, height_cm, weight_kg, photo_url, model_3d_url, is_active, team_id, updated_at')
+        .select(
+          'id, full_name, position, birthdate, height_cm, weight_kg, photo_url, action_photo_url, model_3d_url, is_active, team_id, updated_at',
+        )
         .eq('id', playerId)
         .eq('org_id', orgId)
         .maybeSingle();

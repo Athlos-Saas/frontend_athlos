@@ -68,6 +68,7 @@
     "title": "Edit {{name}}",
     "photoPreviewAlt": "Preview",
     "photo": {
+      "sectionLabel": "Profile photo (header and list avatar)",
       "replaceNotice": "You are about to replace the current photo.",
       "saveNotice": "You are about to save this photo.",
       "confirm": "Confirm",
