@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 
@@ -22,7 +22,16 @@ export function SidebarNavContent({ isCollapsed, onNavigate }: SidebarNavContent
 
   return (
     <>
-      <div className={cn('flex h-16 shrink-0 items-center gap-2.5 border-b border-border px-5', isCollapsed && 'justify-center px-0')}>
+      <Link
+        to="/"
+        onClick={onNavigate}
+        title={isCollapsed ? t('nav.dashboard', 'Dashboard') : undefined}
+        aria-label={t('nav.goHome', 'Ir al inicio')}
+        className={cn(
+          'focus-ring flex h-16 shrink-0 items-center gap-2.5 border-b border-border px-5 transition-colors hover:bg-card',
+          isCollapsed && 'justify-center px-0',
+        )}
+      >
         <span className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md">
           <img src="/images/Favicon.png" alt="" className="size-full object-cover" />
         </span>
@@ -32,7 +41,7 @@ export function SidebarNavContent({ isCollapsed, onNavigate }: SidebarNavContent
             <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Sport Intelligence</p>
           </div>
         )}
-      </div>
+      </Link>
 
       <nav id="main-navigation" aria-label="Navegación principal" className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
         {visibleSections.map((group) => (
