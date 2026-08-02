@@ -161,11 +161,33 @@ export function deleteOrgUser(orgId: string, userId: string): Promise<{ deleted:
   return backendFetch(`/v1/users/${userId}?org_id=${orgId}`, { method: 'DELETE' });
 }
 
-// --- AthlosBot (asistente de IA admin-only) ---
+// --- AthlosBot (asistente de IA, admin y coach) ---
 
 export interface AssistantMessage {
   role: 'user' | 'assistant';
   content: string;
+}
+
+export interface AssistantWatchItem {
+  player_name: string;
+  reason: string;
+}
+
+/** Lo que la persona está mirando ahora mismo — una PISTA para AthlosBot,
+ * nunca dato confirmado (puede estar desactualizada). Espejo de
+ * AssistantScreenContext en atlos/schemas/models.py. */
+export interface AssistantScreenContext {
+  route?: string;
+  tab?: 'resumen' | 'partidos';
+  team_id?: string;
+  team_name?: string;
+  selected_player_id?: string;
+  selected_player_name?: string;
+  selected_video_id?: string;
+  selected_video_title?: string;
+  available_count?: number;
+  injured_count?: number;
+  watch_items?: AssistantWatchItem[];
 }
 
 export interface AssistantProposedAction {
@@ -191,10 +213,11 @@ export function sendAssistantMessage(
   orgId: string,
   message: string,
   history: AssistantMessage[],
+  screenContext?: AssistantScreenContext | null,
 ): Promise<AssistantChatResult> {
   return backendFetch(`/v1/assistant/chat?org_id=${orgId}`, {
     method: 'POST',
-    body: JSON.stringify({ message, history }),
+    body: JSON.stringify({ message, history, screen_context: screenContext ?? null }),
   });
 }
 
@@ -204,4 +227,27 @@ export function confirmAssistantAction(orgId: string, actionId: string): Promise
 
 export function rejectAssistantAction(orgId: string, actionId: string): Promise<AssistantActionResult> {
   return backendFetch(`/v1/assistant/actions/${actionId}/reject?org_id=${orgId}`, { method: 'POST' });
+}
+
+export type ReportType = 'team_readiness' | 'watchlist' | 'match_report';
+
+export interface GenerateReportRequest {
+  report_type: ReportType;
+  team_id?: string;
+  video_id?: string;
+}
+
+export interface GenerateReportResult {
+  report_id: string;
+  title: string;
+  download_url: string | null;
+  expires_in_seconds: number;
+}
+
+/** Dispara el reporte directo desde un botón (sin pasar por el chat). */
+export function generateReport(orgId: string, payload: GenerateReportRequest): Promise<GenerateReportResult> {
+  return backendFetch(`/v1/assistant/reports?org_id=${orgId}`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }

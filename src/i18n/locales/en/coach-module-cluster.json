@@ -2,6 +2,8 @@
   "coachModule": {
     "title": "Coach Module",
     "subtitle": "The most important things, in plain language — technical detail is one click away",
+    "confidential": "Confidential information · coaching staff use",
+    "briefing": "Today you have {{available}}/{{total}} available and {{watching}} to watch. Your suggested lineup is ready.",
     "selectTeam": "Team",
     "empty": {
       "title": "No teams yet",
@@ -53,6 +55,19 @@
     "link": {
       "video": "View heatmaps and full video analysis",
       "roster": "View full roster and stats"
+    },
+    "report": {
+      "button": "Download report",
+      "teamReadiness": "Full squad report",
+      "watchlist": "Players to watch only",
+      "successTitle": "Report ready",
+      "errorTitle": "Couldn't generate the report"
+    },
+    "explain": {
+      "label": "Explain this",
+      "xiQuestion": "Why is {{name}} suggested as a starter?",
+      "watchQuestion": "Why is {{name}} on the watch list?",
+      "mvpQuestion": "Why is {{name}} an MVP candidate?"
     },
     "tabs": {
       "summary": "Summary",

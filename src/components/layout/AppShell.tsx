@@ -10,7 +10,7 @@ import { TooltipProvider } from '@/components/ui/Tooltip';
 import { NAV_SECTIONS } from '@/constants/navigation';
 import { useUiStore } from '@/store/uiStore';
 import { cn } from '@/utils/cn';
-import { isAdmin } from '@/utils/permissions';
+import { canUseAssistant } from '@/utils/permissions';
 
 import { Header, type HeaderProfile } from './Header';
 import { Sidebar, SidebarNavContent } from './Sidebar';
@@ -103,7 +103,7 @@ export function AppShell({ profile, onSignOut }: AppShellProps) {
         placeholder={t('header.searchPlaceholder')}
       />
       <Toaster />
-      {isAdmin(profile.role) && profile.org_id && <AthlosBot orgId={profile.org_id} />}
+      {canUseAssistant(profile.role) && profile.org_id && <AthlosBot orgId={profile.org_id} />}
     </TooltipProvider>
   );
 }

@@ -6,7 +6,11 @@ import {
   AlertTriangle,
   ArrowRight,
   Award,
+  ChevronDown,
+  Download,
   HeartPulse,
+  Lock,
+  MessageCircleQuestion,
   Shield,
   ShieldAlert,
   Sparkles,
@@ -14,9 +18,16 @@ import {
   Video,
 } from 'lucide-react';
 
+import { generateReport } from '@/lib/backendApi';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/DropdownMenu';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -24,6 +35,8 @@ import { StatCard } from '@/components/ui/StatCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { MatchAnalysisTab } from '@/features/coachModule/MatchAnalysisTab';
 import { supabase } from '@/lib/supabase';
+import { useChatStore } from '@/store/chatStore';
+import { toast } from '@/store/toastStore';
 import type { Team } from '@/types/domain';
 
 type LoadState = 'loading' | 'error' | 'ready';
@@ -116,6 +129,10 @@ export default function ModuloEntrenador({ orgId }: { orgId: string }) {
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [state, setState] = useState<LoadState>('loading');
   const [readiness, setReadiness] = useState<PlayerReadiness[]>([]);
+  const [activeTab, setActiveTab] = useState<'resumen' | 'partidos'>('resumen');
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const setScreenContext = useChatStore((s) => s.setScreenContext);
+  const setPendingPrompt = useChatStore((s) => s.setPendingPrompt);
 
   useEffect(() => {
     supabase
@@ -333,7 +350,45 @@ export default function ModuloEntrenador({ orgId }: { orgId: string }) {
       .slice(0, 3);
   }, [available]);
 
+  // Lo que AthlosBot ve como "pista de pantalla" — se actualiza solo, el
+  // entrenador no tiene que describirle nada de esto a mano.
+  useEffect(() => {
+    const selectedTeam = teams?.find((team) => team.id === selectedTeamId);
+    setScreenContext({
+      route: '/entrenador',
+      tab: activeTab,
+      team_id: selectedTeamId || undefined,
+      team_name: selectedTeam?.name,
+      available_count: available.length,
+      injured_count: unavailable.length,
+      watch_items: watchList.slice(0, 10).map(({ entry, reason }) => ({ player_name: entry.player.full_name, reason })),
+    });
+  }, [activeTab, teams, selectedTeamId, available.length, unavailable.length, watchList, setScreenContext]);
+
   const goToProfile = (playerId: string) => navigate(`/atletas/${playerId}`);
+
+  const explain = (question: string) => setPendingPrompt(question);
+
+  const handleGenerateReport = async (reportType: 'team_readiness' | 'watchlist') => {
+    setIsGeneratingReport(true);
+    try {
+      const result = await generateReport(orgId, { report_type: reportType, team_id: selectedTeamId });
+      toast({
+        title: t('coachModule.report.successTitle', 'Reporte listo'),
+        description: result.title,
+        variant: 'success',
+      });
+      if (result.download_url) window.open(result.download_url, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      toast({
+        title: t('coachModule.report.errorTitle', 'No se pudo generar el reporte'),
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'danger',
+      });
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
 
   if (state === 'loading' || teams === null) return <Skeleton className="h-96 w-full" />;
 
@@ -347,32 +402,66 @@ export default function ModuloEntrenador({ orgId }: { orgId: string }) {
     );
   }
 
+  const briefing = t(
+    'coachModule.briefing',
+    'Hoy tenés {{available}}/{{total}} disponibles y {{watching}} para vigilar. Tu once sugerido está listo.',
+    { available: available.length, total: readiness.length, watching: watchList.length },
+  );
+
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('coachModule.title', 'Módulo Entrenador')}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t('coachModule.subtitle', 'Lo más importante, en lenguaje simple — el detalle técnico está a un click de distancia')}
-          </p>
+      <div className="mb-4 rounded-lg border border-border bg-gradient-to-br from-panel to-bg px-5 py-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('coachModule.title', 'Módulo Entrenador')}</h1>
+              <span className="flex items-center gap-1.5 rounded-full border border-ai/30 bg-ai/10 px-2.5 py-1 text-[11px] font-medium text-ai">
+                <Lock className="size-3" aria-hidden="true" />
+                {t('coachModule.confidential', 'Información confidencial · uso del cuerpo técnico')}
+              </span>
+            </div>
+            <p className="mt-2 text-sm text-foreground">{briefing}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t('coachModule.subtitle', 'Lo más importante, en lenguaje simple — el detalle técnico está a un click de distancia')}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {teams.length > 1 && (
+              <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder={t('coachModule.selectTeam', 'Equipo')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {teams.map((team) => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name} {team.season ? `· ${team.season}` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="secondary" isLoading={isGeneratingReport}>
+                  <Download className="size-4" aria-hidden="true" />
+                  {t('coachModule.report.button', 'Descargar informe')}
+                  <ChevronDown className="size-3.5" aria-hidden="true" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleGenerateReport('team_readiness')}>
+                  {t('coachModule.report.teamReadiness', 'Reporte completo del plantel')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleGenerateReport('watchlist')}>
+                  {t('coachModule.report.watchlist', 'Solo jugadores a vigilar')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
-        {teams.length > 1 && (
-          <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
-            <SelectTrigger className="w-64">
-              <SelectValue placeholder={t('coachModule.selectTeam', 'Equipo')} />
-            </SelectTrigger>
-            <SelectContent>
-              {teams.map((team) => (
-                <SelectItem key={team.id} value={team.id}>
-                  {team.name} {team.season ? `· ${team.season}` : ''}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
       </div>
 
-      <Tabs defaultValue="resumen">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'resumen' | 'partidos')}>
         <TabsList>
           <TabsTrigger value="resumen">{t('coachModule.tabs.summary', 'Resumen')}</TabsTrigger>
           <TabsTrigger value="partidos">{t('coachModule.tabs.matches', 'Análisis de partidos')}</TabsTrigger>
@@ -434,22 +523,38 @@ export default function ModuloEntrenador({ orgId }: { orgId: string }) {
                   </p>
                   <div className="space-y-1.5">
                     {starters.map(({ player, score, fatigue }) => (
-                      <button
-                        key={player.id}
-                        type="button"
-                        onClick={() => goToProfile(player.id)}
-                        className="focus-ring flex w-full items-center justify-between gap-3 rounded-md border border-border bg-panel px-3 py-2 text-left transition-colors hover:border-ai/40 hover:bg-card"
-                      >
-                        <span className="text-sm font-medium text-foreground">{player.full_name}</span>
-                        <span className="flex items-center gap-2">
-                          {fatigue && (
-                            <Badge variant={fatigue === 'alto' ? 'danger' : fatigue === 'medio' ? 'warning' : 'success'}>
-                              {t(`coachModule.fatigue.${fatigue}`, fatigue)}
-                            </Badge>
-                          )}
-                          <span className="text-xs font-semibold text-muted-foreground">{score}</span>
-                        </span>
-                      </button>
+                      <div key={player.id} className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => goToProfile(player.id)}
+                          className="focus-ring flex flex-1 items-center justify-between gap-3 rounded-md border border-border bg-panel px-3 py-2 text-left transition-colors hover:border-ai/40 hover:bg-card"
+                        >
+                          <span className="text-sm font-medium text-foreground">{player.full_name}</span>
+                          <span className="flex items-center gap-2">
+                            {fatigue && (
+                              <Badge variant={fatigue === 'alto' ? 'danger' : fatigue === 'medio' ? 'warning' : 'success'}>
+                                {t(`coachModule.fatigue.${fatigue}`, fatigue)}
+                              </Badge>
+                            )}
+                            <span className="text-xs font-semibold text-muted-foreground">{score}</span>
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            explain(
+                              t('coachModule.explain.xiQuestion', '¿Por qué se sugiere a {{name}} de titular?', {
+                                name: player.full_name,
+                              }),
+                            )
+                          }
+                          aria-label={t('coachModule.explain.label', 'Explicame esto')}
+                          title={t('coachModule.explain.label', 'Explicame esto')}
+                          className="focus-ring flex size-8 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-ai/40 hover:text-ai"
+                        >
+                          <MessageCircleQuestion className="size-4" aria-hidden="true" />
+                        </button>
+                      </div>
                     ))}
                     {short > 0 && (
                       <p className="px-3 text-xs text-warning">
@@ -484,21 +589,37 @@ export default function ModuloEntrenador({ orgId }: { orgId: string }) {
           ) : (
             <div className="space-y-2">
               {watchList.map(({ entry, reason, severity }, index) => (
-                <button
-                  key={`${entry.player.id}-${index}`}
-                  type="button"
-                  onClick={() => goToProfile(entry.player.id)}
-                  className={
-                    'focus-ring flex w-full items-center justify-between gap-3 rounded-md border px-3 py-2.5 text-left transition-colors hover:bg-card ' +
-                    (severity === 'danger' ? 'border-danger/30 bg-danger/5' : 'border-warning/30 bg-warning/5')
-                  }
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground">{entry.player.full_name}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{reason}</p>
-                  </div>
-                  <AlertTriangle className={'size-4 shrink-0 ' + (severity === 'danger' ? 'text-danger' : 'text-warning')} aria-hidden="true" />
-                </button>
+                <div key={`${entry.player.id}-${index}`} className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => goToProfile(entry.player.id)}
+                    className={
+                      'focus-ring flex flex-1 items-center justify-between gap-3 rounded-md border px-3 py-2.5 text-left transition-colors hover:bg-card ' +
+                      (severity === 'danger' ? 'border-danger/30 bg-danger/5' : 'border-warning/30 bg-warning/5')
+                    }
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground">{entry.player.full_name}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{reason}</p>
+                    </div>
+                    <AlertTriangle className={'size-4 shrink-0 ' + (severity === 'danger' ? 'text-danger' : 'text-warning')} aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      explain(
+                        t('coachModule.explain.watchQuestion', '¿Por qué {{name}} está en la lista de vigilar?', {
+                          name: entry.player.full_name,
+                        }),
+                      )
+                    }
+                    aria-label={t('coachModule.explain.label', 'Explicame esto')}
+                    title={t('coachModule.explain.label', 'Explicame esto')}
+                    className="focus-ring flex size-8 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-ai/40 hover:text-ai"
+                  >
+                    <MessageCircleQuestion className="size-4" aria-hidden="true" />
+                  </button>
+                </div>
               ))}
             </div>
           )}
@@ -526,25 +647,38 @@ export default function ModuloEntrenador({ orgId }: { orgId: string }) {
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {mvpCandidates.map(({ entry, mvpScore, availabilityRatio }, index) => (
-              <button
-                key={entry.player.id}
-                type="button"
-                onClick={() => goToProfile(entry.player.id)}
-                className="focus-ring animate-slide-up rounded-lg border border-border bg-panel p-4 text-left transition-colors hover:border-purple/40 hover:bg-card"
-                style={{ animationDelay: `${index * 60}ms`, animationFillMode: 'backwards' }}
-              >
-                <div className="mb-2 flex items-center justify-between">
-                  <Badge variant="purple">#{index + 1}</Badge>
-                  <span className="text-lg font-bold text-foreground">{mvpScore}</span>
-                </div>
-                <p className="text-sm font-semibold text-foreground">{entry.player.full_name}</p>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {t('coachModule.mvp.pointsPerGame', '{{value}} pts/partido', { value: (entry.league?.points_per_game ?? 0).toFixed(2) })}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {t('coachModule.mvp.availability', '{{pct}}% de partidos jugados', { pct: Math.round(availabilityRatio * 100) })}
-                </p>
-              </button>
+              <div key={entry.player.id} className="relative animate-slide-up" style={{ animationDelay: `${index * 60}ms`, animationFillMode: 'backwards' }}>
+                <button
+                  type="button"
+                  onClick={() => goToProfile(entry.player.id)}
+                  className="focus-ring w-full rounded-lg border border-border bg-panel p-4 text-left transition-colors hover:border-purple/40 hover:bg-card"
+                >
+                  <div className="mb-2 flex items-center justify-between pr-7">
+                    <Badge variant="purple">#{index + 1}</Badge>
+                    <span className="text-lg font-bold text-foreground">{mvpScore}</span>
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">{entry.player.full_name}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {t('coachModule.mvp.pointsPerGame', '{{value}} pts/partido', { value: (entry.league?.points_per_game ?? 0).toFixed(2) })}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {t('coachModule.mvp.availability', '{{pct}}% de partidos jugados', { pct: Math.round(availabilityRatio * 100) })}
+                  </p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    explain(
+                      t('coachModule.explain.mvpQuestion', '¿Por qué {{name}} es candidato a MVP?', { name: entry.player.full_name }),
+                    )
+                  }
+                  aria-label={t('coachModule.explain.label', 'Explicame esto')}
+                  title={t('coachModule.explain.label', 'Explicame esto')}
+                  className="focus-ring absolute right-2 top-2 flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-ai"
+                >
+                  <MessageCircleQuestion className="size-4" aria-hidden="true" />
+                </button>
+              </div>
             ))}
           </div>
         )}

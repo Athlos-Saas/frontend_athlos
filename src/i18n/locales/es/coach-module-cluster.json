@@ -2,6 +2,8 @@
   "coachModule": {
     "title": "Módulo Entrenador",
     "subtitle": "Lo más importante, en lenguaje simple — el detalle técnico está a un click de distancia",
+    "confidential": "Información confidencial · uso del cuerpo técnico",
+    "briefing": "Hoy tenés {{available}}/{{total}} disponibles y {{watching}} para vigilar. Tu once sugerido está listo.",
     "selectTeam": "Equipo",
     "empty": {
       "title": "Sin equipos todavía",
@@ -53,6 +55,19 @@
     "link": {
       "video": "Ver mapas de calor y análisis de video completo",
       "roster": "Ver plantel y estadísticas completas"
+    },
+    "report": {
+      "button": "Descargar informe",
+      "teamReadiness": "Reporte completo del plantel",
+      "watchlist": "Solo jugadores a vigilar",
+      "successTitle": "Reporte listo",
+      "errorTitle": "No se pudo generar el reporte"
+    },
+    "explain": {
+      "label": "Explicame esto",
+      "xiQuestion": "¿Por qué se sugiere a {{name}} de titular?",
+      "watchQuestion": "¿Por qué {{name}} está en la lista de vigilar?",
+      "mvpQuestion": "¿Por qué {{name}} es candidato a MVP?"
     },
     "tabs": {
       "summary": "Resumen",

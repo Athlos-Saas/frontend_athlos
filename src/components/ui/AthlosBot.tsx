@@ -62,6 +62,8 @@ export function AthlosBot({ orgId }: { orgId: string }) {
   const messages = useChatStore((state) => state.messages);
   const isSending = useChatStore((state) => state.isSending);
   const sendMessage = useChatStore((state) => state.sendMessage);
+  const pendingPrompt = useChatStore((state) => state.pendingPrompt);
+  const clearPendingPrompt = useChatStore((state) => state.clearPendingPrompt);
 
   const [draft, setDraft] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
@@ -69,6 +71,16 @@ export function AthlosBot({ orgId }: { orgId: string }) {
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [messages, isSending]);
+
+  // Un botón "Explicame esto" en otra pantalla dejó un mensaje pre-armado —
+  // se precarga en el input (no se auto-envía) para que la persona vea qué
+  // va a preguntar antes de mandarlo.
+  useEffect(() => {
+    if (pendingPrompt) {
+      setDraft(pendingPrompt);
+      clearPendingPrompt();
+    }
+  }, [pendingPrompt, clearPendingPrompt]);
 
   const handleSend = () => {
     const text = draft.trim();
@@ -113,8 +125,8 @@ export function AthlosBot({ orgId }: { orgId: string }) {
           <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
             {messages.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                Preguntame cómo funciona cualquier módulo de ATHLOS, o pedime cambiar el título/fecha de un
-                video o el nombre/país de la organización.
+                Preguntame cómo funciona cualquier módulo, pedime datos reales de un jugador o un partido,
+                pedime un reporte descargable, o pedime cambiar algo (te lo voy a mostrar antes de aplicarlo).
               </p>
             )}
             {messages.map((message) => (

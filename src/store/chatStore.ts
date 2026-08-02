@@ -8,6 +8,7 @@ import {
   type AssistantActionResult,
   type AssistantMessage,
   type AssistantProposedAction,
+  type AssistantScreenContext,
 } from '@/lib/backendApi';
 
 export interface ChatMessage {
@@ -25,6 +26,16 @@ interface ChatState {
   messages: ChatMessage[];
   isSending: boolean;
   resolvingActionId: string | null;
+  // Lo que la página actual está mirando — se manda como pista en cada
+  // mensaje (ver AssistantScreenContext), nunca se persiste entre sesiones.
+  screenContext: AssistantScreenContext | null;
+  setScreenContext: (context: AssistantScreenContext | null) => void;
+  // Texto pre-armado por un botón "Explicame esto" — AthlosBot lo consume,
+  // abre el panel y lo precarga en el input (un solo click de más para que
+  // el entrenador vea qué va a preguntar antes de enviarlo).
+  pendingPrompt: string | null;
+  setPendingPrompt: (text: string) => void;
+  clearPendingPrompt: () => void;
   sendMessage: (orgId: string, text: string) => Promise<void>;
   confirmAction: (orgId: string, actionId: string) => Promise<void>;
   rejectAction: (orgId: string, actionId: string) => Promise<void>;
@@ -48,6 +59,11 @@ export const useChatStore = create<ChatState>()(
       messages: [],
       isSending: false,
       resolvingActionId: null,
+      screenContext: null,
+      setScreenContext: (context) => set({ screenContext: context }),
+      pendingPrompt: null,
+      setPendingPrompt: (text) => set({ pendingPrompt: text, isOpen: true }),
+      clearPendingPrompt: () => set({ pendingPrompt: null }),
 
       sendMessage: async (orgId, text) => {
         const userMessage: ChatMessage = { id: nextId(), role: 'user', content: text };
@@ -56,7 +72,7 @@ export const useChatStore = create<ChatState>()(
         const history: AssistantMessage[] = get().messages.map((m) => ({ role: m.role, content: m.content }));
 
         try {
-          const result = await sendAssistantMessage(orgId, text, history);
+          const result = await sendAssistantMessage(orgId, text, history, get().screenContext);
           const assistantMessage: ChatMessage = {
             id: nextId(),
             role: 'assistant',
