@@ -1,0 +1,58 @@
+{
+  "coachModule": {
+    "title": "Coach Module",
+    "subtitle": "The most important things, in plain language — technical detail is one click away",
+    "selectTeam": "Team",
+    "empty": {
+      "title": "No teams yet",
+      "description": "Create a team and a roster to use the coach module."
+    },
+    "stat": {
+      "available": "Available",
+      "injured": "Injured",
+      "toWatch": "To watch",
+      "highFatigue": "High fatigue"
+    },
+    "position": {
+      "Goalkeeper": "Goalkeeper",
+      "Defender": "Defender",
+      "Midfielder": "Midfielder",
+      "Forward": "Forward"
+    },
+    "fatigue": {
+      "bajo": "low fatigue",
+      "medio": "medium fatigue",
+      "alto": "high fatigue"
+    },
+    "xi": {
+      "title": "Suggested starting XI (4-3-3)",
+      "description": "Based on availability, recent fitness and performance — never includes injured players",
+      "emptyTitle": "No available players",
+      "emptyDescription": "The whole squad is injured or has no data.",
+      "shortOnPosition": "Short-staffed in this position — {{count}} short"
+    },
+    "watch": {
+      "title": "Players to watch",
+      "description": "Active injury, injury/fatigue risk, or accumulated cards",
+      "emptyTitle": "Nothing to watch",
+      "emptyDescription": "No player has active alerts right now.",
+      "outInjured": "Injured ({{severity}}) — unavailable",
+      "injuryRisk": "{{label}} injury risk{{confidence}}",
+      "lowConfidenceSuffix": " (still limited data)",
+      "highFatigue": "High fatigue this week — consider resting",
+      "cards": "{{count}} yellow cards this season — watch accumulation"
+    },
+    "mvp": {
+      "title": "Season MVP candidates",
+      "description": "Combines performance, availability and fitness — never a single unexplained number",
+      "emptyTitle": "Not enough data",
+      "emptyDescription": "League stats are needed to calculate candidates.",
+      "pointsPerGame": "{{value}} pts/game",
+      "availability": "{{pct}}% of games played"
+    },
+    "link": {
+      "video": "View heatmaps and full video analysis",
+      "roster": "View full roster and stats"
+    }
+  }
+}

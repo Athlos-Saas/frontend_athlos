@@ -24,6 +24,7 @@ const Competiciones = lazy(() => import('./pages/Competiciones'));
 const Configuracion = lazy(() => import('./pages/Configuracion'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Equipos = lazy(() => import('./pages/Equipos'));
+const ModuloEntrenador = lazy(() => import('./pages/ModuloEntrenador'));
 const ModelosIa = lazy(() => import('./pages/ModelosIa'));
 const PlayerProfile = lazy(() => import('./pages/PlayerProfile'));
 const Scouting = lazy(() => import('./pages/Scouting'));
@@ -83,6 +84,7 @@ export default function App() {
       <Routes>
         <Route element={<AppShell profile={profile} onSignOut={signOut} />}>
           <Route index element={<Dashboard orgId={orgId} />} />
+          <Route path="/entrenador" element={<NavGate navKey="/entrenador"><ModuloEntrenador orgId={orgId} /></NavGate>} />
           <Route path="/analisis" element={<NavGate navKey="/analisis"><Analisis orgId={orgId} role={role} /></NavGate>} />
           <Route path="/atletas" element={<NavGate navKey="/atletas"><Atletas orgId={orgId} role={role} /></NavGate>} />
           <Route path="/atletas/:playerId" element={<NavGate navKey="/atletas"><PlayerProfile orgId={orgId} role={role} /></NavGate>} />

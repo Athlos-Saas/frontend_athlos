@@ -4,6 +4,7 @@ import {
   BrainCircuit,
   Building2,
   CalendarRange,
+  ClipboardCheck,
   Cpu,
   FileBarChart2,
   LayoutDashboard,
@@ -39,7 +40,10 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     section: 'General',
     sectionKey: 'nav.section.general',
-    items: [{ label: 'Dashboard', labelKey: 'nav.dashboard', to: '/', icon: LayoutDashboard }],
+    items: [
+      { label: 'Dashboard', labelKey: 'nav.dashboard', to: '/', icon: LayoutDashboard },
+      { label: 'Módulo Entrenador', labelKey: 'nav.coachModule', to: '/entrenador', icon: ClipboardCheck },
+    ],
   },
   {
     section: 'Rendimiento',

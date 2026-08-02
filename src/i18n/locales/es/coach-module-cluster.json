@@ -1,0 +1,58 @@
+{
+  "coachModule": {
+    "title": "Módulo Entrenador",
+    "subtitle": "Lo más importante, en lenguaje simple — el detalle técnico está a un click de distancia",
+    "selectTeam": "Equipo",
+    "empty": {
+      "title": "Sin equipos todavía",
+      "description": "Creá un equipo y un roster para usar el módulo entrenador."
+    },
+    "stat": {
+      "available": "Disponibles",
+      "injured": "Lesionados",
+      "toWatch": "A vigilar",
+      "highFatigue": "Fatiga alta"
+    },
+    "position": {
+      "Goalkeeper": "Arquero",
+      "Defender": "Defensa",
+      "Midfielder": "Mediocampo",
+      "Forward": "Delantero"
+    },
+    "fatigue": {
+      "bajo": "fatiga baja",
+      "medio": "fatiga media",
+      "alto": "fatiga alta"
+    },
+    "xi": {
+      "title": "Once ideal sugerido (4-3-3)",
+      "description": "Según disponibilidad, forma física reciente y rendimiento — nunca incluye lesionados",
+      "emptyTitle": "Sin jugadores disponibles",
+      "emptyDescription": "Todo el plantel figura lesionado o sin datos.",
+      "shortOnPosition": "Plantel corto en esta posición — faltan {{count}}"
+    },
+    "watch": {
+      "title": "Jugadores a vigilar",
+      "description": "Lesión activa, riesgo de lesión/fatiga o tarjetas acumuladas",
+      "emptyTitle": "Nada que vigilar",
+      "emptyDescription": "Ningún jugador tiene alertas activas ahora mismo.",
+      "outInjured": "Lesionado ({{severity}}) — no disponible",
+      "injuryRisk": "Riesgo de lesión {{label}}{{confidence}}",
+      "lowConfidenceSuffix": " (con pocos datos todavía)",
+      "highFatigue": "Fatiga alta esta semana — considerar descanso",
+      "cards": "{{count}} amarillas esta temporada — vigilar acumulación"
+    },
+    "mvp": {
+      "title": "Candidatos a MVP de la temporada",
+      "description": "Combina rendimiento, disponibilidad y estado físico — nunca es un solo número sin explicación",
+      "emptyTitle": "Sin datos suficientes",
+      "emptyDescription": "Hacen falta estadísticas de liga para calcular candidatos.",
+      "pointsPerGame": "{{value}} pts/partido",
+      "availability": "{{pct}}% de partidos jugados"
+    },
+    "link": {
+      "video": "Ver mapas de calor y análisis de video completo",
+      "roster": "Ver plantel y estadísticas completas"
+    }
+  }
+}
