@@ -53,6 +53,29 @@
     "link": {
       "video": "Ver mapas de calor y análisis de video completo",
       "roster": "Ver plantel y estadísticas completas"
+    },
+    "tabs": {
+      "summary": "Resumen",
+      "matches": "Análisis de partidos"
+    },
+    "matches": {
+      "empty": {
+        "title": "Sin partidos analizados todavía",
+        "description": "Subí y analizá un video en Análisis para verlo acá."
+      },
+      "selectPlaceholder": "Elegí un partido",
+      "showHeatmap": "Mostrar mapa de calor",
+      "noVideoTitle": "Sin video para reproducir",
+      "noVideoDescription": "Este análisis no tiene un archivo de video asociado.",
+      "liveMapLabel": "Mapa en vivo — sincronizado con el video",
+      "statsTitle": "Lo relevante de este partido",
+      "statsDescription": "Solo lo que importa en cancha — el resto del detalle sigue en Análisis",
+      "noStatsTitle": "Sin datos suficientes",
+      "noStatsDescription": "Este partido no tiene identidades con suficiente tiempo en cuadro.",
+      "fastest": "Más rápido",
+      "slowest": "Más lento",
+      "average": "Promedio del equipo",
+      "deepLinkHint": "Para el mapa de calor completo, forma del equipo y velocidad por tramos, entrá a Análisis."
     }
   }
 }

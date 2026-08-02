@@ -21,6 +21,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { StatCard } from '@/components/ui/StatCard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { MatchAnalysisTab } from '@/features/coachModule/MatchAnalysisTab';
 import { supabase } from '@/lib/supabase';
 import type { Team } from '@/types/domain';
 
@@ -370,6 +372,13 @@ export default function ModuloEntrenador({ orgId }: { orgId: string }) {
         )}
       </div>
 
+      <Tabs defaultValue="resumen">
+        <TabsList>
+          <TabsTrigger value="resumen">{t('coachModule.tabs.summary', 'Resumen')}</TabsTrigger>
+          <TabsTrigger value="partidos">{t('coachModule.tabs.matches', 'Análisis de partidos')}</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="resumen">
       <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label={t('coachModule.stat.available', 'Disponibles')}
@@ -553,6 +562,12 @@ export default function ModuloEntrenador({ orgId }: { orgId: string }) {
           <ArrowRight className="size-4" aria-hidden="true" />
         </Button>
       </div>
+        </TabsContent>
+
+        <TabsContent value="partidos">
+          <MatchAnalysisTab orgId={orgId} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

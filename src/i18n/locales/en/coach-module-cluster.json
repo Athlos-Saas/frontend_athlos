@@ -53,6 +53,29 @@
     "link": {
       "video": "View heatmaps and full video analysis",
       "roster": "View full roster and stats"
+    },
+    "tabs": {
+      "summary": "Summary",
+      "matches": "Match analysis"
+    },
+    "matches": {
+      "empty": {
+        "title": "No matches analyzed yet",
+        "description": "Upload and analyze a video in Analysis to see it here."
+      },
+      "selectPlaceholder": "Pick a match",
+      "showHeatmap": "Show heatmap",
+      "noVideoTitle": "No video to play",
+      "noVideoDescription": "This analysis has no video file attached.",
+      "liveMapLabel": "Live map — synced with the video",
+      "statsTitle": "What matters in this match",
+      "statsDescription": "Only what matters on the pitch — the rest of the detail stays in Analysis",
+      "noStatsTitle": "Not enough data",
+      "noStatsDescription": "This match has no identities with enough time on screen.",
+      "fastest": "Fastest",
+      "slowest": "Slowest",
+      "average": "Team average",
+      "deepLinkHint": "For the full heatmap, team shape and speed by segment, go to Analysis."
     }
   }
 }
