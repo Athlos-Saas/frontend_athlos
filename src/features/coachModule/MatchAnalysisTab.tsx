@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Flame, Gauge, TrendingDown, TrendingUp, Video as VideoIcon } from 'lucide-react';
+import { Flame, Gauge, TrendingDown, TrendingUp, Video as VideoIcon, Zap } from 'lucide-react';
 
 import { LiveMatchMap } from '@/components/videos/LiveMatchMap';
-import type { TrajectoryPoint } from '@/components/charts/SoccerPitchMap';
+import { toPitch, type TrajectoryPoint } from '@/components/charts/SoccerPitchMap';
 import { Button } from '@/components/ui/Button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -32,6 +33,65 @@ interface TrackRow {
 
 const MIN_TIME_VISIBLE_S = 20;
 const FALLBACK_COLORS = ['#3b82f6', '#f59e0b', '#22c55e', '#a855f7', '#ef4444', '#06b6d4'];
+const BALL_TRAJECTORY_KEY = 'ball';
+
+interface Moment {
+  time: number;
+  trackId: string;
+  speedKmh: number;
+}
+
+// Umbral de "tramo rápido" (no "sprint" — con la precisión de homografía actual
+// no se puede afirmar eso con certeza, ver memoria pipeline-video-mejoras) y una
+// ventana de fusión para no llenar la línea de tiempo con el mismo pique varias
+// veces seguidas. Techo defensivo para descartar picos residuales de homografía.
+const FAST_SEGMENT_MIN_KMH = 20;
+const FAST_SEGMENT_MAX_KMH = 34;
+const MOMENT_MERGE_WINDOW_S = 4;
+const MAX_MOMENTS = 10;
+
+/** Detecta tramos rápidos a partir de la trayectoria real (ya filtrada de saltos por el backend) — nunca inventa un instante que no esté respaldado por dos puntos reales consecutivos. */
+function computeMoments(trajectories: Record<string, TrajectoryPoint[]>): Moment[] {
+  const raw: Moment[] = [];
+  for (const [trackId, points] of Object.entries(trajectories)) {
+    if (trackId === BALL_TRAJECTORY_KEY) continue;
+    for (let i = 1; i < points.length; i += 1) {
+      const a = points[i - 1];
+      const b = points[i];
+      const dt = b.t - a.t;
+      if (dt <= 0) continue;
+      const pa = toPitch(a);
+      const pb = toPitch(b);
+      const distanceM = Math.hypot(pb.x - pa.x, pb.y - pa.y);
+      const speedKmh = (distanceM / dt) * 3.6;
+      if (speedKmh >= FAST_SEGMENT_MIN_KMH && speedKmh <= FAST_SEGMENT_MAX_KMH) {
+        raw.push({ time: b.t, trackId, speedKmh });
+      }
+    }
+  }
+  raw.sort((a, b) => a.time - b.time);
+
+  const merged: Moment[] = [];
+  for (const moment of raw) {
+    const last = merged[merged.length - 1];
+    if (last && last.trackId === moment.trackId && moment.time - last.time <= MOMENT_MERGE_WINDOW_S) {
+      if (moment.speedKmh > last.speedKmh) merged[merged.length - 1] = moment;
+    } else {
+      merged.push(moment);
+    }
+  }
+
+  return merged
+    .sort((a, b) => b.speedKmh - a.speedKmh)
+    .slice(0, MAX_MOMENTS)
+    .sort((a, b) => a.time - b.time);
+}
+
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
 
 /**
  * Pestaña "Análisis de partidos" del Módulo Entrenador — a diferencia del
@@ -54,6 +114,9 @@ export function MatchAnalysisTab({ orgId }: { orgId: string }) {
   const [playerNameById, setPlayerNameById] = useState<Map<string, string>>(new Map());
   const [currentTime, setCurrentTime] = useState(0);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [overlayMap, setOverlayMap] = useState(false);
+  const [highlightPossession, setHighlightPossession] = useState(false);
+  const [showMoments, setShowMoments] = useState(false);
   const [isLoadingMatch, setIsLoadingMatch] = useState(false);
 
   useEffect(() => {
@@ -143,6 +206,12 @@ export function MatchAnalysisTab({ orgId }: { orgId: string }) {
 
   const nameFor = (trackId: number) => labelByTrackId.get(String(trackId)) ?? `J${trackId}`;
 
+  const moments = useMemo(() => (showMoments ? computeMoments(trajectories) : []), [showMoments, trajectories]);
+
+  const seekTo = (time: number) => {
+    if (videoRef.current) videoRef.current.currentTime = time;
+  };
+
   if (videos === null) return <Skeleton className="h-96 w-full" />;
 
   if (videos.length === 0) {
@@ -170,28 +239,54 @@ export function MatchAnalysisTab({ orgId }: { orgId: string }) {
             ))}
           </SelectContent>
         </Select>
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Switch checked={showHeatmap} onCheckedChange={setShowHeatmap} />
-          {t('coachModule.matches.showHeatmap', 'Mostrar mapa de calor')}
-        </label>
+        <div className="flex flex-wrap items-center gap-4">
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Switch checked={showHeatmap} onCheckedChange={setShowHeatmap} />
+            {t('coachModule.matches.showHeatmap', 'Mostrar mapa de calor')}
+          </label>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Checkbox checked={overlayMap} onCheckedChange={(checked) => setOverlayMap(checked === true)} />
+            {t('coachModule.matches.overlayMap', 'Superponer mapa sobre el video')}
+          </label>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Checkbox checked={highlightPossession} onCheckedChange={(checked) => setHighlightPossession(checked === true)} />
+            {t('coachModule.matches.highlightPossession', 'Resaltar posesión')}
+          </label>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Checkbox checked={showMoments} onCheckedChange={(checked) => setShowMoments(checked === true)} />
+            {t('coachModule.matches.showMoments', 'Mostrar tramos rápidos')}
+          </label>
+        </div>
       </div>
 
       {isLoadingMatch ? (
         <Skeleton className="h-96 w-full" />
       ) : (
         <>
-          <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <Card className="p-2">
+          {overlayMap ? (
+            <Card className="relative mb-5 p-2">
               {videoUrl ? (
-                // eslint-disable-next-line jsx-a11y/media-has-caption
-                <video
-                  ref={videoRef}
-                  src={videoUrl}
-                  controls
-                  playsInline
-                  className="max-h-[420px] w-full rounded-lg"
-                  onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
-                />
+                <>
+                  {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                  <video
+                    ref={videoRef}
+                    src={videoUrl}
+                    controls
+                    playsInline
+                    className="max-h-[420px] w-full rounded-lg"
+                    onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+                  />
+                  <div className="absolute bottom-4 right-4 w-40 overflow-hidden rounded-lg shadow-lg ring-1 ring-black/30 sm:w-56">
+                    <LiveMatchMap
+                      trajectories={trajectories}
+                      currentTime={currentTime}
+                      colorByTrackId={colorByTrackId}
+                      labelByTrackId={labelByTrackId}
+                      showHeatmap={showHeatmap}
+                      highlightPossession={highlightPossession}
+                    />
+                  </div>
+                </>
               ) : (
                 <EmptyState
                   icon={VideoIcon}
@@ -200,19 +295,82 @@ export function MatchAnalysisTab({ orgId }: { orgId: string }) {
                 />
               )}
             </Card>
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {t('coachModule.matches.liveMapLabel', 'Mapa en vivo — sincronizado con el video')}
-              </p>
-              <LiveMatchMap
-                trajectories={trajectories}
-                currentTime={currentTime}
-                colorByTrackId={colorByTrackId}
-                labelByTrackId={labelByTrackId}
-                showHeatmap={showHeatmap}
-              />
+          ) : (
+            <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <Card className="p-2">
+                {videoUrl ? (
+                  // eslint-disable-next-line jsx-a11y/media-has-caption
+                  <video
+                    ref={videoRef}
+                    src={videoUrl}
+                    controls
+                    playsInline
+                    className="max-h-[420px] w-full rounded-lg"
+                    onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+                  />
+                ) : (
+                  <EmptyState
+                    icon={VideoIcon}
+                    title={t('coachModule.matches.noVideoTitle', 'Sin video para reproducir')}
+                    description={t('coachModule.matches.noVideoDescription', 'Este análisis no tiene un archivo de video asociado.')}
+                  />
+                )}
+              </Card>
+              <div>
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {t('coachModule.matches.liveMapLabel', 'Mapa en vivo — sincronizado con el video')}
+                </p>
+                <LiveMatchMap
+                  trajectories={trajectories}
+                  currentTime={currentTime}
+                  colorByTrackId={colorByTrackId}
+                  labelByTrackId={labelByTrackId}
+                  showHeatmap={showHeatmap}
+                  highlightPossession={highlightPossession}
+                />
+              </div>
             </div>
-          </div>
+          )}
+
+          {showMoments && (
+            <Card className="mb-5">
+              <CardHeader>
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="size-4 text-warning" aria-hidden="true" />
+                    {t('coachModule.matches.momentsTitle', 'Tramos rápidos')}
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    {t(
+                      'coachModule.matches.momentsDescription',
+                      'Detección aproximada a partir del video — no es una medición oficial de sprint, hacé click para ir a ese instante',
+                    )}
+                  </CardDescription>
+                </div>
+              </CardHeader>
+              {moments.length === 0 ? (
+                <EmptyState
+                  icon={Zap}
+                  title={t('coachModule.matches.momentsEmptyTitle', 'Sin tramos rápidos detectados')}
+                  description={t('coachModule.matches.momentsEmptyDescription', 'Ningún jugador superó el umbral en este partido.')}
+                />
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {moments.map((moment, index) => (
+                    <button
+                      key={`${moment.trackId}-${index}`}
+                      type="button"
+                      onClick={() => seekTo(moment.time)}
+                      className="focus-ring flex items-center gap-1.5 rounded-md border border-warning/30 bg-warning/5 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-warning/10"
+                    >
+                      <Zap className="size-3.5 text-warning" aria-hidden="true" />
+                      {nameFor(Number(moment.trackId))} · {moment.speedKmh.toFixed(1)} km/h · {formatTime(moment.time)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </Card>
+          )}
 
           <Card>
             <CardHeader>
