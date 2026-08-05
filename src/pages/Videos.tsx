@@ -4,6 +4,7 @@ import { Film, Pencil, Play, Trash2, Upload } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { type TrajectoryPoint } from '@/components/charts/SoccerPitchMap';
+import { MatchInsights } from '@/components/videos/MatchInsights';
 import { TacticalBoard, type RosterOption } from '@/components/videos/TacticalBoard';
 import { AnalyzingIndicator, VIDEO_PROCESSING_STAGE_KEYS } from '@/components/ui/AnalyzingIndicator';
 import { Badge } from '@/components/ui/Badge';
@@ -23,7 +24,13 @@ import { supabase } from '@/lib/supabase';
 import { toast } from '@/store/toastStore';
 import { getDateLocale } from '@/utils/dateLocale';
 import { canWrite } from '@/utils/permissions';
-import type { VideoAnalysis, VideoPlayerTrack } from '@/types/domain';
+import type {
+  VideoAnalysis,
+  VideoEvent,
+  VideoPlayerMetrics,
+  VideoPlayerTrack,
+  VideoTeamMetrics,
+} from '@/types/domain';
 
 const STATUS_BADGE: Record<VideoAnalysis['status'], 'ai' | 'warning' | 'success' | 'danger'> = {
   uploaded: 'ai',
@@ -56,6 +63,12 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [selectedVideoId, setSelectedVideoId] = useState('');
   const [tracks, setTracks] = useState<VideoPlayerTrack[]>([]);
+  // Capas analíticas del video seleccionado (backend: video_events /
+  // video_player_metrics / video_team_metrics). Se leen directo con RLS,
+  // igual que video_player_tracks.
+  const [events, setEvents] = useState<VideoEvent[]>([]);
+  const [playerMetrics, setPlayerMetrics] = useState<VideoPlayerMetrics[]>([]);
+  const [teamMetrics, setTeamMetrics] = useState<VideoTeamMetrics[]>([]);
   const [resultVideoUrl, setResultVideoUrl] = useState<string | null>(null);
   const [trajectories, setTrajectories] = useState<Record<string, TrajectoryPoint[]>>({});
   const [rosterPlayers, setRosterPlayers] = useState<RosterOption[]>([]);
@@ -71,7 +84,9 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
   const loadVideos = () => {
     supabase
       .from('video_analyses')
-      .select('id, title, status, created_at, match_date, storage_path, processed_path, error_message, yolo_model')
+      .select(
+        'id, title, status, created_at, match_date, storage_path, processed_path, error_message, yolo_model, tracking_points, event_stats, metrics_stats',
+      )
       .eq('org_id', orgId)
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
@@ -124,20 +139,51 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
   const loadTracks = (videoId: string) => {
     supabase
       .from('video_player_tracks')
-      .select('track_id, distance_m, time_visible_s, avg_speed_kmh, max_speed_kmh, matched_player_id, shirt_color')
+      .select(
+        'track_id, distance_m, time_visible_s, avg_speed_kmh, max_speed_kmh, matched_player_id, shirt_color, team_cluster',
+      )
       .eq('video_id', videoId)
       .order('distance_m', { ascending: false })
       .then(({ data }) => setTracks(data ?? []));
   };
 
+  /** Capas analíticas. Se cargan aparte de los tracks porque son opcionales:
+   * un video procesado antes de que existieran simplemente no tiene filas, y
+   * eso no es un error — MatchInsights lo explica en pantalla. */
+  const loadInsights = (videoId: string) => {
+    supabase
+      .from('video_events')
+      .select('*')
+      .eq('video_id', videoId)
+      .order('frame', { ascending: true })
+      .then(({ data }) => setEvents((data as VideoEvent[]) ?? []));
+
+    supabase
+      .from('video_player_metrics')
+      .select('*')
+      .eq('video_id', videoId)
+      .then(({ data }) => setPlayerMetrics((data as VideoPlayerMetrics[]) ?? []));
+
+    supabase
+      .from('video_team_metrics')
+      .select('*')
+      .eq('video_id', videoId)
+      .order('team_cluster', { ascending: true })
+      .then(({ data }) => setTeamMetrics((data as VideoTeamMetrics[]) ?? []));
+  };
+
   useEffect(() => {
     if (!selectedVideoId) {
       setTracks([]);
+      setEvents([]);
+      setPlayerMetrics([]);
+      setTeamMetrics([]);
       setResultVideoUrl(null);
       setTrajectories({});
       return;
     }
     loadTracks(selectedVideoId);
+    loadInsights(selectedVideoId);
 
     const selected = (videos ?? []).find((video) => video.id === selectedVideoId);
     if (selected?.processed_path) {
@@ -236,6 +282,18 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
     if (selectedVideoId === video.id) setSelectedVideoId('');
     loadVideos();
   };
+
+  const selectedVideo = (videos ?? []).find((video) => video.id === selectedVideoId) ?? null;
+
+  /** Nombre del jugador del roster asignado a cada track, para que los
+   * eventos y las métricas digan "Pérez" y no "#17" cuando el admin ya hizo
+   * la asignación en el tablero táctico. */
+  const playerNameByTrack = new Map<number, string>();
+  for (const track of tracks) {
+    if (!track.matched_player_id) continue;
+    const player = rosterPlayers.find((option) => option.id === track.matched_player_id);
+    if (player) playerNameByTrack.set(Number(track.track_id), player.full_name);
+  }
 
   const openRename = (video: VideoAnalysis) => {
     setEditingVideo(video);
@@ -503,6 +561,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                   canEdit={canWrite(role)}
                   isSaving={isAssigning}
                   onAssign={handleAssignTracks}
+                  hasAnalysisLayers={Boolean(selectedVideo?.tracking_points)}
                 />
               </div>
             ) : (
@@ -514,6 +573,24 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                 )}
               />
             ))}
+
+          {selectedVideoId && tracks.length > 0 && (
+            <div className="mb-5">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {t('videos.result.insightsLabel', 'Análisis del partido')}
+              </p>
+              <MatchInsights
+                events={events}
+                playerMetrics={playerMetrics}
+                teamMetrics={teamMetrics}
+                tracks={tracks}
+                eventStats={selectedVideo?.event_stats ?? null}
+                metricsStats={selectedVideo?.metrics_stats ?? null}
+                trackingPoints={selectedVideo?.tracking_points ?? null}
+                playerNameByTrack={playerNameByTrack}
+              />
+            </div>
+          )}
 
           {selectedVideoId && tracks.length === 0 && (
             <EmptyState

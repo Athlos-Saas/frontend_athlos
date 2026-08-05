@@ -142,6 +142,112 @@ export interface VideoAnalysis {
   processed_path?: string | null;
   error_message?: string | null;
   yolo_model?: string | null;
+  /** Cantidad de posiciones guardadas en el artefacto de tracking. Su
+   * presencia es la señal de que el video se procesó con el pipeline que
+   * genera las capas analíticas: los videos anteriores lo tienen en null. */
+  tracking_points?: number | null;
+  event_stats?: VideoEventStats | null;
+  metrics_stats?: VideoMetricsStats | null;
+}
+
+/** Diagnóstico de la detección de eventos. El backend lo escribe SIEMPRE,
+ * sobre todo cuando no salió nada: `skipped_reason` es lo que permite explicar
+ * un cero en vez de mostrarlo pelado. */
+export interface VideoEventStats {
+  total_frames?: number;
+  ball_frames?: number;
+  ball_coverage?: number;
+  possession_frames?: number;
+  possession_spells?: number;
+  events_total?: number;
+  events_by_type?: Record<string, number>;
+  pitch_calibrated?: boolean;
+  calibration_coverage?: number | null;
+  team_silhouette?: number | null;
+  team_colors?: Record<string, string>;
+  yolo_model?: string | null;
+  skipped_reason?: string;
+  warnings?: string[];
+}
+
+export interface VideoMetricsStats {
+  tracks?: number;
+  points?: number;
+  ball_points?: number;
+  pitch_calibrated?: boolean;
+  /** false cuando las coordenadas salen de la escala lineal de respaldo: las
+   * métricas en metros son aproximadas y la UI tiene que decirlo. */
+  geometry_reliable?: boolean;
+  possession_spells?: number;
+  shape_frames_by_team?: Record<string, number>;
+  player_rows?: number;
+  team_rows?: number;
+  shape_skipped_reason?: string;
+  skipped_reason?: string;
+  failed_reason?: string;
+  warnings?: string[];
+}
+
+export type VideoEventType = 'pass' | 'turnover' | 'possession_change' | 'carry';
+
+export interface VideoEvent {
+  id: string;
+  event_type: VideoEventType;
+  frame: number;
+  t_s: number;
+  end_t_s?: number | null;
+  track_id?: number | null;
+  end_track_id?: number | null;
+  team_cluster?: number | null;
+  end_team_cluster?: number | null;
+  start_x_m?: number | null;
+  start_y_m?: number | null;
+  end_x_m?: number | null;
+  end_y_m?: number | null;
+  length_m?: number | null;
+  duration_s?: number | null;
+  progress_m?: number | null;
+}
+
+/** Grilla de ocupación normalizada (suma 1), en orden fila-mayor desde y=0. */
+export interface VideoHeatmap {
+  cols: number;
+  rows: number;
+  points: number;
+  grid: number[];
+}
+
+export interface VideoPlayerMetrics {
+  track_id: number;
+  team_cluster?: number | null;
+  heatmap?: VideoHeatmap | Record<string, never> | null;
+  passes_made: number;
+  passes_received: number;
+  turnovers_lost: number;
+  turnovers_won: number;
+  carries: number;
+  carry_distance_m: number;
+  progressive_passes: number;
+  progression_m: number;
+  possession_time_s: number;
+}
+
+export interface VideoTeamMetrics {
+  team_cluster: number;
+  mean_width_m?: number | null;
+  mean_depth_m?: number | null;
+  mean_area_m2?: number | null;
+  mean_compactness_m?: number | null;
+  mean_centroid_x_m?: number | null;
+  mean_centroid_y_m?: number | null;
+  defensive_line_m?: number | null;
+  frames_sampled: number;
+  mean_players_visible?: number | null;
+  possession_time_s: number;
+  possession_share?: number | null;
+  passes: number;
+  turnovers: number;
+  pass_network: { from: number; to: number; count: number }[];
 }
 
 export interface VideoPlayerTrack {
@@ -154,6 +260,9 @@ export interface VideoPlayerTrack {
   avg_speed_kmh: number;
   max_speed_kmh: number;
   shirt_color?: string | null;
+  /** Equipo (0/1) que asignó el backend agrupando por color de camiseta.
+   * null cuando no acumuló color suficiente o los dos kits no separan. */
+  team_cluster?: number | null;
 }
 
 export interface WellnessEntry {

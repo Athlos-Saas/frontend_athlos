@@ -176,12 +176,39 @@ function meanColorVec(colors: ColorVec[]): ColorVec {
 }
 
 /**
+ * Equipos según lo que YA decidió el backend (`video_player_tracks.
+ * team_cluster`, calculado en services/team_classifier.py con el mismo
+ * embedding HSV que usa este archivo). Es la fuente de verdad cuando existe:
+ * el backend usa esa misma asignación para decidir si un cambio de posesión
+ * fue un pase o una pérdida, así que si acá agrupáramos distinto, el tablero
+ * y los eventos se contradirían.
+ *
+ * Devuelve un mapa vacío cuando el backend no asignó equipos — y eso puede
+ * ser una decisión deliberada suya (exige que los dos kits separen de verdad,
+ * medido por coeficiente de silueta, para no partir en dos una nube de
+ * colores que en realidad es un gradiente de iluminación). Respetar esa
+ * negativa es parte del punto; ver `teamClusters` para cuándo sí se recae en
+ * el agrupamiento local.
+ */
+function teamsFromBackend(tracks: VideoPlayerTrack[]): Map<string, TeamLabel> {
+  const labels = new Map<string, TeamLabel>();
+  for (const track of tracks) {
+    if (track.team_cluster === 0) labels.set(String(track.track_id), 'A');
+    else if (track.team_cluster === 1) labels.set(String(track.track_id), 'B');
+  }
+  return labels;
+}
+
+/**
  * Agrupa las identidades en 2 equipos por color medio de camiseta (k-means
  * simple en el espacio HSV de arriba, semillas = el par de colores más
  * distantes). Requiere >= 2 tracks con shirt_color; si el video es muy
  * casero y el modelo no acumuló color para casi nadie, devuelve un mapa
  * vacío — el tablero simplemente no muestra el filtro de equipo, no
  * inventa una agrupación con datos insuficientes.
+ *
+ * Sigue existiendo solo como respaldo para los videos procesados ANTES de que
+ * el backend calculara `team_cluster`; para los nuevos manda el backend.
  */
 function clusterTeams(tracks: VideoPlayerTrack[]): Map<string, TeamLabel> {
   const colored = tracks
@@ -439,6 +466,7 @@ export function TacticalBoard({
   canEdit,
   isSaving,
   onAssign,
+  hasAnalysisLayers = false,
 }: {
   trajectories: Record<string, TrajectoryPoint[]>;
   tracks: VideoPlayerTrack[];
@@ -446,6 +474,10 @@ export function TacticalBoard({
   canEdit: boolean;
   isSaving: boolean;
   onAssign: (trackIds: number[], playerId: string | null) => Promise<void>;
+  /** true cuando el video se procesó con el pipeline que persiste
+   * `team_cluster`. Determina si los equipos los decide el backend o el
+   * k-means local de respaldo — ver `teamClusters`. */
+  hasAnalysisLayers?: boolean;
 }) {
   const { t } = useTranslation();
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
@@ -464,10 +496,19 @@ export function TacticalBoard({
     [tracks],
   );
 
-  /** Agrupación por color de camiseta (sugerencia 1) — vacío si no hay
-   * suficientes tracks con color muestreado; el filtro de equipo no se
-   * muestra en ese caso. */
-  const teamClusters = useMemo(() => clusterTeams(tracks), [tracks]);
+  /** Equipos: manda el backend cuando el video pasó por el pipeline que los
+   * calcula (`hasAnalysisLayers`), incluso si decidió NO asignar ninguno —
+   * esa negativa es informada (los kits no separaban lo suficiente) y
+   * pisarla con un agrupamiento local haría que el tablero muestre dos
+   * equipos que los eventos no reconocen.
+   *
+   * El k-means local queda solo para los videos viejos, procesados antes de
+   * que existiera la columna: ahí no hay opinión del backend que respetar y
+   * es preferible una agrupación aproximada a ninguna. */
+  const teamClusters = useMemo(
+    () => (hasAnalysisLayers ? teamsFromBackend(tracks) : clusterTeams(tracks)),
+    [tracks, hasAnalysisLayers],
+  );
   const teamSwatches = useMemo(() => {
     const groups: Record<TeamLabel, ColorVec[]> = { A: [], B: [] };
     for (const track of tracks) {
