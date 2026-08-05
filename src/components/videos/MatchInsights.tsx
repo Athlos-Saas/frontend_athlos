@@ -89,13 +89,19 @@ function Panel({
 
 /** Mapa de calor dibujado desde la grilla que ya calculó el backend — acá no
  * se recalcula nada, solo se pinta. La cancha se ve de lado: el eje X (largo,
- * de arco a arco) es horizontal. La fila 0 de la grilla es y=0, así que se
- * invierte para que el dibujo coincida con la orientación de la cancha. */
+ * de arco a arco) es horizontal.
+ *
+ * Las filas se dibujan EN ORDEN (0 arriba), no invertidas. El eje Y del
+ * pipeline nace en el borde superior de la imagen (`pitch_calibration` proyecta
+ * desde píxeles, donde y crece hacia abajo), y el `SoccerPitchMap` que ya usa
+ * el tablero táctico dibuja con esa misma convención (SVG sin transform, cy
+ * crece hacia abajo). Invertir acá dejaba este mapa en espejo vertical
+ * respecto del video y del tablero. */
 function HeatmapGrid({ heatmap, label }: { heatmap: VideoHeatmap; label: string }) {
   const peak = useMemo(() => Math.max(...heatmap.grid) || 1, [heatmap.grid]);
   const rows = useMemo(() => {
     const out: number[][] = [];
-    for (let row = heatmap.rows - 1; row >= 0; row -= 1) {
+    for (let row = 0; row < heatmap.rows; row += 1) {
       out.push(heatmap.grid.slice(row * heatmap.cols, (row + 1) * heatmap.cols));
     }
     return out;
