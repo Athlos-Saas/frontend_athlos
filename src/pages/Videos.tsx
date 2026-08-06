@@ -57,7 +57,15 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
   const { t } = useTranslation();
   const [videos, setVideos] = useState<VideoAnalysis[] | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [videoTitle, setVideoTitle] = useState(t('videos.defaultTitle', 'Partido sin título'));
+  // Arranca VACÍO, no con "Partido sin título": un campo ya relleno se lee
+  // como un valor del sistema y no como algo editable — un usuario real
+  // reportó que no encontró dónde ponerle nombre al video. Ahora el nombre
+  // sale solo del archivo elegido y se puede pisar.
+  const [videoTitle, setVideoTitle] = useState('');
+  // Si el usuario escribió un título a mano, elegir otro archivo NO se lo pisa.
+  const [titleTouched, setTitleTouched] = useState(false);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [matchDate, setMatchDate] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
@@ -211,9 +219,23 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVideoId]);
 
+  /** Nombre del archivo sin la extensión: es el título por defecto del video. */
+  const fileBaseName = (file: File) => file.name.replace(/\.[^./\\]+$/, '').trim();
+
+  /** Punto único de entrada del archivo — lo usan el selector y el arrastrar
+   * y soltar, para que las dos vías se comporten igual. */
+  const acceptFile = (file: File | null) => {
+    setSelectedFile(file);
+    if (file && !titleTouched) setVideoTitle(fileBaseName(file));
+  };
+
   const handleUpload = async () => {
     if (!selectedFile) return;
     setIsUploading(true);
+    // Sin título escrito se usa el del archivo; si hasta eso queda vacío
+    // (un archivo llamado ".mp4"), recién ahí el genérico.
+    const title =
+      videoTitle.trim() || fileBaseName(selectedFile) || t('videos.defaultTitle', 'Partido sin título');
 
     const storagePath = `${orgId}/raw/${Date.now()}-${selectedFile.name}`;
     const { error: uploadError } = await supabase.storage
@@ -228,7 +250,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
 
     const { error: insertError } = await supabase
       .from('video_analyses')
-      .insert({ org_id: orgId, title: videoTitle, match_date: matchDate || null, storage_path: storagePath });
+      .insert({ org_id: orgId, title, match_date: matchDate || null, storage_path: storagePath });
 
     if (insertError) {
       toast({ title: t('videos.toast.registerError', 'Error al registrar el video'), description: insertError.message, variant: 'danger' });
@@ -240,7 +262,10 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
       });
     }
     setSelectedFile(null);
+    setVideoTitle('');
+    setTitleTouched(false);
     setMatchDate('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
     setIsUploading(false);
     loadVideos();
   };
@@ -367,9 +392,90 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
         <CardHeader>
           <CardTitle>{t('videos.upload.cardTitle', 'Subir video')}</CardTitle>
         </CardHeader>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label={t('videos.fields.title', 'Título')} htmlFor="title">
-            <Input id="title" value={videoTitle} onChange={(event) => setVideoTitle(event.target.value)} />
+        {/* Paso 1 — elegir el archivo. Va PRIMERO y ocupa toda la fila: antes
+         * el `<input type="file">` quedaba al fondo, después de dos campos de
+         * texto, con el aspecto por defecto del navegador — un usuario real
+         * no encontró dónde cargar el video. Ahora es el elemento más grande
+         * de la tarjeta y acepta clic o arrastrar y soltar. */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
+          className="sr-only"
+          onChange={(event) => acceptFile(event.target.files?.[0] ?? null)}
+        />
+
+        {!selectedFile ? (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setIsDraggingFile(true);
+            }}
+            onDragLeave={() => setIsDraggingFile(false)}
+            onDrop={(event) => {
+              event.preventDefault();
+              setIsDraggingFile(false);
+              acceptFile(event.dataTransfer.files?.[0] ?? null);
+            }}
+            className={`flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-6 py-10 text-center transition-colors ${
+              isDraggingFile
+                ? 'border-ai bg-ai/10'
+                : 'border-border bg-panel/40 hover:border-ai/60 hover:bg-panel/70'
+            }`}
+          >
+            <span className="flex size-11 items-center justify-center rounded-full bg-ai/15">
+              <Upload className="size-5 text-ai" aria-hidden="true" />
+            </span>
+            <span className="text-sm font-semibold text-foreground">
+              {t('videos.upload.dropzoneTitle', 'Elegí el video del partido')}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {t('videos.upload.dropzoneHint', 'Hacé clic acá o arrastrá el archivo — MP4, MOV, AVI o MKV')}
+            </span>
+          </button>
+        ) : (
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-panel/60 px-4 py-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-success/15">
+              <Film className="size-4 text-success" aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-foreground">{selectedFile.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {(selectedFile.size / 1024 / 1024).toFixed(1)} MB
+              </p>
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setSelectedFile(null);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+              }}
+            >
+              {t('videos.upload.changeFile', 'Cambiar')}
+            </Button>
+          </div>
+        )}
+
+        {/* Paso 2 — los datos. El título ya viene puesto con el nombre del
+         * archivo, así que se ve que existe y que se puede cambiar. */}
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label={t('videos.fields.title', 'Nombre del video')} htmlFor="title">
+            <Input
+              id="title"
+              value={videoTitle}
+              placeholder={
+                selectedFile
+                  ? fileBaseName(selectedFile)
+                  : t('videos.upload.titlePlaceholder', 'Se toma del nombre del archivo')
+              }
+              onChange={(event) => {
+                setVideoTitle(event.target.value);
+                setTitleTouched(true);
+              }}
+            />
           </Field>
           <Field label={t('videos.fields.matchDate', 'Fecha del partido (opcional)')} htmlFor="match-date">
             <Input
@@ -380,23 +486,22 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
             />
           </Field>
         </div>
-        <p className="mb-3 text-xs text-muted-foreground">
+        <p className="mb-4 mt-1.5 text-xs text-muted-foreground">
           {t(
             'videos.upload.matchDateHint',
             'Se usa para cruzar las métricas de este video con el historial GPS del jugador en su ficha. Sin fecha, el video no aparece en esa comparación.',
           )}
         </p>
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            type="file"
-            accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
-            onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
-            className="text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-panel file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-foreground"
-          />
-          <Button onClick={handleUpload} disabled={!selectedFile} isLoading={isUploading}>
-            <Upload className="size-4" aria-hidden="true" /> {t('videos.upload.submit', 'Subir y registrar')}
-          </Button>
-        </div>
+
+        {/* Paso 3 — subir. */}
+        <Button onClick={handleUpload} disabled={!selectedFile} isLoading={isUploading}>
+          <Upload className="size-4" aria-hidden="true" /> {t('videos.upload.submit', 'Subir y registrar')}
+        </Button>
+        {!selectedFile && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t('videos.upload.pickFirst', 'Primero elegí un archivo de video.')}
+          </p>
+        )}
       </Card>
 
       <Card className="mb-5">

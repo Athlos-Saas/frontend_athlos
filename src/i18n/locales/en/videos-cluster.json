@@ -28,10 +28,15 @@
     "upload": {
       "cardTitle": "Upload video",
       "matchDateHint": "Used to cross this video's metrics with the player's GPS history in their profile. Without a date, the video won't appear in that comparison.",
-      "submit": "Upload and register"
+      "submit": "Upload and register",
+      "dropzoneTitle": "Choose the match video",
+      "dropzoneHint": "Click here or drag the file — MP4, MOV, AVI or MKV",
+      "changeFile": "Change",
+      "titlePlaceholder": "Taken from the file name",
+      "pickFirst": "Pick a video file first."
     },
     "fields": {
-      "title": "Title",
+      "title": "Video name",
       "matchDate": "Match date (optional)"
     },
     "list": {

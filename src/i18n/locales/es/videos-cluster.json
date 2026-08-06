@@ -28,10 +28,15 @@
     "upload": {
       "cardTitle": "Subir video",
       "matchDateHint": "Se usa para cruzar las métricas de este video con el historial GPS del jugador en su ficha. Sin fecha, el video no aparece en esa comparación.",
-      "submit": "Subir y registrar"
+      "submit": "Subir y registrar",
+      "dropzoneTitle": "Elegí el video del partido",
+      "dropzoneHint": "Hacé clic acá o arrastrá el archivo — MP4, MOV, AVI o MKV",
+      "changeFile": "Cambiar",
+      "titlePlaceholder": "Se toma del nombre del archivo",
+      "pickFirst": "Primero elegí un archivo de video."
     },
     "fields": {
-      "title": "Título",
+      "title": "Nombre del video",
       "matchDate": "Fecha del partido (opcional)"
     },
     "list": {
