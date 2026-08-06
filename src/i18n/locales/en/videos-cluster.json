@@ -144,7 +144,9 @@
       "showLess": "Show less",
       "showAll": "Show all {{count}}",
       "limitsTitle": "How reliable is this",
-      "limitsSubtitle": "Limits reported by the analysis itself"
+      "limitsSubtitle": "Limits reported by the analysis itself",
+      "geometryUnusableTitle": "Do not use the distances from this video",
+      "geometryUnusableDescription": "The video is not landscape and the pitch could not be calibrated, so meters (width, depth, area, defensive line) mean nothing here. Heatmaps still work, since they are relative positions. To get real distances, record in landscape with a fixed, elevated camera."
     }
   },
   "tacticalBoard": {

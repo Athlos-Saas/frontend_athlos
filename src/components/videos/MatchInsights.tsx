@@ -177,6 +177,12 @@ export function MatchInsights({
   }, [eventStats, metricsStats]);
 
   const geometryReliable = metricsStats?.geometry_reliable ?? eventStats?.pitch_calibrated ?? null;
+  // Dos niveles distintos, y la diferencia importa para el usuario: "no
+  // calibró, los metros son aproximados" es un aviso; "además el video no es
+  // apaisado, los metros no significan nada" es un no-usar. Mezclarlos en un
+  // solo cartel amarillo haría que el caso grave se lea como el leve.
+  const geometryUsable =
+    metricsStats?.geometry_usable ?? eventStats?.geometry_usable ?? true;
   const hasEvents = events.length > 0;
 
   const trackLabel = (trackId: number | null | undefined): string => {
@@ -213,21 +219,38 @@ export function MatchInsights({
 
   return (
     <div className="space-y-4">
-      {geometryReliable === false && (
-        <div className="flex items-start gap-2.5 rounded-lg border border-warning/40 bg-warning/10 p-3">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />
+      {!geometryUsable ? (
+        <div className="flex items-start gap-2.5 rounded-lg border border-danger/40 bg-danger/10 p-3">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-danger" aria-hidden="true" />
           <div className="text-xs leading-relaxed text-foreground">
             <p className="font-semibold">
-              {t('videos.insights.geometryTitle', 'Distancias aproximadas')}
+              {t('videos.insights.geometryUnusableTitle', 'No uses las distancias de este video')}
             </p>
             <p className="text-muted-foreground">
               {t(
-                'videos.insights.geometryDescription',
-                'No se pudo calibrar la cancha en este video, así que todo lo expresado en metros (ancho, profundidad, área, avance) sale de una escala de respaldo. Los mapas de calor, al ser posiciones relativas, se ven menos afectados.',
+                'videos.insights.geometryUnusableDescription',
+                'El video no es apaisado y no se pudo calibrar la cancha, así que los metros (ancho, profundidad, área, línea defensiva) no significan nada acá. Los mapas de calor sí sirven, porque son posiciones relativas. Para obtener distancias reales, grabá en horizontal con la cámara fija y elevada.',
               )}
             </p>
           </div>
         </div>
+      ) : (
+        geometryReliable === false && (
+          <div className="flex items-start gap-2.5 rounded-lg border border-warning/40 bg-warning/10 p-3">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />
+            <div className="text-xs leading-relaxed text-foreground">
+              <p className="font-semibold">
+                {t('videos.insights.geometryTitle', 'Distancias aproximadas')}
+              </p>
+              <p className="text-muted-foreground">
+                {t(
+                  'videos.insights.geometryDescription',
+                  'No se pudo calibrar la cancha en este video, así que todo lo expresado en metros (ancho, profundidad, área, avance) sale de una escala de respaldo. Los mapas de calor, al ser posiciones relativas, se ven menos afectados.',
+                )}
+              </p>
+            </div>
+          </div>
+        )
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">

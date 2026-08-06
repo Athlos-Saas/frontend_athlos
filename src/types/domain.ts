@@ -166,6 +166,15 @@ export interface VideoEventStats {
   team_silhouette?: number | null;
   team_colors?: Record<string, string>;
   yolo_model?: string | null;
+  /** 'dedicated' = detector de pelota entrenado para fútbol; 'coco' = clase
+   * genérica de respaldo, que encuentra mucha menos pelota. */
+  ball_detector?: 'dedicated' | 'coco';
+  frame_aspect?: number | null;
+  /** Más fuerte que `pitch_calibrated`: false solo cuando NO hubo homografía
+   * Y además el encuadre (vertical, típicamente) hace que la escala de
+   * respaldo no signifique nada. Distingue "aproximado" de "no usable". */
+  geometry_usable?: boolean;
+  fallback_warning?: string;
   skipped_reason?: string;
   warnings?: string[];
 }
@@ -178,6 +187,10 @@ export interface VideoMetricsStats {
   /** false cuando las coordenadas salen de la escala lineal de respaldo: las
    * métricas en metros son aproximadas y la UI tiene que decirlo. */
   geometry_reliable?: boolean;
+  /** false cuando además el encuadre no es apaisado: ahí los metros no son
+   * "aproximados", directamente no se pueden usar. */
+  geometry_usable?: boolean;
+  frame_aspect?: number | null;
   possession_spells?: number;
   shape_frames_by_team?: Record<string, number>;
   player_rows?: number;
