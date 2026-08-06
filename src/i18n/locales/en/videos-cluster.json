@@ -56,7 +56,10 @@
       "uploaded": "Uploaded",
       "processing": "Analyzing",
       "done": "Ready",
-      "failed": "Failed"
+      "failed": "Failed",
+      "elapsed": "Running for {{count}} min",
+      "elapsedStarting": "Just started",
+      "tooLong": "longer than usual"
     },
     "yoloModel": {
       "nano": "Nano (fast)",
@@ -104,7 +107,9 @@
       "modelLabel": "Model",
       "hint": "Nano processes faster and is enough for standard, well-framed video. Small detects a lot more players and the ball (tested: 4x more player detections, 75x more ball detections) — worth it for harder shots (panning camera, high angle, vertical video), at the cost of ~30% more processing time.",
       "cancel": "Cancel",
-      "confirm": "Analyze"
+      "confirm": "Analyze",
+      "durationTitle": "This takes a while",
+      "durationBody": "Analysis takes roughly 20 times the video length: a 30-second clip can take about 10 minutes. Ball detection is the expensive part, and it is what makes passes and possession measurable. You can close this window and even leave the page — it keeps processing on the server."
     },
     "insights": {
       "legacyTitle": "This video has no analysis layers",

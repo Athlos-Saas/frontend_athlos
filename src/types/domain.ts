@@ -137,6 +137,9 @@ export interface VideoAnalysis {
   title: string;
   status: 'uploaded' | 'processing' | 'done' | 'failed';
   created_at: string;
+  /** Se actualiza al pasar a `processing`, así que sirve como hora de inicio
+   * del análisis para mostrar cuánto lleva corriendo. */
+  updated_at?: string | null;
   match_date?: string | null;
   storage_path?: string | null;
   processed_path?: string | null;

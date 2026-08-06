@@ -56,7 +56,10 @@
       "uploaded": "Subido",
       "processing": "Analizando",
       "done": "Listo",
-      "failed": "Falló"
+      "failed": "Falló",
+      "elapsed": "Lleva {{count}} min",
+      "elapsedStarting": "Recién empezó",
+      "tooLong": "más de lo normal"
     },
     "yoloModel": {
       "nano": "Nano (rápido)",
@@ -104,7 +107,9 @@
       "modelLabel": "Modelo",
       "hint": "Nano procesa más rápido y alcanza para video estándar bien encuadrado. Small detecta bastantes más jugadores y la pelota (probado: 4x más detecciones de jugador, 75x más de pelota) — conviene para tomas difíciles (cámara que panea, ángulo elevado, video vertical), a costa de ~30% más tiempo de proceso.",
       "cancel": "Cancelar",
-      "confirm": "Analizar"
+      "confirm": "Analizar",
+      "durationTitle": "Esto tarda bastante",
+      "durationBody": "El análisis lleva del orden de 20 veces la duración del video: un clip de 30 segundos puede tomar unos 10 minutos. La detección de pelota es la parte cara, y es la que permite medir pases y posesión. Podés cerrar esta ventana e incluso irte de la página — sigue procesando en el servidor."
     },
     "insights": {
       "legacyTitle": "Este video no tiene las capas de análisis",

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Film, Pencil, Play, Trash2, Upload } from 'lucide-react';
+import { Clock, Film, Pencil, Play, Trash2, Upload } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { type TrajectoryPoint } from '@/components/charts/SoccerPitchMap';
@@ -48,6 +48,20 @@ const STATUS_LABEL: Record<VideoAnalysis['status'], string> = {
 
 const POLL_INTERVAL_MS = 4000;
 
+/** A partir de acá el análisis lleva demasiado y conviene decirlo. Coincide
+ * con `STUCK_PROCESSING_GRACE_MIN` del backend: pasado ese tiempo, el próximo
+ * arranque de la API lo va a dar por muerto. */
+const SLOW_ANALYSIS_MIN = 45;
+
+/** Minutos que lleva un video en `processing`. `updated_at` se escribe al
+ * entrar en ese estado, así que sirve como hora de arranque. */
+function minutesProcessing(video: VideoAnalysis): number | null {
+  if (!video.updated_at) return null;
+  const started = new Date(video.updated_at).getTime();
+  if (Number.isNaN(started)) return null;
+  return Math.max(0, Math.floor((Date.now() - started) / 60000));
+}
+
 const YOLO_MODEL_LABEL: Record<YoloModelKey, string> = {
   nano: 'Nano (rápido)',
   small: 'Small (más preciso)',
@@ -93,7 +107,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
     supabase
       .from('video_analyses')
       .select(
-        'id, title, status, created_at, match_date, storage_path, processed_path, error_message, yolo_model, tracking_points, event_stats, metrics_stats',
+        'id, title, status, created_at, updated_at, match_date, storage_path, processed_path, error_message, yolo_model, tracking_points, event_stats, metrics_stats',
       )
       .eq('org_id', orgId)
       .order('created_at', { ascending: false })
@@ -544,10 +558,34 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                           transition={{ duration: 0.25 }}
                         >
                           {video.status === 'processing' ? (
-                            <AnalyzingIndicator
-                              label={t('videos.status.analyzingLabel', 'Analizando video…')}
-                              stageKeys={VIDEO_PROCESSING_STAGE_KEYS}
-                            />
+                            (() => {
+                              // El tiempo transcurrido es lo que distingue
+                              // "está trabajando" de "se colgó". Sin esto, un
+                              // análisis de 20 minutos se lee como un cuelgue
+                              // — pasó de verdad con un usuario.
+                              const mins = minutesProcessing(video);
+                              return (
+                                <div>
+                                  <AnalyzingIndicator
+                                    label={t('videos.status.analyzingLabel', 'Analizando video…')}
+                                    stageKeys={VIDEO_PROCESSING_STAGE_KEYS}
+                                  />
+                                  {mins !== null && (
+                                    <p
+                                      className={`mt-1 text-xs ${
+                                        mins >= SLOW_ANALYSIS_MIN ? 'text-warning' : 'text-muted-foreground'
+                                      }`}
+                                    >
+                                      {mins < 1
+                                        ? t('videos.status.elapsedStarting', 'Recién empezó')
+                                        : t('videos.status.elapsed', 'Lleva {{count}} min', { count: mins })}
+                                      {mins >= SLOW_ANALYSIS_MIN &&
+                                        ` · ${t('videos.status.tooLong', 'más de lo normal')}`}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })()
                           ) : (
                             <Badge variant={STATUS_BADGE[video.status]}>
                               {t(`videos.status.${video.status}`, STATUS_LABEL[video.status])}
@@ -807,6 +845,23 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                 'Nano procesa más rápido y alcanza para video estándar bien encuadrado. Small detecta bastantes más jugadores y la pelota (probado: 4x más detecciones de jugador, 75x más de pelota) — conviene para tomas difíciles (cámara que panea, ángulo elevado, video vertical), a costa de ~30% más tiempo de proceso.',
               )}
             </p>
+            {/* Aviso de duración: sin esto, un análisis de 10 minutos sobre un
+             * clip de 30 segundos se lee como que la aplicación se colgó. El
+             * factor sale de mediciones reales, no de una estimación. */}
+            <div className="flex items-start gap-2.5 rounded-lg border border-warning/40 bg-warning/10 p-3">
+              <Clock className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />
+              <div className="text-xs leading-relaxed">
+                <p className="font-semibold text-foreground">
+                  {t('videos.analyzeDialog.durationTitle', 'Esto tarda bastante')}
+                </p>
+                <p className="text-muted-foreground">
+                  {t(
+                    'videos.analyzeDialog.durationBody',
+                    'El análisis lleva del orden de 20 veces la duración del video: un clip de 30 segundos puede tomar unos 10 minutos. La detección de pelota es la parte cara, y es la que permite medir pases y posesión. Podés cerrar esta ventana e incluso irte de la página — sigue procesando en el servidor.',
+                  )}
+                </p>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="secondary" size="sm" onClick={() => setAnalyzeVideo(null)}>
