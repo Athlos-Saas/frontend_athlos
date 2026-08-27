@@ -1,0 +1,70 @@
+{
+  "statsbomb": {
+    "title": "StatsBomb Analytics",
+    "subtitle": "Datos de eventos profesionales de partidos de élite",
+    "kpi": {
+      "matches": "Partidos cargados",
+      "shots": "Tiros (con xG)",
+      "players": "Jugadores",
+      "competitions": "Competiciones"
+    },
+    "tabs": {
+      "shotmap": "Mapa de tiros",
+      "rankings": "Ranking jugadores",
+      "formations": "Formaciones",
+      "train": "Entrenar modelos"
+    },
+    "shotmap": {
+      "chartTitle": "Mapa de tiros",
+      "chartDescription": "Coordenadas StatsBomb (120×80m) — tamaño proporcional a xG",
+      "emptyTitle": "Sin datos de tiros",
+      "emptyDescription": "Ingesta StatsBomb Open Data para ver el mapa de tiros.",
+      "legend": {
+        "goal": "Gol",
+        "saved": "Atajada",
+        "missed": "Fallado / Bloqueado"
+      }
+    },
+    "rankings": {
+      "cardTitle": "Top jugadores por xG",
+      "cardDescription": "Top 50 jugadores — ordenados por xG total acumulado",
+      "emptyTitle": "Sin datos de jugadores",
+      "emptyDescription": "Ingesta datos para ver el ranking de jugadores.",
+      "col": {
+        "player": "Jugador",
+        "matches": "PJ",
+        "goals": "Goles",
+        "xg": "xG",
+        "assists": "Asistencias",
+        "passes": "Pases completados"
+      }
+    },
+    "formations": {
+      "chartTitle": "Tasa de victoria por formación",
+      "chartDescription": "Solo formaciones con ≥ 3 partidos — porcentaje de victorias",
+      "winRate": "Tasa de victoria",
+      "emptyTitle": "Sin datos de formaciones",
+      "emptyDescription": "Se necesitan al menos 3 partidos por formación para calcular la tasa de victoria."
+    },
+    "train": {
+      "cardTitle": "Modelos StatsBomb",
+      "cardDescription": "Reentrena todos los modelos de ML que usan datos de eventos StatsBomb (xG, pases, presión…).",
+      "trainAllButton": "Entrenar todos los modelos",
+      "noBackendHint": "VITE_API_URL no está configurado. El entrenamiento requiere el backend FastAPI accesible desde el navegador.",
+      "hint": "El entrenamiento puede tomar varios minutos dependiendo del volumen de datos cargados.",
+      "resultsTitle": "Resultados del entrenamiento",
+      "successTitle": "Entrenamiento completado",
+      "successDescription": "{{count}} modelos actualizados.",
+      "errorTitle": "No se pudo entrenar",
+      "unexpectedError": "Error inesperado.",
+      "noResultsTitle": "Sin resultados",
+      "noResultsDescription": "El backend no devolvió modelos entrenados."
+    },
+    "toast": {
+      "loadKpiErrorTitle": "No se pudo cargar los KPIs",
+      "loadShotsErrorTitle": "No se pudo cargar los tiros",
+      "loadPlayersErrorTitle": "No se pudo cargar el ranking",
+      "loadFormationsErrorTitle": "No se pudo cargar las formaciones"
+    }
+  }
+}

@@ -6,6 +6,7 @@ import {
   CalendarRange,
   ClipboardCheck,
   Cpu,
+  Database,
   FileBarChart2,
   LayoutDashboard,
   Plug,
@@ -64,6 +65,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: 'Pronósticos IA', labelKey: 'nav.pronosticos', to: '/pronosticos', icon: BrainCircuit },
       { label: 'Modelos IA', labelKey: 'nav.modelosIa', to: '/modelos', icon: BrainCircuit },
       { label: 'Búsqueda de talento', labelKey: 'nav.scouting', to: '/scouting', icon: Radar },
+      { label: 'StatsBomb', labelKey: 'nav.statsbomb', to: '/statsbomb', icon: Database },
     ],
   },
   {

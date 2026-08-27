@@ -28,6 +28,7 @@ const ModuloEntrenador = lazy(() => import('./pages/ModuloEntrenador'));
 const ModelosIa = lazy(() => import('./pages/ModelosIa'));
 const PlayerProfile = lazy(() => import('./pages/PlayerProfile'));
 const Scouting = lazy(() => import('./pages/Scouting'));
+const StatsBombAnalytics = lazy(() => import('./pages/StatsBombAnalytics'));
 const Temporadas = lazy(() => import('./pages/Temporadas'));
 
 const PLACEHOLDER_ROUTES = new Set(['/pronosticos']);
@@ -94,6 +95,7 @@ export default function App() {
           <Route path="/equipos" element={<NavGate navKey="/equipos"><Equipos orgId={orgId} /></NavGate>} />
           <Route path="/temporadas" element={<NavGate navKey="/temporadas"><Temporadas orgId={orgId} /></NavGate>} />
           <Route path="/scouting" element={<NavGate navKey="/scouting"><Scouting orgId={orgId} /></NavGate>} />
+          <Route path="/statsbomb" element={<NavGate navKey="/statsbomb"><StatsBombAnalytics orgId={orgId} /></NavGate>} />
           <Route path="/alertas" element={<NavGate navKey="/alertas"><Alertas orgId={orgId} /></NavGate>} />
           <Route path="/configuracion" element={<NavGate navKey="/configuracion"><Configuracion orgId={orgId} role={role} /></NavGate>} />
           <Route

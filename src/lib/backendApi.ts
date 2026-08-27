@@ -251,3 +251,33 @@ export function generateReport(orgId: string, payload: GenerateReportRequest): P
     body: JSON.stringify(payload),
   });
 }
+
+// ---------------------------------------------------------------------------
+// StatsBomb
+// ---------------------------------------------------------------------------
+
+/**
+ * Dispara el entrenamiento de TODOS los modelos StatsBomb
+ * (POST /v1/statsbomb/train/all?org_id=…).
+ * Devuelve la lista de resultados por modelo.
+ */
+export function trainStatsBombModels(orgId: string): Promise<
+  Array<{ model_name: string; status: string; metrics?: Record<string, unknown> }>
+> {
+  return backendFetch(`/v1/statsbomb/train/all?org_id=${orgId}`, { method: 'POST' });
+}
+
+/**
+ * Dispara la ingesta de StatsBomb Open Data para una competición/temporada
+ * concretas, o todas si no se especifica (POST /v1/statsbomb/ingest?org_id=…).
+ */
+export function ingestStatsBomb(
+  orgId: string,
+  competitionId?: number,
+  seasonId?: number,
+): Promise<{ status: string; matches_loaded: number; events_loaded: number }> {
+  const params = new URLSearchParams({ org_id: orgId });
+  if (competitionId != null) params.set('competition_id', String(competitionId));
+  if (seasonId != null) params.set('season_id', String(seasonId));
+  return backendFetch(`/v1/statsbomb/ingest?${params.toString()}`, { method: 'POST' });
+}

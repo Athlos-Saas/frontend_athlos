@@ -1,0 +1,70 @@
+{
+  "statsbomb": {
+    "title": "StatsBomb Analytics",
+    "subtitle": "Professional event data from elite matches",
+    "kpi": {
+      "matches": "Matches loaded",
+      "shots": "Shots (with xG)",
+      "players": "Players",
+      "competitions": "Competitions"
+    },
+    "tabs": {
+      "shotmap": "Shot map",
+      "rankings": "Player rankings",
+      "formations": "Formations",
+      "train": "Train models"
+    },
+    "shotmap": {
+      "chartTitle": "Shot map",
+      "chartDescription": "StatsBomb coordinates (120×80m) — size proportional to xG",
+      "emptyTitle": "No shot data",
+      "emptyDescription": "Ingest StatsBomb Open Data to see the shot map.",
+      "legend": {
+        "goal": "Goal",
+        "saved": "Saved",
+        "missed": "Missed / Blocked"
+      }
+    },
+    "rankings": {
+      "cardTitle": "Top players by xG",
+      "cardDescription": "Top 50 players — sorted by cumulative xG",
+      "emptyTitle": "No player data",
+      "emptyDescription": "Ingest data to see the player rankings.",
+      "col": {
+        "player": "Player",
+        "matches": "GP",
+        "goals": "Goals",
+        "xg": "xG",
+        "assists": "Assists",
+        "passes": "Passes completed"
+      }
+    },
+    "formations": {
+      "chartTitle": "Win rate by formation",
+      "chartDescription": "Only formations with ≥ 3 matches — percentage of wins",
+      "winRate": "Win rate",
+      "emptyTitle": "No formation data",
+      "emptyDescription": "At least 3 matches per formation are needed to calculate win rate."
+    },
+    "train": {
+      "cardTitle": "StatsBomb models",
+      "cardDescription": "Retrain all ML models that use StatsBomb event data (xG, passes, pressure…).",
+      "trainAllButton": "Train all models",
+      "noBackendHint": "VITE_API_URL is not configured. Training requires the FastAPI backend accessible from the browser.",
+      "hint": "Training can take several minutes depending on the volume of loaded data.",
+      "resultsTitle": "Training results",
+      "successTitle": "Training completed",
+      "successDescription": "{{count}} models updated.",
+      "errorTitle": "Could not train",
+      "unexpectedError": "Unexpected error.",
+      "noResultsTitle": "No results",
+      "noResultsDescription": "The backend returned no trained models."
+    },
+    "toast": {
+      "loadKpiErrorTitle": "Could not load KPIs",
+      "loadShotsErrorTitle": "Could not load shots",
+      "loadPlayersErrorTitle": "Could not load rankings",
+      "loadFormationsErrorTitle": "Could not load formations"
+    }
+  }
+}
