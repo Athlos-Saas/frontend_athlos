@@ -8,6 +8,7 @@ import {
   Cpu,
   Database,
   FileBarChart2,
+  Gamepad2,
   LayoutDashboard,
   Plug,
   Radar,
@@ -66,6 +67,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: 'Modelos IA', labelKey: 'nav.modelosIa', to: '/modelos', icon: BrainCircuit },
       { label: 'Búsqueda de talento', labelKey: 'nav.scouting', to: '/scouting', icon: Radar },
       { label: 'StatsBomb', labelKey: 'nav.statsbomb', to: '/statsbomb', icon: Database },
+      { label: 'Simulación IA', labelKey: 'nav.simulacion', to: '/simulacion', icon: Gamepad2 },
     ],
   },
   {

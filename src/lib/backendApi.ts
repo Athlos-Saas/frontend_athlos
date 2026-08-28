@@ -281,3 +281,71 @@ export function ingestStatsBomb(
   if (seasonId != null) params.set('season_id', String(seasonId));
   return backendFetch(`/v1/statsbomb/ingest?${params.toString()}`, { method: 'POST' });
 }
+
+// ---------------------------------------------------------------------------
+// Simulación IA
+// ---------------------------------------------------------------------------
+
+export interface XgParams {
+  location_x: number;
+  location_y: number;
+  body_part?: string;
+  under_pressure?: boolean;
+  shot_type?: string;
+}
+
+export interface XgResult {
+  xg: number;
+  xg_percent: number;
+  distance_yards: number;
+  zone: string;
+  multipliers: Record<string, number>;
+}
+
+/** Calcula el xG situacional para una posición de tiro en el campo.
+ * POST /v1/simulation/xg */
+export function computeSituationalXg(params: XgParams): Promise<XgResult> {
+  return backendFetch('/v1/simulation/xg', { method: 'POST', body: JSON.stringify(params) });
+}
+
+export interface PlayAction {
+  type: string;
+  from_x: number;
+  from_y: number;
+  to_x: number;
+  to_y: number;
+  under_pressure?: boolean;
+}
+
+export interface SimulatePlayResult {
+  sequence_success_probability: number;
+  actions: Array<{
+    type: string;
+    from_x: number;
+    from_y: number;
+    to_x: number;
+    to_y: number;
+    probability: number;
+    cumulative_probability: number;
+    xg?: number;
+  }>;
+}
+
+/** Simula una secuencia de acciones (pases, conducciones, tiros) y devuelve
+ * la probabilidad de éxito de cada acción y el xG final si aplica.
+ * POST /v1/simulation/play */
+export function simulatePlay(sequence: PlayAction[]): Promise<SimulatePlayResult> {
+  return backendFetch('/v1/simulation/play', { method: 'POST', body: JSON.stringify({ sequence }) });
+}
+
+/** Sugiere el 11 ideal para la organización usando los modelos de ML.
+ * POST /v1/simulation/best-xi?org_id=… */
+export function suggestBestXi(orgId: string): Promise<TrainingResult> {
+  return backendFetch(`/v1/simulation/best-xi?org_id=${orgId}`, { method: 'POST' });
+}
+
+/** Compara el plantel de la organización contra benchmarks de élite.
+ * POST /v1/simulation/benchmark-roster?org_id=… */
+export function benchmarkRoster(orgId: string): Promise<TrainingResult> {
+  return backendFetch(`/v1/simulation/benchmark-roster?org_id=${orgId}`, { method: 'POST' });
+}
