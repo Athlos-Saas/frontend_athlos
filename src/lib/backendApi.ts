@@ -302,10 +302,30 @@ export interface XgResult {
   multipliers: Record<string, number>;
 }
 
+/** fetch público contra atlos-backend (sin auth) para endpoints que no la requieren. */
+async function backendFetchPublic<T>(path: string, init?: RequestInit): Promise<T> {
+  const backendUrl = getBackendUrl();
+  if (!backendUrl) throw new Error('VITE_API_URL no está configurado.');
+  let response: Response;
+  try {
+    response = await fetch(`${backendUrl}${path}`, {
+      ...init,
+      headers: { 'Content-Type': 'application/json', ...init?.headers },
+    });
+  } catch {
+    throw new Error(`No se pudo conectar a ${backendUrl}.`);
+  }
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.detail ?? `El backend respondió ${response.status}.`);
+  }
+  return response.json();
+}
+
 /** Calcula el xG situacional para una posición de tiro en el campo.
- * POST /v1/simulation/xg */
+ * POST /v1/simulation/xg — no requiere autenticación */
 export function computeSituationalXg(params: XgParams): Promise<XgResult> {
-  return backendFetch('/v1/simulation/xg', { method: 'POST', body: JSON.stringify(params) });
+  return backendFetchPublic('/v1/simulation/xg', { method: 'POST', body: JSON.stringify(params) });
 }
 
 export interface PlayAction {
@@ -334,8 +354,9 @@ export interface SimulatePlayResult {
 /** Simula una secuencia de acciones (pases, conducciones, tiros) y devuelve
  * la probabilidad de éxito de cada acción y el xG final si aplica.
  * POST /v1/simulation/play */
+/** POST /v1/simulation/play — no requiere autenticación */
 export function simulatePlay(sequence: PlayAction[]): Promise<SimulatePlayResult> {
-  return backendFetch('/v1/simulation/play', { method: 'POST', body: JSON.stringify({ sequence }) });
+  return backendFetchPublic('/v1/simulation/play', { method: 'POST', body: JSON.stringify({ sequence }) });
 }
 
 /** Sugiere el 11 ideal para la organización usando los modelos de ML.

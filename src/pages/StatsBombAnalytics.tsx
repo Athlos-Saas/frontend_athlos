@@ -82,8 +82,7 @@ function ShotMapTab({ orgId }: { orgId: string }) {
     setState('loading');
     supabase
       .from('sb_shots')
-      .select('id, location_x, location_y, xg, outcome, player_name, minute, team_name')
-      .eq('org_id', orgId)
+      .select('id, location_x, location_y, statsbomb_xg, outcome, player_id, minute')
       .order('minute', { ascending: true })
       .limit(2000)
       .then(({ data, error }) => {
@@ -150,47 +149,70 @@ function PlayerRankingsTab({ orgId }: { orgId: string }) {
   useEffect(() => {
     let isMounted = true;
     setState('loading');
-    supabase
-      .from('sb_player_match_stats')
-      .select('player_name, goals, xg, assists, passes_completed, match_id')
-      .eq('org_id', orgId)
-      .limit(5000)
-      .then(({ data, error }) => {
-        if (!isMounted) return;
-        if (error) {
-          toast({
-            title: t('statsbomb.toast.loadPlayersErrorTitle', 'No se pudo cargar el ranking'),
-            description: error.message,
-            variant: 'danger',
-          });
-          setState('error');
-          return;
-        }
-        // Agrupar por jugador del lado cliente — la tabla tiene una fila por partido
-        const map = new Map<string, PlayerStat>();
-        for (const row of data ?? []) {
-          const key = row.player_name;
-          const prev = map.get(key) ?? {
-            player_name: key,
-            matches: 0,
-            goals: 0,
-            xg: 0,
-            assists: 0,
-            passes_completed: 0,
-          };
-          map.set(key, {
-            player_name: key,
-            matches: prev.matches + 1,
-            goals: prev.goals + (row.goals ?? 0),
-            xg: prev.xg + (row.xg ?? 0),
-            assists: prev.assists + (row.assists ?? 0),
-            passes_completed: prev.passes_completed + (row.passes_completed ?? 0),
-          });
-        }
-        const sorted = [...map.values()].sort((a, b) => b.xg - a.xg).slice(0, 50);
-        setPlayers(sorted);
-        setState('ready');
-      });
+
+    // sb_player_match_stats no tiene player_name ni org_id.
+    // Cargamos stats y jugadores por separado, luego unimos del lado cliente.
+    Promise.all([
+      supabase
+        .from('sb_player_match_stats')
+        .select('player_id, goals, xg_total, assists, passes_completed, match_id')
+        .limit(5000),
+      supabase
+        .from('sb_players')
+        .select('id, player_name'),
+    ]).then(([statsResult, playersResult]) => {
+      if (!isMounted) return;
+      if (statsResult.error) {
+        toast({
+          title: t('statsbomb.toast.loadPlayersErrorTitle', 'No se pudo cargar el ranking'),
+          description: statsResult.error.message,
+          variant: 'danger',
+        });
+        setState('error');
+        return;
+      }
+      if (playersResult.error) {
+        toast({
+          title: t('statsbomb.toast.loadPlayersErrorTitle', 'No se pudo cargar el ranking'),
+          description: playersResult.error.message,
+          variant: 'danger',
+        });
+        setState('error');
+        return;
+      }
+
+      // Mapa id → nombre de jugador
+      const nameMap = new Map<number, string>(
+        (playersResult.data ?? []).map((p) => [p.id as number, p.player_name as string]),
+      );
+
+      // Agrupar por player_id del lado cliente — la tabla tiene una fila por partido
+      const map = new Map<number, PlayerStat>();
+      for (const row of statsResult.data ?? []) {
+        const pid = row.player_id as number;
+        const name = nameMap.get(pid) ?? `Jugador #${pid}`;
+        const prev = map.get(pid) ?? {
+          player_name: name,
+          matches: 0,
+          goals: 0,
+          xg: 0,
+          assists: 0,
+          passes_completed: 0,
+        };
+        map.set(pid, {
+          player_name: name,
+          matches: prev.matches + 1,
+          goals: prev.goals + ((row.goals as number) ?? 0),
+          xg: prev.xg + ((row.xg_total as number) ?? 0),
+          assists: prev.assists + ((row.assists as number) ?? 0),
+          passes_completed: prev.passes_completed + ((row.passes_completed as number) ?? 0),
+        });
+      }
+      const sorted = [...map.values()].sort((a, b) => b.xg - a.xg).slice(0, 50);
+      setPlayers(sorted);
+      setState('ready');
+    });
+
     return () => {
       isMounted = false;
     };
@@ -284,10 +306,10 @@ function FormationsTab({ orgId }: { orgId: string }) {
 
     // Unimos sb_tactics con sb_matches para calcular win_rate por formación
     // Cargamos tácticas con resultado del partido (match_result de sb_matches)
+    // sb_tactics y sb_matches son datos públicos de referencia: no tienen org_id.
     supabase
       .from('sb_tactics')
       .select('formation, match_id, team_id')
-      .eq('org_id', orgId)
       .limit(5000)
       .then(async ({ data: tacticsData, error: tacticsError }) => {
         if (!isMounted) return;
@@ -306,13 +328,14 @@ function FormationsTab({ orgId }: { orgId: string }) {
           return;
         }
 
-        // Obtener partidos con resultado
+        // Obtener partidos con resultado.
+        // sb_matches.id es la PK serial; match_id es el ID de StatsBomb.
+        // sb_tactics.match_id referencia sb_matches.id.
         const matchIds = [...new Set(tacticsData.map((t) => t.match_id))];
         const { data: matchData, error: matchError } = await supabase
           .from('sb_matches')
-          .select('match_id, home_team_id, away_team_id, home_score, away_score')
-          .eq('org_id', orgId)
-          .in('match_id', matchIds.slice(0, 1000));
+          .select('id, home_team_id, away_team_id, home_score, away_score')
+          .in('id', matchIds.slice(0, 1000));
 
         if (!isMounted) return;
         if (matchError) {
@@ -323,7 +346,7 @@ function FormationsTab({ orgId }: { orgId: string }) {
         }
 
         const matchMap = new Map(
-          (matchData ?? []).map((m) => [m.match_id, m]),
+          (matchData ?? []).map((m) => [m.id, m]),
         );
 
         // Calcular win rate por formación
@@ -580,11 +603,13 @@ export default function StatsBombAnalytics({ orgId }: { orgId: string }) {
     let isMounted = true;
     setKpiState('loading');
 
+    // Las tablas sb_* son datos públicos de referencia: no tienen columna org_id.
+    // Para jugadores usamos sb_players (no sb_player_match_stats que tiene filas por partido).
     Promise.all([
-      supabase.from('sb_matches').select('match_id', { count: 'exact', head: true }).eq('org_id', orgId),
-      supabase.from('sb_shots').select('id', { count: 'exact', head: true }).eq('org_id', orgId),
-      supabase.from('sb_player_match_stats').select('player_name', { count: 'exact', head: true }).eq('org_id', orgId),
-      supabase.from('sb_competitions').select('competition_id', { count: 'exact', head: true }).eq('org_id', orgId),
+      supabase.from('sb_matches').select('id', { count: 'exact', head: true }),
+      supabase.from('sb_shots').select('id', { count: 'exact', head: true }),
+      supabase.from('sb_players').select('id', { count: 'exact', head: true }),
+      supabase.from('sb_competitions').select('id', { count: 'exact', head: true }),
     ]).then(([matches, shots, players, competitions]) => {
       if (!isMounted) return;
       const hasError = [matches, shots, players, competitions].some((r) => r.error);

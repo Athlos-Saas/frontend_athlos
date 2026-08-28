@@ -29,9 +29,13 @@ export interface ShotPoint {
   id: string;
   location_x: number;
   location_y: number;
-  xg: number | null;
+  /** Campo real de la tabla sb_shots. El alias xg se mantiene por compatibilidad. */
+  statsbomb_xg?: number | null;
+  xg?: number | null;
   outcome: string; // 'Goal' | 'Saved Shot' | 'Off T' | 'Blocked' | …
-  player_name: string;
+  /** player_id (integer) viene de sb_shots; player_name se resuelve externamente. */
+  player_name?: string;
+  player_id?: number | null;
   minute: number;
   team_name?: string;
 }
@@ -53,9 +57,14 @@ function shotColor(outcome: string): string {
 }
 
 /** Radio proporcional al xG (mínimo visible = 4px, máximo = 12px). */
-function xgRadius(xg: number | null): number {
+function xgRadius(xg: number | null | undefined): number {
   const v = xg ?? 0.05;
   return Math.max(4, Math.min(12, 4 + v * 40));
+}
+
+/** Devuelve el valor xG del punto, leyendo statsbomb_xg o xg según cuál esté presente. */
+function resolveXg(point: ShotPoint): number | null {
+  return point.statsbomb_xg ?? point.xg ?? null;
 }
 
 function CustomDot(props: {
@@ -65,7 +74,7 @@ function CustomDot(props: {
 }) {
   const { cx = 0, cy = 0, payload } = props;
   if (!payload) return null;
-  const r = xgRadius(payload.xg);
+  const r = xgRadius(resolveXg(payload));
   const color = shotColor(payload.outcome);
   return (
     <circle
@@ -85,14 +94,16 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   if (!d) return null;
+  const xgVal = resolveXg(d);
+  const label = d.player_name ?? (d.player_id != null ? `Jugador #${d.player_id}` : '—');
   return (
     <div style={{ ...chartTooltipStyle, padding: '8px 12px', lineHeight: '1.6' }}>
-      <p className="font-semibold">{d.player_name}</p>
+      <p className="font-semibold">{label}</p>
       <p className="text-xs text-muted-foreground">
         Min. {d.minute} · {d.outcome}
       </p>
       <p className="text-xs">
-        xG: <span className="font-medium">{d.xg != null ? d.xg.toFixed(3) : '—'}</span>
+        xG: <span className="font-medium">{xgVal != null ? xgVal.toFixed(3) : '—'}</span>
       </p>
     </div>
   );
@@ -192,7 +203,7 @@ export function ShotMapLegend() {
 export function ShotOutcomeSummary({ shots }: { shots: ShotPoint[] }) {
   const goals = shots.filter((s) => s.outcome === 'Goal').length;
   const saved = shots.filter((s) => s.outcome === 'Saved Shot').length;
-  const totalXg = shots.reduce((acc, s) => acc + (s.xg ?? 0), 0);
+  const totalXg = shots.reduce((acc, s) => acc + (resolveXg(s) ?? 0), 0);
   return (
     <div className="flex items-center gap-6 text-xs text-muted-foreground">
       <span>
