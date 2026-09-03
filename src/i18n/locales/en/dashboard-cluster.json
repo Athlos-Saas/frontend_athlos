@@ -3,6 +3,7 @@
     "title": "Sports Intelligence Center",
     "subtitle": "Real-time overview of your organization",
     "liveData": "Live data",
+    "demoData": "Demo data",
     "kpi": {
       "players": "Monitored athletes",
       "sessions": "GPS sessions",

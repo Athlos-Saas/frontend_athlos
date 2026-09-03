@@ -51,9 +51,24 @@
       "avgPlayerLoad": "Avg. Player Load"
     }
   },
+  "scoutAi": {
+    "position": "Position I'm looking for",
+    "style": "Playing style",
+    "recommend": "Recommend",
+    "forMyTeam": "For my team",
+    "error": "Could not generate recommendation",
+    "emptyTitle": "Define your need",
+    "emptyDesc": "Pick a position and style, or hit \"For my team\" to let the AI infer your style and suggest the best-fitting players.",
+    "idealProfile": "Target profile",
+    "inferred": "inferred style",
+    "ideal": "Ideal",
+    "candidatesCount": "{{count}} candidates ranked by fit"
+  },
   "scoutingPage": {
     "title": "Scouting",
     "subtitle": "League prospects ranked by AI models (elite scorer probability and roles)",
+    "headerSubtitle": "Find the player that fits your team and playing style",
+    "tabs": { "ai": "AI Scouting", "league": "League ranking" },
     "emptyTitle": "No scouting data",
     "emptyDescription": "Import conference stats and retrain the technical models to generate the rankings.",
     "seasonPlaceholder": "Season",

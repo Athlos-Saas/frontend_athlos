@@ -359,14 +359,151 @@ export function simulatePlay(sequence: PlayAction[]): Promise<SimulatePlayResult
   return backendFetchPublic('/v1/simulation/play', { method: 'POST', body: JSON.stringify({ sequence }) });
 }
 
-/** Sugiere el 11 ideal para la organización usando los modelos de ML.
- * POST /v1/simulation/best-xi?org_id=… */
-export function suggestBestXi(orgId: string): Promise<TrainingResult> {
-  return backendFetch(`/v1/simulation/best-xi?org_id=${orgId}`, { method: 'POST' });
+/** Sugiere el 11 ideal de un equipo (o de toda la org si team_id es null),
+ * respetando la formación. POST /v1/simulation/best-xi?org_id=… */
+export function suggestBestXi(
+  orgId: string,
+  teamId?: string | null,
+  formation = '4-3-3',
+): Promise<TrainingResult> {
+  const params = new URLSearchParams({ org_id: orgId, formation });
+  if (teamId) params.set('team_id', teamId);
+  return backendFetch(`/v1/simulation/best-xi?${params.toString()}`, { method: 'POST' });
 }
 
-/** Compara el plantel de la organización contra benchmarks de élite.
- * POST /v1/simulation/benchmark-roster?org_id=… */
-export function benchmarkRoster(orgId: string): Promise<TrainingResult> {
-  return backendFetch(`/v1/simulation/benchmark-roster?org_id=${orgId}`, { method: 'POST' });
+export interface SimulateMatchResult {
+  home_team: { id: string; name: string; strength: { attack: number; defense: number; squad_size: number } };
+  away_team: { id: string; name: string; strength: { attack: number; defense: number; squad_size: number } };
+  expected_goals: { home: number; away: number };
+  probabilities: { home_win: number; draw: number; away_win: number };
+  most_likely_scores: Array<{ score: string; probability: number }>;
+  predicted_score: string;
+  n_simulations: number;
+}
+
+/** Simula un enfrentamiento entre dos equipos de la organización (Poisson).
+ * POST /v1/simulation/match?org_id=… */
+export function simulateMatch(
+  orgId: string,
+  homeTeamId: string,
+  awayTeamId: string,
+  homeAdvantage = 1.15,
+): Promise<SimulateMatchResult> {
+  return backendFetch(`/v1/simulation/match?org_id=${orgId}`, {
+    method: 'POST',
+    body: JSON.stringify({ home_team_id: homeTeamId, away_team_id: awayTeamId, home_advantage: homeAdvantage }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Perfiles tipo FIFA de jugadores de StatsBomb
+// ---------------------------------------------------------------------------
+
+export interface SbPlayerAttributes {
+  RIT: number;
+  TIR: number;
+  PAS: number;
+  REG: number;
+  DEF: number;
+  FIS: number;
+}
+
+export interface SbPlayerCard {
+  player_id: number;
+  name: string;
+  country: string | null;
+  overall: number;
+  matches: number;
+  attributes: SbPlayerAttributes;
+}
+
+export interface SbPlayerProfile extends SbPlayerCard {
+  radar: Array<{ attribute: string; value: number }>;
+  stats: Record<string, number>;
+  basis: string;
+}
+
+export interface SbProfileList {
+  total: number;
+  players: SbPlayerCard[];
+  basis: string;
+}
+
+/** Lista de tarjetas de jugador StatsBomb. GET /v1/statsbomb/profiles */
+export function listSbProfiles(params: {
+  limit?: number;
+  offset?: number;
+  search?: string;
+  sortBy?: string;
+}): Promise<SbProfileList> {
+  const q = new URLSearchParams();
+  if (params.limit != null) q.set('limit', String(params.limit));
+  if (params.offset != null) q.set('offset', String(params.offset));
+  if (params.search) q.set('search', params.search);
+  if (params.sortBy) q.set('sort_by', params.sortBy);
+  return backendFetch(`/v1/statsbomb/profiles?${q.toString()}`);
+}
+
+/** Ficha completa de un jugador StatsBomb. GET /v1/statsbomb/profiles/{id} */
+export function getSbProfile(playerId: number): Promise<SbPlayerProfile> {
+  return backendFetch(`/v1/statsbomb/profiles/${playerId}`);
+}
+
+
+// ---------------------------------------------------------------------------
+// Scouting con IA (recomendación de fichajes sobre el pool de StatsBomb)
+// ---------------------------------------------------------------------------
+
+export interface ScoutingCandidate extends SbPlayerCard {
+  fit: number;
+  style_match: number;
+  reason: string;
+}
+
+export interface ScoutingResult {
+  position: string;
+  style: string;
+  target: Record<string, number>;
+  candidates: ScoutingCandidate[];
+  basis: string;
+  inferred_style?: string;
+  style_inferred_from_team?: boolean;
+}
+
+export type ScoutPosition = 'GK' | 'DEF' | 'MID' | 'FWD';
+export type ScoutStyle =
+  | 'posesion'
+  | 'presion'
+  | 'contragolpe'
+  | 'ofensivo'
+  | 'defensivo'
+  | 'equilibrado';
+
+/** Recomienda jugadores por posición y estilo. GET /v1/scouting/recommend */
+export function scoutingRecommend(params: {
+  position: ScoutPosition;
+  style: ScoutStyle;
+  limit?: number;
+  minOverall?: number;
+  search?: string;
+}): Promise<ScoutingResult> {
+  const q = new URLSearchParams({ position: params.position, style: params.style });
+  if (params.limit != null) q.set('limit', String(params.limit));
+  if (params.minOverall != null) q.set('min_overall', String(params.minOverall));
+  if (params.search) q.set('search', params.search);
+  return backendFetch(`/v1/scouting/recommend?${q.toString()}`);
+}
+
+/** Recomienda para el equipo propio (estilo inferido si no se pasa).
+ * GET /v1/scouting/recommend-for-team?org_id=… */
+export function scoutingRecommendForTeam(params: {
+  orgId: string;
+  position: ScoutPosition;
+  style?: ScoutStyle;
+  limit?: number;
+}): Promise<ScoutingResult> {
+  const q = new URLSearchParams({ org_id: params.orgId, position: params.position });
+  if (params.style) q.set('style', params.style);
+  if (params.limit != null) q.set('limit', String(params.limit));
+  return backendFetch(`/v1/scouting/recommend-for-team?${q.toString()}`);
 }

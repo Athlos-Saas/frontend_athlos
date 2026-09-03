@@ -117,7 +117,7 @@ function ShotMapTab({ orgId }: { orgId: string }) {
         title={t('statsbomb.shotmap.emptyTitle', 'Sin datos de tiros')}
         description={t(
           'statsbomb.shotmap.emptyDescription',
-          'Ingesta StatsBomb Open Data para ver el mapa de tiros.',
+          'Ingesta los datos de benchmark para ver el mapa de tiros.',
         )}
       />
     );
@@ -126,7 +126,7 @@ function ShotMapTab({ orgId }: { orgId: string }) {
   return (
     <ChartCard
       title={t('statsbomb.shotmap.chartTitle', 'Mapa de tiros')}
-      description={t('statsbomb.shotmap.chartDescription', 'Coordenadas StatsBomb (120×80m) — tamaño proporcional a xG')}
+      description={t('statsbomb.shotmap.chartDescription', 'Coordenadas de cancha (120×80m) — tamaño proporcional a xG')}
       height={420}
       footer={
         <div className="flex flex-wrap items-center justify-between gap-3">

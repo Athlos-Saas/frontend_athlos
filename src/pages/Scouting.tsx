@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Radar, ShieldHalf, Target } from 'lucide-react';
+import { Radar, ShieldHalf, Sparkles, Target } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/Badge';
@@ -10,6 +10,8 @@ import { Pagination } from '@/components/ui/Pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { AiScoutPanel } from '@/features/scouting/AiScoutPanel';
 import { usePagedRows } from '@/hooks/usePagedRows';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/store/toastStore';
@@ -35,7 +37,7 @@ function ProbabilityCell({ value, gradient }: { value: number | null; gradient: 
  * ya existen (proba_top_scorer del clasificador + clusters de rol). Todo sale
  * de league_attacker_stats / league_goalkeeper_stats — nada inventado.
  */
-export default function Scouting({ orgId }: { orgId: string }) {
+function LeagueRankingTab({ orgId }: { orgId: string }) {
   const { t } = useTranslation();
   const globalSeason = useUiStore((state) => state.season);
   const [attackers, setAttackers] = useState<LeagueAttackerStat[] | null>(null);
@@ -124,12 +126,9 @@ export default function Scouting({ orgId }: { orgId: string }) {
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('scoutingPage.title', 'Scouting')}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t('scoutingPage.subtitle', 'Prospectos de la liga rankeados por los modelos de IA (probabilidad de goleador élite y roles)')}
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          {t('scoutingPage.subtitle', 'Prospectos de la liga rankeados por los modelos de IA (probabilidad de goleador élite y roles)')}
+        </p>
         <div className="flex flex-wrap items-center gap-2">
           {seasons.length > 0 && (
             <Select value={season} onValueChange={setSeason}>
@@ -278,6 +277,50 @@ export default function Scouting({ orgId }: { orgId: string }) {
           <Pagination page={keepersPager.page} pageCount={keepersPager.pageCount} onPageChange={keepersPager.setPage} className="mt-4" />
         </Card>
       )}
+    </div>
+  );
+}
+
+
+/**
+ * Scouting = dos modos:
+ *  - "Scouting IA": recomendador por necesidad/estilo sobre el pool de
+ *    StatsBomb (AiScoutPanel), con ficha detallada al clic.
+ *  - "Ranking de liga": los prospectos de la propia liga rankeados por los
+ *    modelos técnicos (lo que existía antes).
+ */
+export default function Scouting({ orgId }: { orgId: string }) {
+  const { t } = useTranslation();
+  return (
+    <div>
+      <div className="mb-5">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          {t('scoutingPage.title', 'Scouting')}
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {t('scoutingPage.headerSubtitle', 'Encuentra el jugador que encaja con tu equipo y tu estilo de juego')}
+        </p>
+      </div>
+
+      <Tabs defaultValue="ai">
+        <TabsList>
+          <TabsTrigger value="ai">
+            <Sparkles className="mr-1.5 size-4" aria-hidden="true" />
+            {t('scoutingPage.tabs.ai', 'Scouting IA')}
+          </TabsTrigger>
+          <TabsTrigger value="league">
+            <Target className="mr-1.5 size-4" aria-hidden="true" />
+            {t('scoutingPage.tabs.league', 'Ranking de liga')}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="ai">
+          <AiScoutPanel orgId={orgId} />
+        </TabsContent>
+        <TabsContent value="league">
+          <LeagueRankingTab orgId={orgId} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -1,0 +1,35 @@
+{
+  "sbPlayers": {
+    "title": "Jugadores Benchmark",
+    "subtitle": "Perfiles de jugador con atributos y radar, sobre datos profesionales de referencia",
+    "playersCount": "jugadores",
+    "matches": "partidos",
+    "attributes": "Atributos",
+    "rawStats": "Estadísticas (acumuladas)",
+    "goals": "Goles",
+    "assists": "Asistencias",
+    "shots": "Tiros",
+    "keyPasses": "Pases clave",
+    "passPct": "% Pase",
+    "dribbles": "Regates",
+    "tackles": "Entradas",
+    "interceptions": "Intercep.",
+    "pressures": "Presiones",
+    "xgPer90": "xG/90",
+    "searchPlaceholder": "Buscar jugador…",
+    "prev": "Anterior",
+    "next": "Siguiente",
+    "pageOf": "Página {{page}} de {{total}}",
+    "loadError": "No se pudo cargar los jugadores",
+    "loadErrorDesc": "¿El backend está corriendo y hay datos de benchmark ingestados?",
+    "loadProfileError": "No se pudo cargar la ficha",
+    "sort": {
+      "overall": "Overall",
+      "shooting": "Tiro",
+      "passing": "Pase",
+      "dribbling": "Regate",
+      "defending": "Defensa",
+      "pace": "Ritmo"
+    }
+  }
+}

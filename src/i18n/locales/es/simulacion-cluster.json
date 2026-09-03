@@ -5,9 +5,26 @@
     "tabs": {
       "xg": "xG Interactivo",
       "play": "Simular Jugada",
-      "xi": "11 Ideal"
+      "xi": "11 Ideal",
+      "match": "Enfrentamiento"
     },
     "noBackend": "VITE_API_URL no está configurado. Se requiere el backend FastAPI para usar esta función.",
+    "match": {
+      "home": "Local",
+      "away": "Visitante",
+      "simulate": "Simular partido",
+      "pickTwo": "Elige dos equipos distintos",
+      "error": "No se pudo simular el enfrentamiento",
+      "empty": "Elige dos equipos y simula el enfrentamiento. El modelo estima el resultado con Poisson sobre la fuerza real de cada plantel.",
+      "predicted": "marcador probable",
+      "attack": "Ataque",
+      "defense": "Defensa",
+      "probabilities": "Probabilidades",
+      "homeWin": "Gana local",
+      "draw": "Empate",
+      "awayWin": "Gana visitante",
+      "likelyScores": "Marcadores más probables"
+    },
 
     "xg": {
       "title": "xG Interactivo",
@@ -31,7 +48,7 @@
       "multipliers": "Factores multiplicadores",
       "yards": "yardas",
       "errorTitle": "No se pudo calcular el xG",
-      "pitchLabel": "Media cancha interactiva — coordenadas StatsBomb (0–120 × 0–80)",
+      "pitchLabel": "Media cancha interactiva — coordenadas de cancha (0–120 × 0–80)",
       "shotPlaced": "Tiro colocado",
       "reset": "Limpiar",
       "penaltyArea": "Área penal",
@@ -69,6 +86,8 @@
     "xi": {
       "title": "11 Ideal",
       "description": "Sugiere la alineación óptima para tu plantel usando los modelos de ML entrenados",
+      "teamPlaceholder": "Equipo",
+      "allTeams": "Toda la organización",
       "suggestButton": "Sugerir 11 ideal",
       "benchmarkButton": "Comparar con élite",
       "suggesting": "Calculando…",

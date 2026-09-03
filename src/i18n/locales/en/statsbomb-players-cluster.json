@@ -1,0 +1,35 @@
+{
+  "sbPlayers": {
+    "title": "Benchmark Players",
+    "subtitle": "Player profiles with attributes and radar, based on professional reference data",
+    "playersCount": "players",
+    "matches": "matches",
+    "attributes": "Attributes",
+    "rawStats": "Statistics (cumulative)",
+    "goals": "Goals",
+    "assists": "Assists",
+    "shots": "Shots",
+    "keyPasses": "Key passes",
+    "passPct": "Pass %",
+    "dribbles": "Dribbles",
+    "tackles": "Tackles",
+    "interceptions": "Intercep.",
+    "pressures": "Pressures",
+    "xgPer90": "xG/90",
+    "searchPlaceholder": "Search player…",
+    "prev": "Previous",
+    "next": "Next",
+    "pageOf": "Page {{page}} of {{total}}",
+    "loadError": "Could not load players",
+    "loadErrorDesc": "Is the backend running and benchmark data ingested?",
+    "loadProfileError": "Could not load profile",
+    "sort": {
+      "overall": "Overall",
+      "shooting": "Shooting",
+      "passing": "Passing",
+      "dribbling": "Dribbling",
+      "defending": "Defending",
+      "pace": "Pace"
+    }
+  }
+}

@@ -51,9 +51,24 @@
       "avgPlayerLoad": "Player Load medio"
     }
   },
+  "scoutAi": {
+    "position": "Posición que busco",
+    "style": "Estilo de juego",
+    "recommend": "Recomendar",
+    "forMyTeam": "Para mi equipo",
+    "error": "No se pudo generar la recomendación",
+    "emptyTitle": "Define tu necesidad",
+    "emptyDesc": "Elige posición y estilo, o pulsa \"Para mi equipo\" para que la IA infiera tu estilo y sugiera los jugadores que mejor encajan.",
+    "idealProfile": "Perfil ideal buscado",
+    "inferred": "estilo inferido",
+    "ideal": "Ideal",
+    "candidatesCount": "{{count}} candidatos ordenados por ajuste (fit)"
+  },
   "scoutingPage": {
     "title": "Scouting",
     "subtitle": "Prospectos de la liga rankeados por los modelos de IA (probabilidad de goleador élite y roles)",
+    "headerSubtitle": "Encuentra el jugador que encaja con tu equipo y tu estilo de juego",
+    "tabs": { "ai": "Scouting IA", "league": "Ranking de liga" },
     "emptyTitle": "Sin datos de scouting",
     "emptyDescription": "Importa estadísticas de conferencia y reentrena los modelos técnicos para generar los rankings.",
     "seasonPlaceholder": "Temporada",

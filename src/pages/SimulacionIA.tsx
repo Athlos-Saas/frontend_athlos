@@ -15,8 +15,8 @@
  *  - Específico de fútbol por diseño — frontend soccerspecific. La deuda de
  *    multi-deporte está documentada en CLAUDE.md y acotada a este componente.
  */
-import { useCallback, useRef, useState } from 'react';
-import { Gamepad2, Target, Users } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Gamepad2, Swords, Target, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/Badge';
@@ -32,10 +32,11 @@ import {
   SelectValue,
 } from '@/components/ui/Select';
 import { Switch } from '@/components/ui/Switch';
-import { getBackendUrl, computeSituationalXg, simulatePlay, suggestBestXi, benchmarkRoster } from '@/lib/backendApi';
+import { getBackendUrl, computeSituationalXg, simulatePlay, suggestBestXi, simulateMatch } from '@/lib/backendApi';
+import { fetchTeams, type TeamOption } from '@/lib/importers/playerLookup';
 import { toast } from '@/store/toastStore';
 import { colors } from '@/constants/tokens';
-import type { XgResult, SimulatePlayResult, PlayAction } from '@/lib/backendApi';
+import type { XgResult, SimulatePlayResult, PlayAction, SimulateMatchResult } from '@/lib/backendApi';
 import type { TrainingResult } from '@/lib/backendApi';
 
 // ---------------------------------------------------------------------------
@@ -419,7 +420,7 @@ function XgTab({ orgId: _orgId }: { orgId: string }) {
         </div>
 
         <p className="text-center text-xs text-muted-foreground">
-          {t('simulacion.xg.pitchLabel', 'Media cancha interactiva — coordenadas StatsBomb (0–120 × 0–80)')}
+          {t('simulacion.xg.pitchLabel', 'Media cancha interactiva — coordenadas de cancha (0–120 × 0–80)')}
         </p>
       </div>
 
@@ -965,23 +966,30 @@ function parseBestXi(metrics: Record<string, unknown>): BestXiPlayer[] {
   return [];
 }
 
+const FORMATIONS = ['4-3-3', '4-4-2', '3-5-2', '4-2-3-1'];
+
 function XiTab({ orgId }: { orgId: string }) {
   const { t } = useTranslation();
 
   const [xiResult, setXiResult] = useState<TrainingResult | null>(null);
-  const [benchResult, setBenchResult] = useState<TrainingResult | null>(null);
   const [isSuggesting, setIsSuggesting] = useState(false);
-  const [isBenchmarking, setIsBenchmarking] = useState(false);
   const [xiPlayers, setXiPlayers] = useState<BestXiPlayer[]>([]);
+  const [teams, setTeams] = useState<TeamOption[]>([]);
+  const [teamId, setTeamId] = useState<string>('all');
+  const [formation, setFormation] = useState('4-3-3');
 
   const backendUrl = getBackendUrl();
+
+  useEffect(() => {
+    fetchTeams(orgId).then(setTeams).catch(() => setTeams([]));
+  }, [orgId]);
 
   const handleSuggestXi = async () => {
     setIsSuggesting(true);
     setXiResult(null);
     setXiPlayers([]);
     try {
-      const data = await suggestBestXi(orgId);
+      const data = await suggestBestXi(orgId, teamId === 'all' ? null : teamId, formation);
       setXiResult(data);
       const players = parseBestXi(data.metrics);
       setXiPlayers(players);
@@ -996,24 +1004,7 @@ function XiTab({ orgId }: { orgId: string }) {
     }
   };
 
-  const handleBenchmark = async () => {
-    setIsBenchmarking(true);
-    setBenchResult(null);
-    try {
-      const data = await benchmarkRoster(orgId);
-      setBenchResult(data);
-    } catch (err) {
-      toast({
-        title: t('simulacion.xi.errorBenchmark', 'No se pudo comparar el plantel'),
-        description: err instanceof Error ? err.message : String(err),
-        variant: 'danger',
-      });
-    } finally {
-      setIsBenchmarking(false);
-    }
-  };
-
-  // Determinar estado titular/suplente/fuera basándose en el índice
+  // Determinar estado titular/suplente/fuase basándose en el índice
   const getStatus = (index: number): 'starter' | 'substitute' | 'out' => {
     if (index < 11) return 'starter';
     if (index < 16) return 'substitute';
@@ -1042,6 +1033,33 @@ function XiTab({ orgId }: { orgId: string }) {
     <div className="space-y-5">
       {/* Botones de acción */}
       <div className="flex flex-wrap items-center gap-3">
+        <Select value={teamId} onValueChange={setTeamId}>
+          <SelectTrigger className="h-9 w-52">
+            <SelectValue placeholder={t('simulacion.xi.teamPlaceholder', 'Equipo')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('simulacion.xi.allTeams', 'Toda la organización')}</SelectItem>
+            {teams.map((team) => (
+              <SelectItem key={team.id} value={team.id}>
+                {team.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={formation} onValueChange={setFormation}>
+          <SelectTrigger className="h-9 w-32">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {FORMATIONS.map((f) => (
+              <SelectItem key={f} value={f}>
+                {f}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <Button
           variant="primary"
           isLoading={isSuggesting}
@@ -1050,15 +1068,6 @@ function XiTab({ orgId }: { orgId: string }) {
         >
           <Users className="size-4" aria-hidden="true" />
           {t('simulacion.xi.suggestButton', 'Sugerir 11 ideal')}
-        </Button>
-
-        <Button
-          variant="secondary"
-          isLoading={isBenchmarking}
-          disabled={!backendUrl}
-          onClick={handleBenchmark}
-        >
-          {t('simulacion.xi.benchmarkButton', 'Comparar con élite')}
         </Button>
 
         {!backendUrl && (
@@ -1242,28 +1251,188 @@ function XiTab({ orgId }: { orgId: string }) {
         </Card>
       )}
 
-      {/* Resultado de benchmark */}
-      {benchResult && (
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Pestaña: Enfrentamiento entre dos equipos (Poisson)
+// ---------------------------------------------------------------------------
+
+function MatchTab({ orgId }: { orgId: string }) {
+  const { t } = useTranslation();
+  const [teams, setTeams] = useState<TeamOption[]>([]);
+  const [homeId, setHomeId] = useState('');
+  const [awayId, setAwayId] = useState('');
+  const [result, setResult] = useState<SimulateMatchResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const backendUrl = getBackendUrl();
+
+  useEffect(() => {
+    fetchTeams(orgId)
+      .then((rows) => {
+        setTeams(rows);
+        if (rows[0]) setHomeId(rows[0].id);
+        if (rows[1]) setAwayId(rows[1].id);
+      })
+      .catch(() => setTeams([]));
+  }, [orgId]);
+
+  const run = async () => {
+    if (!homeId || !awayId || homeId === awayId) {
+      toast({
+        title: t('simulacion.match.pickTwo', 'Elige dos equipos distintos'),
+        variant: 'danger',
+      });
+      return;
+    }
+    setLoading(true);
+    setResult(null);
+    try {
+      const data = await simulateMatch(orgId, homeId, awayId);
+      setResult(data);
+    } catch (err) {
+      toast({
+        title: t('simulacion.match.error', 'No se pudo simular el enfrentamiento'),
+        description: err instanceof Error ? err.message : String(err),
+        variant: 'danger',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const probBar = (label: string, value: number, color: string) => (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-semibold text-foreground">{value}%</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-border/60">
+        <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${value}%`, background: color }} />
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-end gap-3">
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+            {t('simulacion.match.home', 'Local')}
+          </label>
+          <Select value={homeId} onValueChange={setHomeId}>
+            <SelectTrigger className="h-9 w-52">
+              <SelectValue placeholder={t('simulacion.match.home', 'Local')} />
+            </SelectTrigger>
+            <SelectContent>
+              {teams.map((team) => (
+                <SelectItem key={team.id} value={team.id}>
+                  {team.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <span className="pb-2 text-sm font-bold text-muted-foreground">vs</span>
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+            {t('simulacion.match.away', 'Visitante')}
+          </label>
+          <Select value={awayId} onValueChange={setAwayId}>
+            <SelectTrigger className="h-9 w-52">
+              <SelectValue placeholder={t('simulacion.match.away', 'Visitante')} />
+            </SelectTrigger>
+            <SelectContent>
+              {teams.map((team) => (
+                <SelectItem key={team.id} value={team.id}>
+                  {team.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button variant="primary" isLoading={loading} disabled={!backendUrl} onClick={run}>
+          <Swords className="size-4" aria-hidden="true" />
+          {t('simulacion.match.simulate', 'Simular partido')}
+        </Button>
+      </div>
+
+      {!result && !loading && (
         <Card>
-          <CardHeader>
-            <div>
-              <CardTitle>{t('simulacion.xi.benchmarkTitle', 'Comparación con élite')}</CardTitle>
-              <CardDescription className="mt-1">
-                {t('simulacion.xi.benchmarkDescription', 'Resultado de la comparación del plantel contra benchmarks de élite')}
-              </CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {Object.entries(benchResult.metrics).map(([key, val]) => (
-              <div key={key} className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">{key}</span>
-                <span className="font-mono text-foreground">
-                  {typeof val === 'number' ? val.toFixed(3) : String(val)}
-                </span>
-              </div>
-            ))}
+          <CardContent className="flex flex-col items-center justify-center py-14 text-center">
+            <Swords className="mb-3 size-10 text-muted-foreground" aria-hidden="true" />
+            <p className="text-sm text-muted-foreground">
+              {t('simulacion.match.empty', 'Elige dos equipos y simula el enfrentamiento. El modelo estima el resultado con Poisson sobre la fuerza real de cada plantel.')}
+            </p>
           </CardContent>
         </Card>
+      )}
+
+      {loading && <Skeleton className="h-64 w-full" />}
+
+      {result && (
+        <>
+          {/* Marcador esperado */}
+          <Card>
+            <CardContent className="py-6">
+              <div className="flex items-center justify-around gap-4 text-center">
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">{result.home_team.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t('simulacion.match.attack', 'Ataque')} {result.home_team.strength.attack} ·{' '}
+                    {t('simulacion.match.defense', 'Defensa')} {result.home_team.strength.defense}
+                  </p>
+                </div>
+                <div className="shrink-0">
+                  <p className="text-3xl font-black text-foreground">{result.predicted_score}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    {t('simulacion.match.predicted', 'marcador probable')}
+                  </p>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">{result.away_team.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t('simulacion.match.attack', 'Ataque')} {result.away_team.strength.attack} ·{' '}
+                    {t('simulacion.match.defense', 'Defensa')} {result.away_team.strength.defense}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 flex justify-around text-center text-xs text-muted-foreground">
+                <span>xG {result.expected_goals.home}</span>
+                <span>xG {result.expected_goals.away}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Probabilidades */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('simulacion.match.probabilities', 'Probabilidades')}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {probBar(t('simulacion.match.homeWin', 'Gana local'), result.probabilities.home_win, colors.green)}
+                {probBar(t('simulacion.match.draw', 'Empate'), result.probabilities.draw, colors.orange)}
+                {probBar(t('simulacion.match.awayWin', 'Gana visitante'), result.probabilities.away_win, colors.blue)}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('simulacion.match.likelyScores', 'Marcadores más probables')}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {result.most_likely_scores.map((s) => (
+                  <div key={s.score} className="flex items-center justify-between text-sm">
+                    <span className="font-mono font-semibold text-foreground">{s.score}</span>
+                    <span className="text-muted-foreground">{s.probability}%</span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </>
       )}
     </div>
   );
@@ -1273,7 +1442,7 @@ function XiTab({ orgId }: { orgId: string }) {
 // Componente principal
 // ---------------------------------------------------------------------------
 
-type Tab = 'xg' | 'play' | 'xi';
+type Tab = 'xg' | 'play' | 'xi' | 'match';
 
 export default function SimulacionIA({ orgId, role: _role }: { orgId: string; role: string | null }) {
   const { t } = useTranslation();
@@ -1283,6 +1452,7 @@ export default function SimulacionIA({ orgId, role: _role }: { orgId: string; ro
     { key: 'xg', label: t('simulacion.tabs.xg', 'xG Interactivo') },
     { key: 'play', label: t('simulacion.tabs.play', 'Simular Jugada') },
     { key: 'xi', label: t('simulacion.tabs.xi', '11 Ideal') },
+    { key: 'match', label: t('simulacion.tabs.match', 'Enfrentamiento') },
   ];
 
   return (
@@ -1328,6 +1498,7 @@ export default function SimulacionIA({ orgId, role: _role }: { orgId: string; ro
       {activeTab === 'xg' && <XgTab orgId={orgId} />}
       {activeTab === 'play' && <PlayTab orgId={orgId} />}
       {activeTab === 'xi' && <XiTab orgId={orgId} />}
+      {activeTab === 'match' && <MatchTab orgId={orgId} />}
     </div>
   );
 }

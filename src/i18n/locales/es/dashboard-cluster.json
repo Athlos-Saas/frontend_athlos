@@ -3,6 +3,7 @@
     "title": "Centro de inteligencia deportiva",
     "subtitle": "Resumen en tiempo real de tu organización",
     "liveData": "Datos en vivo",
+    "demoData": "Datos de demostración",
     "kpi": {
       "players": "Atletas monitoreados",
       "sessions": "Sesiones GPS",

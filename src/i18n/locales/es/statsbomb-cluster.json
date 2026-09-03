@@ -1,6 +1,6 @@
 {
   "statsbomb": {
-    "title": "StatsBomb Analytics",
+    "title": "Benchmark Analytics",
     "subtitle": "Datos de eventos profesionales de partidos de élite",
     "kpi": {
       "matches": "Partidos cargados",
@@ -16,9 +16,9 @@
     },
     "shotmap": {
       "chartTitle": "Mapa de tiros",
-      "chartDescription": "Coordenadas StatsBomb (120×80m) — tamaño proporcional a xG",
+      "chartDescription": "Coordenadas de cancha (120×80m) — tamaño proporcional a xG",
       "emptyTitle": "Sin datos de tiros",
-      "emptyDescription": "Ingesta StatsBomb Open Data para ver el mapa de tiros.",
+      "emptyDescription": "Ingesta los datos de benchmark para ver el mapa de tiros.",
       "legend": {
         "goal": "Gol",
         "saved": "Atajada",
@@ -47,8 +47,8 @@
       "emptyDescription": "Se necesitan al menos 3 partidos por formación para calcular la tasa de victoria."
     },
     "train": {
-      "cardTitle": "Modelos StatsBomb",
-      "cardDescription": "Reentrena todos los modelos de ML que usan datos de eventos StatsBomb (xG, pases, presión…).",
+      "cardTitle": "Modelos Benchmark",
+      "cardDescription": "Reentrena todos los modelos de ML que usan datos de eventos de benchmark (xG, pases, presión…).",
       "trainAllButton": "Entrenar todos los modelos",
       "noBackendHint": "VITE_API_URL no está configurado. El entrenamiento requiere el backend FastAPI accesible desde el navegador.",
       "hint": "El entrenamiento puede tomar varios minutos dependiendo del volumen de datos cargados.",
