@@ -9,13 +9,15 @@ import { UserRound } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { RadarComparisonChart } from '@/components/charts/RadarComparisonChart';
+import { RadarDualChart } from '@/components/charts/RadarDualChart';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent } from '@/components/ui/Dialog';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { StatCard } from '@/components/ui/StatCard';
 import { colors } from '@/constants/tokens';
-import { getSbProfile, type SbPlayerProfile } from '@/lib/backendApi';
+import { getSbProfile, listSbProfiles, type SbPlayerCard, type SbPlayerProfile } from '@/lib/backendApi';
 import { toast } from '@/store/toastStore';
 
 type LoadState = 'loading' | 'error' | 'ready';
@@ -49,11 +51,20 @@ export function SbPlayerProfileDialog({
   const [profile, setProfile] = useState<SbPlayerProfile | null>(null);
   const [state, setState] = useState<LoadState>('loading');
 
+  // Comparación con otro jugador.
+  const [comparing, setComparing] = useState(false);
+  const [compareSearch, setCompareSearch] = useState('');
+  const [compareResults, setCompareResults] = useState<SbPlayerCard[]>([]);
+  const [compareProfile, setCompareProfile] = useState<SbPlayerProfile | null>(null);
+
   useEffect(() => {
     if (playerId == null) return;
     let mounted = true;
     setState('loading');
     setProfile(null);
+    setComparing(false);
+    setCompareProfile(null);
+    setCompareSearch('');
     getSbProfile(playerId)
       .then((data) => {
         if (!mounted) return;
@@ -73,6 +84,32 @@ export function SbPlayerProfileDialog({
       mounted = false;
     };
   }, [playerId, t]);
+
+  // Buscar candidatos a comparar (debounce).
+  useEffect(() => {
+    if (!comparing || !compareSearch.trim()) {
+      setCompareResults([]);
+      return;
+    }
+    const id = setTimeout(() => {
+      listSbProfiles({ limit: 6, search: compareSearch.trim() })
+        .then((d) => setCompareResults(d.players.filter((p) => p.player_id !== playerId)))
+        .catch(() => setCompareResults([]));
+    }, 300);
+    return () => clearTimeout(id);
+  }, [comparing, compareSearch, playerId]);
+
+  const pickCompare = (pid: number) => {
+    getSbProfile(pid)
+      .then((d) => {
+        setCompareProfile(d);
+        setCompareResults([]);
+        setCompareSearch('');
+      })
+      .catch(() => {
+        toast({ title: t('sbPlayers.loadProfileError', 'No se pudo cargar la ficha'), variant: 'danger' });
+      });
+  };
 
   return (
     <Dialog open={playerId != null} onOpenChange={(open) => !open && onClose()}>
@@ -120,14 +157,78 @@ export function SbPlayerProfileDialog({
                 </div>
               </div>
               <div className="h-56">
-                <RadarComparisonChart
-                  data={profile.radar}
-                  dataKey="value"
-                  angleKey="attribute"
-                  name={profile.name}
-                  color={colors.purple}
-                />
+                {compareProfile ? (
+                  <RadarDualChart
+                    data={profile.radar.map((r, i) => ({
+                      attribute: r.attribute,
+                      a: r.value,
+                      b: compareProfile.radar[i]?.value ?? 0,
+                    }))}
+                    nameA={profile.name.split(' ').slice(-1)[0]}
+                    nameB={compareProfile.name.split(' ').slice(-1)[0]}
+                  />
+                ) : (
+                  <RadarComparisonChart
+                    data={profile.radar}
+                    dataKey="value"
+                    angleKey="attribute"
+                    name={profile.name}
+                    color={colors.purple}
+                  />
+                )}
               </div>
+            </div>
+
+            {/* Comparador con otro jugador */}
+            <div className="rounded-md border border-border bg-panel/40 p-3">
+              {!comparing && !compareProfile && (
+                <Button variant="secondary" size="sm" onClick={() => setComparing(true)}>
+                  {t('sbPlayers.compareWith', 'Comparar con otro jugador')}
+                </Button>
+              )}
+              {(comparing || compareProfile) && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium text-foreground">
+                      {compareProfile
+                        ? t('sbPlayers.comparingWith', 'Comparando con {{name}}', { name: compareProfile.name })
+                        : t('sbPlayers.searchToCompare', 'Busca un jugador para comparar')}
+                    </span>
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => { setComparing(false); setCompareProfile(null); setCompareSearch(''); }}
+                    >
+                      {t('sbPlayers.clearCompare', 'Quitar')}
+                    </button>
+                  </div>
+                  {!compareProfile && (
+                    <>
+                      <input
+                        value={compareSearch}
+                        onChange={(e) => setCompareSearch(e.target.value)}
+                        placeholder={t('sbPlayers.searchPlaceholder', 'Buscar jugador…')}
+                        className="focus-ring h-8 w-full rounded-md border border-border bg-panel px-3 text-xs text-foreground"
+                      />
+                      {compareResults.length > 0 && (
+                        <div className="max-h-32 space-y-1 overflow-y-auto">
+                          {compareResults.map((c) => (
+                            <button
+                              key={c.player_id}
+                              type="button"
+                              onClick={() => pickCompare(c.player_id)}
+                              className="flex w-full items-center justify-between rounded px-2 py-1 text-xs hover:bg-panel"
+                            >
+                              <span className="text-foreground">{c.name}</span>
+                              <span className="font-bold" style={{ color: ratingColor(c.overall) }}>{c.overall}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>

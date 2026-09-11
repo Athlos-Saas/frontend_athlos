@@ -629,6 +629,26 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                             {t('videos.actions.viewResult', 'Ver resultado')}
                           </Button>
                         )}
+                        {/* Los videos procesados antes de que existieran las
+                         * capas analíticas (eventos, mapas, métricas) tienen
+                         * tracking_points null: sin re-analizar no muestran
+                         * nada de eso. Este botón lo hace obvio en vez de
+                         * dejar al usuario adivinando por qué la sección de
+                         * análisis sale vacía. */}
+                        {video.status === 'done' && !video.tracking_points && canWrite(role) && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            isLoading={analyzingId === video.id}
+                            onClick={() => {
+                              setSelectedYoloModel((video.yolo_model as YoloModelKey) ?? 'small');
+                              setAnalyzeVideo(video);
+                            }}
+                          >
+                            <Play className="size-4" aria-hidden="true" />
+                            {t('videos.actions.reanalyze', 'Re-analizar')}
+                          </Button>
+                        )}
                         {canWrite(role) && (
                           <Button variant="ghost" size="icon" onClick={() => openRename(video)}>
                             <Pencil className="size-4" aria-hidden="true" />
@@ -683,6 +703,23 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
               </SelectContent>
             </Select>
           </div>
+
+          {selectedVideoId && selectedVideo && !selectedVideo.tracking_points && (
+            <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-warning/40 bg-warning/10 p-3">
+              <Film className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />
+              <div className="text-xs leading-relaxed text-foreground">
+                <p className="font-semibold">
+                  {t('videos.result.legacyTitle', 'Este video no tiene el análisis nuevo')}
+                </p>
+                <p className="text-muted-foreground">
+                  {t(
+                    'videos.result.legacyDescription',
+                    'Se procesó antes de que existieran los eventos, los mapas de calor y las métricas por jugador/equipo. Dale "Re-analizar" (modelo Small) en la tabla de arriba para generarlos.',
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
 
           {selectedVideoId && resultVideoUrl && (
             <div className="mb-5">

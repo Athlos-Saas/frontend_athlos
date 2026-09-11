@@ -1,4 +1,13 @@
 {
+  "playerRating": {
+    "title": "Player rating",
+    "subtitle": "(level within your squad)",
+    "rankInSquad": "#{{rank}} of {{total}}",
+    "percentile": "{{pct}}th percentile of squad",
+    "formulaLabel": "Formula",
+    "overallHow": "How the overall is calculated",
+    "overallFormula": "Overall formula"
+  },
   "playerProfile": {
     "backToRoster": "Back to roster",
     "playerNotSpecified": "Player not specified",

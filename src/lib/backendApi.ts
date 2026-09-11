@@ -298,7 +298,10 @@ export interface XgResult {
   xg: number;
   xg_percent: number;
   distance_yards: number;
+  distance_m: number;
   zone: string;
+  angle_degrees?: number;
+  source?: string;
   multipliers: Record<string, number>;
 }
 
@@ -337,18 +340,23 @@ export interface PlayAction {
   under_pressure?: boolean;
 }
 
+export interface SimulatePlayAction {
+  step: number;
+  type: string;
+  success_probability: number;
+  cumulative_probability: number;
+  distance_m?: number;
+  xg?: number;
+  xg_percent?: number;
+  zone?: string;
+}
+
 export interface SimulatePlayResult {
+  total_actions: number;
   sequence_success_probability: number;
-  actions: Array<{
-    type: string;
-    from_x: number;
-    from_y: number;
-    to_x: number;
-    to_y: number;
-    probability: number;
-    cumulative_probability: number;
-    xg?: number;
-  }>;
+  sequence_success_percent: number;
+  final_xg: number | null;
+  actions: SimulatePlayAction[];
 }
 
 /** Simula una secuencia de acciones (pases, conducciones, tiros) y devuelve
@@ -506,4 +514,170 @@ export function scoutingRecommendForTeam(params: {
   if (params.style) q.set('style', params.style);
   if (params.limit != null) q.set('limit', String(params.limit));
   return backendFetch(`/v1/scouting/recommend-for-team?${q.toString()}`);
+}
+
+
+// ---------------------------------------------------------------------------
+// Insights — resumen agregado que evita queries masivas desde el navegador
+// ---------------------------------------------------------------------------
+
+export interface InsightsSummary {
+  counts: {
+    players: number;
+    sessions: number;
+    videos: number;
+    predictions_total: number;
+    predictions_30d: number;
+    models: number;
+    active_alerts: number;
+  };
+  distribution: Array<{ name: string; value: number }>;
+  recent_models: Array<{
+    name: string;
+    version: string;
+    task: string;
+    metrics: Record<string, unknown>;
+    trained_at: string;
+  }>;
+  recent_activity: Array<{
+    prediction_type: string;
+    label: string;
+    created_at: string;
+  }>;
+  avg_accuracy: number | null;
+}
+
+/** Resumen para Dashboard y AI Center. GET /v1/insights/summary?org_id= */
+export function fetchInsightsSummary(orgId: string): Promise<InsightsSummary> {
+  return backendFetch(`/v1/insights/summary?org_id=${orgId}`);
+}
+
+export interface ForecastEntry {
+  player_id: string;
+  player_name: string;
+  position: string;
+  injury_risk: number | null;
+  injury_label: string | null;
+  fatigue_risk: number | null;
+  fatigue_label: string | null;
+  proj_goals_next5: number | null;
+  proj_assists_next5: number | null;
+  top_scorer_proba: number | null;
+}
+
+export interface ForecastsResult {
+  forecasts: ForecastEntry[];
+  summary: {
+    players_with_forecast: number;
+    high_injury_risk: number;
+    high_fatigue_risk: number;
+    projected_goals_next5: number;
+  };
+}
+
+/** Pronósticos por jugador (riesgo lesión/fatiga). GET /v1/insights/forecasts?org_id= */
+export function fetchForecasts(orgId: string): Promise<ForecastsResult> {
+  return backendFetch(`/v1/insights/forecasts?org_id=${orgId}`);
+}
+
+
+// ---------------------------------------------------------------------------
+// Rivales — scouting de equipos rivales y simulación contra ellos
+// ---------------------------------------------------------------------------
+
+export type RivalStyle = ScoutStyle;
+
+export interface Rival {
+  id: string;
+  org_id: string;
+  name: string;
+  competition: string | null;
+  play_style: RivalStyle;
+  attack_rating: number | null;
+  defense_rating: number | null;
+  notes: string | null;
+}
+
+export interface RivalInput {
+  name: string;
+  competition?: string | null;
+  play_style: RivalStyle;
+  attack_rating?: number | null;
+  defense_rating?: number | null;
+  notes?: string | null;
+}
+
+/** Lista los rivales de la org. GET /v1/rivals?org_id= */
+export function listRivals(orgId: string): Promise<Rival[]> {
+  return backendFetch(`/v1/rivals?org_id=${orgId}`);
+}
+
+/** Crea un rival. POST /v1/rivals?org_id= */
+export function createRival(orgId: string, rival: RivalInput): Promise<Rival> {
+  return backendFetch(`/v1/rivals?org_id=${orgId}`, { method: 'POST', body: JSON.stringify(rival) });
+}
+
+/** Elimina un rival. DELETE /v1/rivals/{id}?org_id= */
+export function deleteRival(orgId: string, rivalId: string): Promise<{ deleted: string }> {
+  return backendFetch(`/v1/rivals/${rivalId}?org_id=${orgId}`, { method: 'DELETE' });
+}
+
+/** Simula equipo propio vs rival. POST /v1/rivals/simulate?org_id= */
+export function simulateVsRival(
+  orgId: string,
+  homeTeamId: string,
+  rivalId: string,
+  homeAdvantage = 1.15,
+): Promise<SimulateMatchResult> {
+  return backendFetch(`/v1/rivals/simulate?org_id=${orgId}`, {
+    method: 'POST',
+    body: JSON.stringify({ home_team_id: homeTeamId, rival_id: rivalId, home_advantage: homeAdvantage }),
+  });
+}
+
+
+// ---------------------------------------------------------------------------
+// Rating de jugadores propios (overall + atributos) — equivalente FIFA propio
+// ---------------------------------------------------------------------------
+
+export interface OwnPlayerRating {
+  player_id: string;
+  name: string;
+  position: string | null;
+  overall: number;
+  attributes: { RIT: number; RES: number; ACE: number; TIR: number; CRE: number; DIS: number };
+}
+
+export interface RatingAttributeExplanation {
+  code: string;
+  label: string;
+  rating: number;
+  percentile: number;
+  rank_in_squad: number;
+  squad_size: number;
+  formula: string;
+  sources: Array<{ label: string; value: number | null; unit: string }>;
+}
+
+export interface OwnPlayerRatingProfile extends OwnPlayerRating {
+  radar: Array<{ attribute: string; value: number }>;
+  explanation: {
+    attributes: RatingAttributeExplanation[];
+    overall: number;
+    overall_formula: string;
+    note: string;
+  };
+  basis: string;
+}
+
+/** Lista ratings de los jugadores propios. GET /v1/player-ratings?org_id= */
+export function listOwnPlayerRatings(orgId: string, teamId?: string): Promise<{ players: OwnPlayerRating[]; basis: string }> {
+  const q = new URLSearchParams({ org_id: orgId });
+  if (teamId) q.set('team_id', teamId);
+  return backendFetch(`/v1/player-ratings?${q.toString()}`);
+}
+
+/** Ficha de rating de un jugador propio. GET /v1/player-ratings/{id}?org_id= */
+export function getOwnPlayerRating(orgId: string, playerId: string): Promise<OwnPlayerRatingProfile> {
+  return backendFetch(`/v1/player-ratings/${playerId}?org_id=${orgId}`);
 }

@@ -18,7 +18,7 @@ import {
   Video,
 } from 'lucide-react';
 
-import { generateReport } from '@/lib/backendApi';
+import { generateReport, listOwnPlayerRatings } from '@/lib/backendApi';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -109,8 +109,13 @@ function computeScore(input: {
     else if (input.wellness.soreness !== null && input.wellness.soreness <= 2) score += 5;
   }
   if (input.gpsSessionsRecent === 0) score -= 10;
-  if (input.league?.points_per_game) score += Math.min(20, input.league.points_per_game * 8);
-  return Math.max(0, Math.min(100, Math.round(score)));
+  // points_per_game puede venir como string o null desde Supabase — se
+  // normaliza a número finito para no propagar NaN al score (que luego
+  // aparecía como "NaN" en la UI).
+  const ppg = Number(input.league?.points_per_game);
+  if (Number.isFinite(ppg) && ppg > 0) score += Math.min(20, ppg * 8);
+  const final = Math.round(score);
+  return Number.isFinite(final) ? Math.max(0, Math.min(100, final)) : 60;
 }
 
 /**
@@ -129,6 +134,9 @@ export default function ModuloEntrenador({ orgId }: { orgId: string }) {
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [state, setState] = useState<LoadState>('loading');
   const [readiness, setReadiness] = useState<PlayerReadiness[]>([]);
+  // Overall por jugador (del modelo de rating propio), para mostrar el "nivel"
+  // de cada jugador en el once sugerido junto a su disponibilidad.
+  const [overallByPlayer, setOverallByPlayer] = useState<Map<string, number>>(new Map());
   const [activeTab, setActiveTab] = useState<'resumen' | 'partidos'>('resumen');
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const setScreenContext = useChatStore((s) => s.setScreenContext);
@@ -182,7 +190,11 @@ export default function ModuloEntrenador({ orgId }: { orgId: string }) {
             .eq('org_id', orgId)
             .in('prediction_type', ['injury_risk', 'fatigue_risk'])
             .in('player_id', playerIds)
-            .order('created_at', { ascending: false }),
+            .order('created_at', { ascending: false })
+            // Límite defensivo: sin él, PostgREST intenta serializar todas las
+            // filas de injury/fatigue de la org vía RLS y devuelve 500. Con el
+            // orden desc, las primeras N cubren las más recientes por jugador.
+            .limit(2000),
           supabase.from('wellness_entries').select('player_id, soreness, mood').eq('org_id', orgId).gte('entry_date', wellnessSince).in('player_id', playerIds),
           supabase.from('gps_sessions').select('player_id').eq('org_id', orgId).gte('session_date', gpsSince).in('player_id', playerIds),
           supabase.from('league_attacker_stats').select('player_id, goals, assists, points_per_game, gp, yellow_cards, red_cards, role_name').eq('org_id', orgId).in('player_id', playerIds),
@@ -279,6 +291,24 @@ export default function ModuloEntrenador({ orgId }: { orgId: string }) {
     };
   }, [orgId, selectedTeamId]);
 
+  // Ratings de jugadores propios (overall). Best-effort: si el backend no está
+  // accesible, el once igual funciona con el score de disponibilidad.
+  useEffect(() => {
+    if (!selectedTeamId) return;
+    let isMounted = true;
+    listOwnPlayerRatings(orgId, selectedTeamId)
+      .then((res) => {
+        if (!isMounted) return;
+        setOverallByPlayer(new Map(res.players.map((p) => [p.player_id, p.overall])));
+      })
+      .catch(() => {
+        /* sin ratings: el once usa solo disponibilidad */
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [orgId, selectedTeamId]);
+
   const available = useMemo(() => readiness.filter((r) => r.available), [readiness]);
   const unavailable = useMemo(() => readiness.filter((r) => !r.available), [readiness]);
 
@@ -290,14 +320,21 @@ export default function ModuloEntrenador({ orgId }: { orgId: string }) {
       list.push(entry);
       byPosition.set(pos, list);
     }
-    for (const list of byPosition.values()) list.sort((a, b) => b.score - a.score);
+    // Orden combinado: 60% disponibilidad (score) + 40% nivel (overall del
+    // modelo de rating propio) — el mismo criterio del 11 ideal de Simulación:
+    // no alinear a un fatigado por bueno que sea, pero desempatar por calidad.
+    const combined = (e: PlayerReadiness) => {
+      const ov = overallByPlayer.get(e.player.id);
+      return ov != null ? e.score * 0.6 + ov * 0.4 : e.score;
+    };
+    for (const list of byPosition.values()) list.sort((a, b) => combined(b) - combined(a));
 
     return POSITION_ORDER.map((position) => {
       const needed = FORMATION[position];
       const pool = byPosition.get(position) ?? [];
       return { position, starters: pool.slice(0, needed), short: Math.max(0, needed - pool.length) };
     });
-  }, [available]);
+  }, [available, overallByPlayer]);
 
   const watchList = useMemo(() => {
     const rows: { entry: PlayerReadiness; reason: string; severity: 'warning' | 'danger' }[] = [];
@@ -536,7 +573,18 @@ export default function ModuloEntrenador({ orgId }: { orgId: string }) {
                                 {t(`coachModule.fatigue.${fatigue}`, fatigue)}
                               </Badge>
                             )}
-                            <span className="text-xs font-semibold text-muted-foreground">{score}</span>
+                            {overallByPlayer.get(player.id) != null && (
+                              <span
+                                className="flex size-6 items-center justify-center rounded text-[11px] font-black text-white"
+                                title={t('coachModule.xi.overall', 'Nivel general')}
+                                style={{ background: 'linear-gradient(135deg,#0ea5e9,#0f172a)' }}
+                              >
+                                {overallByPlayer.get(player.id)}
+                              </span>
+                            )}
+                            <span className="text-xs font-semibold text-muted-foreground" title={t('coachModule.xi.readiness', 'Disponibilidad')}>
+                              {score}
+                            </span>
                           </span>
                         </button>
                         <button

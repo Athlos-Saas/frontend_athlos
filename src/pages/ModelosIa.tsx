@@ -49,6 +49,110 @@ function buildColumns(t: TFunction): DataTableColumn<MlModel>[] {
   ];
 }
 
+/**
+ * Catálogo fijo de modelos de IA con su explicación, features, métrica y uso.
+ * El contenido es documentación — no sale de una query, porque la explicación
+ * de "qué hace el modelo" no cambia en cada entrenamiento.
+ */
+const MODEL_CATALOG = [
+  {
+    name: 'physical_profile_kmeans',
+    task: 'Clustering',
+    what: 'Agrupa jugadores en 3 perfiles físicos (Velocista, Equilibrado, Resistente) según sus medias de sesiones GPS.',
+    features: 'distance_km, sprint_distance_m, top_speed_kmh, player_load (medias por jugador).',
+    metric: 'Inercia del cluster (menor = más compacto). No hay accuracy: es clustering, no clasificación.',
+    usage: 'Identifica el motor físico de cada jugador para dosificar cargas y programar entrenamientos diferenciados.',
+  },
+  {
+    name: 'fatigue_risk_rf',
+    task: 'Clasificación',
+    what: 'Clasifica cada sesión GPS como riesgo de fatiga "alto" o "normal" con un Random Forest.',
+    features: 'distance_km, sprint_distance_m, player_load, top_speed_kmh, impacts, hr_load.',
+    metric: 'Accuracy 0.93, recall 0.88 (validación cruzada). La etiqueta de entrenamiento es z-score(player_load) > +1.',
+    usage: 'Alerta en tiempo real de sesiones de carga excesiva antes de que el sobreuso cause una lesión.',
+  },
+  {
+    name: 'session_anomaly_iforest',
+    task: 'Detección de anomalías',
+    what: 'Detecta sesiones GPS atípicas con Isolation Forest (5% de contaminación).',
+    features: 'Las mismas que fatigue_risk, normalizadas.',
+    metric: 'Tasa de anomalías detectadas (aprox. 5%). No hay accuracy: es anomalía, no etiqueta conocida.',
+    usage: 'Separa errores de captura de esfuerzos anómalos reales que merecen revisión del staff.',
+  },
+  {
+    name: 'player_load_ridge',
+    task: 'Regresión',
+    what: 'Predice el Player Load esperado de una sesión (Ridge) para detectar sobre-esfuerzo (real > esperado).',
+    features: 'distance_km, sprint_distance_m, duration_s, top_speed_kmh.',
+    metric: 'R² ≈ 0.90, MAE ≈ 24 (validación cruzada).',
+    usage: 'Si la carga real supera mucho la esperada, marca "sobre-esfuerzo" como señal de riesgo.',
+  },
+  {
+    name: 'injury_risk_rf',
+    task: 'Clasificación',
+    what: 'Predice la probabilidad de lesión en los próximos 14 días con Random Forest, usando GPS + wellness + historial.',
+    features: 'ACWR, carga aguda/crónica, media 7d de RPE, soreness, sleep, mood, lesiones previas.',
+    metric: 'AUC ≈ 0.79. Precision/recall bajas al umbral 0.5 por evento raro (~10%), no por fallo del modelo.',
+    usage: 'Proyecta qué jugadores tienen mayor riesgo de lesionarse esta semana. Clave para rotaciones.',
+  },
+  {
+    name: 'top_scorer_logreg',
+    task: 'Clasificación',
+    what: 'Rankea atacantes de la liga por probabilidad de ser "goleador de élite" (regresión logística).',
+    features: 'goals/game, assists/game, shots/game, sh_pct, sog_pct (por partido).',
+    metric: 'AUC 0.891, accuracy 0.824 (validación cruzada).',
+    usage: 'Identifica prospectos ofensivos de la liga con perfil de goleador para el scouting.',
+  },
+  {
+    name: 'attacker_roles_kmeans',
+    task: 'Clustering',
+    what: 'Clasifica atacantes de la liga en 4 roles: Finalizador, Creador/mixto, Llegador desde atrás, Bajo volumen.',
+    features: 'goals/game, assists/game, points/game, shots/game.',
+    metric: 'Conteo por rol y jugadores asignados.',
+    usage: 'Etiqueta el estilo de cada atacante para entender qué aporta y a quién se parece.',
+  },
+  {
+    name: 'goalkeeper_roles_kmeans',
+    task: 'Clustering',
+    what: 'Clasifica porteros de la liga en 3 roles: Shot-stopper, Alto volumen, Eficiente.',
+    features: 'gaa, save_pct, saves/game.',
+    metric: 'Conteo por rol.',
+    usage: 'Perfila porteros para scouting y comparación dentro de la conferencia.',
+  },
+  {
+    name: 'xg_statsbomb',
+    task: 'Clasificación (xG)',
+    what: 'Modelo xG propio entrenado con +86K tiros de partidos de élite (Gradient Boosting).',
+    features: 'Distancia, ángulo, body_part, shot_type, play_pattern, presión, primer toque, regate, portería vacía.',
+    metric: 'AUC ~0.80, MAE vs StatsBomb ≈ 0.04.',
+    usage: 'Mide la calidad real de cada oportunidad de gol. Base del xG interactivo y del análisis de tiros.',
+  },
+  {
+    name: 'player_similarity_statsbomb',
+    task: 'Similitud',
+    what: 'Para cada jugador de élite, encuentra los 10 más parecidos por distancia euclidiana en 11 dimensiones tácticas.',
+    features: 'Pases, pases progresivos, key passes, tiros, xG, regates, tackles, intercepciones, presiones, carries, duelos aéreos (todo p90).',
+    metric: 'Distancia al más similar (menor = más parecido).',
+    usage: 'Motor de scouting: "dame jugadores parecidos a X" en segundos.',
+  },
+  {
+    name: 'tactical_roles_statsbomb',
+    task: 'Clustering',
+    what: 'Roles tácticos emergentes por K-Means multidimensional sobre stats p90.',
+    features: 'Las 11 dimensiones tácticas normalizadas.',
+    metric: 'Silhouette score.',
+    usage: 'Descubre patrones de juego no evidentes: "este jugador juega como un volante de contención aunque sea mediapunta".',
+  },
+  {
+    name: 'best_xi_suggestion',
+    task: 'Optimización de alineación',
+    what: 'Sugiere el 11 ideal de un equipo combinando disponibilidad física y aporte técnico, respetando la formación.',
+    features: 'Readiness (fatiga, lesión, carga, anomalías) + contribución técnica (stats de liga).',
+    metric: 'Score medio del 11 sugerido.',
+    usage: 'Herramienta de decisión pre-partido: quién está disponible Y quién rinde más, por posición.',
+  },
+];
+
 export default function ModelosIa({ orgId, role }: { orgId: string; role: string | null }) {
   const { t } = useTranslation();
   const [models, setModels] = useState<MlModel[]>([]);
@@ -175,6 +279,35 @@ export default function ModelosIa({ orgId, role }: { orgId: string; role: string
           }
         />
       </Card>
+
+      {/* ---- Catálogo explicativo de cada modelo de IA ---- */}
+      <div className="mt-6">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">
+          {t('modelosIa.catalog.title', 'Catálogo de modelos')}
+        </h2>
+        <p className="mb-5 text-sm text-muted-foreground">
+          {t('modelosIa.catalog.description', 'Qué hace cada modelo, con qué datos se entrena, qué métrica mide y cómo ayuda al cuerpo técnico.')}
+        </p>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {MODEL_CATALOG.map((m) => (
+            <Card key={m.name}>
+              <CardHeader>
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    {m.name} <Badge variant="ai">{m.task}</Badge>
+                  </CardTitle>
+                </div>
+              </CardHeader>
+              <div className="space-y-2 text-xs">
+                <p className="text-foreground">{m.what}</p>
+                <p className="text-muted-foreground"><strong>Features:</strong> {m.features}</p>
+                <p className="text-muted-foreground"><strong>Métrica clave:</strong> {m.metric}</p>
+                <p className="text-muted-foreground"><strong>Uso práctico:</strong> {m.usage}</p>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

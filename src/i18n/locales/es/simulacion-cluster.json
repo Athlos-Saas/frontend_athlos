@@ -47,6 +47,7 @@
       "zone": "Zona",
       "multipliers": "Factores multiplicadores",
       "yards": "yardas",
+      "meters": "m",
       "errorTitle": "No se pudo calcular el xG",
       "pitchLabel": "Media cancha interactiva — coordenadas de cancha (0–120 × 0–80)",
       "shotPlaced": "Tiro colocado",

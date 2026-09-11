@@ -17,6 +17,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Gamepad2, Swords, Target, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/Badge';
@@ -32,11 +33,12 @@ import {
   SelectValue,
 } from '@/components/ui/Select';
 import { Switch } from '@/components/ui/Switch';
-import { getBackendUrl, computeSituationalXg, simulatePlay, suggestBestXi, simulateMatch } from '@/lib/backendApi';
+import { getBackendUrl, computeSituationalXg, simulatePlay, suggestBestXi, simulateMatch, simulateVsRival, listRivals } from '@/lib/backendApi';
 import { fetchTeams, type TeamOption } from '@/lib/importers/playerLookup';
+import { supabase } from '@/lib/supabase';
 import { toast } from '@/store/toastStore';
 import { colors } from '@/constants/tokens';
-import type { XgResult, SimulatePlayResult, PlayAction, SimulateMatchResult } from '@/lib/backendApi';
+import type { XgResult, SimulatePlayResult, PlayAction, SimulateMatchResult, Rival } from '@/lib/backendApi';
 import type { TrainingResult } from '@/lib/backendApi';
 
 // ---------------------------------------------------------------------------
@@ -66,13 +68,24 @@ function sbToPx(sbX: number, sbY: number): [number, number] {
   return [px, py];
 }
 
-/** Convierte píxel SVG (relativo al elemento) → coordenada StatsBomb. */
-function pxToSb(px: number, py: number, rect: DOMRect): [number, number] {
-  const relX = px - rect.left;
-  const relY = py - rect.top;
-  const sbX = SB_X_MIN + (relX / SVG_W) * (SB_X_MAX - SB_X_MIN);
-  // SVG Y → StatsBomb Y invertido
-  const sbY = SB_Y_MIN + (1 - relY / SVG_H) * (SB_Y_MAX - SB_Y_MIN);
+/** Convierte un evento de click → coordenada StatsBomb con exactitud.
+ *
+ * Antes se usaba getBoundingClientRect + relX/SVG_W, que fallaba cuando el SVG
+ * se escalaba por el viewBox responsivo (el ancho real ≠ 600px), y el punto
+ * "se movía" y no quedaba donde se hacía click. Ahora se usa la matriz de
+ * transformación nativa del SVG (getScreenCTM().inverse()), que mapea el punto
+ * de pantalla al espacio del viewBox con precisión, sin importar el escalado ni
+ * la posición del elemento en la página. */
+function eventToSb(e: React.MouseEvent<SVGSVGElement>): [number, number] {
+  const svg = e.currentTarget;
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return [90, 40];
+  const pt = svg.createSVGPoint();
+  pt.x = e.clientX;
+  pt.y = e.clientY;
+  const local = pt.matrixTransform(ctm.inverse()); // coords en el espacio del viewBox (0..SVG_W, 0..SVG_H)
+  const sbX = SB_X_MIN + (local.x / SVG_W) * (SB_X_MAX - SB_X_MIN);
+  const sbY = SB_Y_MIN + (1 - local.y / SVG_H) * (SB_Y_MAX - SB_Y_MIN);
   return [
     Math.max(SB_X_MIN, Math.min(SB_X_MAX, sbX)),
     Math.max(SB_Y_MIN, Math.min(SB_Y_MAX, sbY)),
@@ -235,40 +248,111 @@ function PitchSvg({
 
 type XgLoadState = 'idle' | 'loading' | 'error' | 'ready';
 
-function XgTab({ orgId: _orgId }: { orgId: string }) {
+interface RosterPlayer {
+  id: string;
+  full_name: string;
+  position: string | null;
+}
+
+function XgTab({ orgId }: { orgId: string }) {
   const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
+  const [roster, setRoster] = useState<RosterPlayer[]>([]);
+  const [selectedPlayer, setSelectedPlayer] = useState<string>('');
+
+  useEffect(() => {
+    // Roster propio para asociar el tiro a un jugador (opcional).
+    supabase
+      .from('players')
+      .select('id, full_name, position')
+      .eq('org_id', orgId)
+      .eq('is_active', true)
+      .order('full_name')
+      .then(({ data }) => setRoster((data as RosterPlayer[]) ?? []));
+  }, [orgId]);
 
   const [shotPos, setShotPos] = useState<[number, number] | null>(null); // StatsBomb coords
   const [shotPxPos, setShotPxPos] = useState<[number, number] | null>(null); // SVG pixel coords
   const [bodyPart, setBodyPart] = useState('right_foot');
   const [shotType, setShotType] = useState('open_play');
   const [underPressure, setUnderPressure] = useState(false);
+  // Modo de interacción: colocar el tiro o colocar defensores/portero.
+  const [placeMode, setPlaceMode] = useState<'shot' | 'defender'>('shot');
+  // Defensores colocados (coords SB). Un defensor cerca de la línea de tiro
+  // activa `under_pressure` automáticamente — la presión defensiva es un
+  // factor real del modelo de xG.
+  const [defenders, setDefenders] = useState<Array<[number, number]>>([]);
 
   const [result, setResult] = useState<XgResult | null>(null);
   const [loadState, setLoadState] = useState<XgLoadState>('idle');
 
   const backendUrl = getBackendUrl();
 
+  /** ¿Hay algún defensor a menos de ~4yd de la línea recta tiro→arco? */
+  const pressureFromDefenders = useCallback(
+    (sx: number, sy: number, defs: Array<[number, number]>) => {
+      const gx = 120;
+      const gy = 40;
+      for (const [dx, dy] of defs) {
+        // Distancia del defensor al segmento tiro→arco.
+        const vx = gx - sx;
+        const vy = gy - sy;
+        const wx = dx - sx;
+        const wy = dy - sy;
+        const len2 = vx * vx + vy * vy || 1;
+        const tRaw = (wx * vx + wy * vy) / len2;
+        const tt = Math.max(0, Math.min(1, tRaw));
+        const projx = sx + tt * vx;
+        const projy = sy + tt * vy;
+        const dist = Math.hypot(dx - projx, dy - projy);
+        if (dist <= 4) return true;
+      }
+      return false;
+    },
+    [],
+  );
+
   const handlePitchClick = useCallback(
     async (e: React.MouseEvent<SVGSVGElement>) => {
       if (!backendUrl) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      const [sbX, sbY] = pxToSb(e.clientX, e.clientY, rect);
-      const [pxX, pxY] = sbToPx(sbX, sbY);
+      const [sbX, sbY] = eventToSb(e);
 
+      // Modo "colocar defensor": agrega un defensor y recalcula el tiro actual
+      // (si ya hay uno) considerando la nueva presión defensiva.
+      if (placeMode === 'defender') {
+        const nextDefs: Array<[number, number]> = [...defenders, [sbX, sbY]];
+        setDefenders(nextDefs);
+        if (shotPos) {
+          const pressed = underPressure || pressureFromDefenders(shotPos[0], shotPos[1], nextDefs);
+          setLoadState('loading');
+          try {
+            const data = await computeSituationalXg({
+              location_x: shotPos[0], location_y: shotPos[1],
+              body_part: bodyPart, shot_type: shotType, under_pressure: pressed,
+            });
+            setResult(data);
+            setLoadState('ready');
+          } catch {
+            setLoadState('error');
+          }
+        }
+        return;
+      }
+
+      const [pxX, pxY] = sbToPx(sbX, sbY);
       setShotPos([sbX, sbY]);
       setShotPxPos([pxX, pxY]);
       setLoadState('loading');
       setResult(null);
 
       try {
+        const pressed = underPressure || pressureFromDefenders(sbX, sbY, defenders);
         const data = await computeSituationalXg({
           location_x: sbX,
           location_y: sbY,
           body_part: bodyPart,
           shot_type: shotType,
-          under_pressure: underPressure,
+          under_pressure: pressed,
         });
         setResult(data);
         setLoadState('ready');
@@ -281,13 +365,14 @@ function XgTab({ orgId: _orgId }: { orgId: string }) {
         setLoadState('error');
       }
     },
-    [backendUrl, bodyPart, shotType, underPressure, t],
+    [backendUrl, bodyPart, shotType, underPressure, t, placeMode, defenders, shotPos, pressureFromDefenders],
   );
 
   const handleReset = () => {
     setShotPos(null);
     setShotPxPos(null);
     setResult(null);
+    setDefenders([]);
     setLoadState('idle');
   };
 
@@ -307,6 +392,22 @@ function XgTab({ orgId: _orgId }: { orgId: string }) {
       <div className="space-y-3">
         {/* Controles */}
         <div className="flex flex-wrap items-center gap-3">
+          {roster.length > 0 && (
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-muted-foreground">{t('simulacion.xg.player', 'Jugador')}</label>
+              <Select value={selectedPlayer || 'none'} onValueChange={(v) => setSelectedPlayer(v === 'none' ? '' : v)}>
+                <SelectTrigger className="w-44">
+                  <SelectValue placeholder={t('simulacion.xg.anyPlayer', 'Sin asignar')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t('simulacion.xg.anyPlayer', 'Sin asignar')}</SelectItem>
+                  {roster.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <label className="text-xs text-muted-foreground">{t('simulacion.xg.bodyPart', 'Parte del cuerpo')}</label>
             <Select value={bodyPart} onValueChange={setBodyPart}>
@@ -347,7 +448,25 @@ function XgTab({ orgId: _orgId }: { orgId: string }) {
             </label>
           </div>
 
-          {shotPos && (
+          {/* Modo de colocación: tiro o defensor */}
+          <div className="flex items-center gap-1 rounded-md border border-border bg-panel p-0.5">
+            <button
+              type="button"
+              onClick={() => setPlaceMode('shot')}
+              className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${placeMode === 'shot' ? 'bg-ai text-white' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              {t('simulacion.xg.placeShot', 'Colocar tiro')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPlaceMode('defender')}
+              className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${placeMode === 'defender' ? 'bg-danger text-white' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              {t('simulacion.xg.placeDefender', 'Colocar defensa')}
+            </button>
+          </div>
+
+          {(shotPos || defenders.length > 0) && (
             <Button variant="secondary" size="sm" onClick={handleReset}>
               {t('simulacion.xg.reset', 'Limpiar')}
             </Button>
@@ -365,6 +484,17 @@ function XgTab({ orgId: _orgId }: { orgId: string }) {
             svgRef={svgRef}
             onClick={backendUrl ? handlePitchClick : undefined}
           >
+            {/* Defensores colocados */}
+            {defenders.map(([dx, dy], i) => {
+              const [pxX, pxY] = sbToPx(dx, dy);
+              return (
+                <g key={`def-${i}`}>
+                  <circle cx={pxX} cy={pxY} r={9} fill={colors.red} opacity={0.85} stroke="white" strokeWidth={1.5} />
+                  <text x={pxX} y={pxY + 3.5} textAnchor="middle" fill="white" fontSize={9} fontWeight="bold">D</text>
+                </g>
+              );
+            })}
+
             {/* Marcador del tiro */}
             {shotPxPos && (
               <g>
@@ -496,7 +626,7 @@ function XgTab({ orgId: _orgId }: { orgId: string }) {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{t('simulacion.xg.distance', 'Distancia')}</span>
                   <span className="font-medium">
-                    {result.distance_yards.toFixed(1)} {t('simulacion.xg.yards', 'yardas')}
+                    {result.distance_m.toFixed(1)} {t('simulacion.xg.meters', 'm')}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
@@ -533,6 +663,11 @@ function XgTab({ orgId: _orgId }: { orgId: string }) {
             {/* Posición del tiro */}
             {shotPos && (
               <p className="text-center text-xs text-muted-foreground">
+                {selectedPlayer && (
+                  <span className="mr-1 font-medium text-foreground">
+                    {roster.find((p) => p.id === selectedPlayer)?.full_name} —{' '}
+                  </span>
+                )}
                 {t('simulacion.xg.shotPlaced', 'Tiro colocado')}:{' '}
                 <span className="font-mono">
                   ({shotPos[0].toFixed(1)}, {shotPos[1].toFixed(1)})
@@ -572,6 +707,10 @@ function PlayTab({ orgId: _orgId }: { orgId: string }) {
 
   const [actionMode, setActionMode] = useState<ActionMode>(null);
   const [points, setPoints] = useState<SequencePoint[]>([]);
+  // Modo "rival": coloca defensores rivales en la cancha. Un rival cerca de una
+  // acción activa la presión automáticamente en esa acción.
+  const [rivalMode, setRivalMode] = useState(false);
+  const [rivals, setRivals] = useState<Array<[number, number]>>([]);
   const [underPressure, setUnderPressure] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
   const [simResult, setSimResult] = useState<SimulatePlayResult | null>(null);
@@ -581,19 +720,27 @@ function PlayTab({ orgId: _orgId }: { orgId: string }) {
 
   const handlePitchClick = useCallback(
     (e: React.MouseEvent<SVGSVGElement>) => {
-      if (!actionMode || !backendUrl) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      const [sbX, sbY] = pxToSb(e.clientX, e.clientY, rect);
+      if (!backendUrl) return;
+      const [sbX, sbY] = eventToSb(e);
+      // Colocar rival (defensor).
+      if (rivalMode) {
+        setRivals((prev) => [...prev, [sbX, sbY]]);
+        setSimResult(null);
+        return;
+      }
+      if (!actionMode) return;
       const [pxX, pxY] = sbToPx(sbX, sbY);
+      // Presión automática: ¿hay un rival a menos de ~4yd de este punto?
+      const nearRival = rivals.some(([rx, ry]) => Math.hypot(rx - sbX, ry - sbY) <= 4);
       setPoints((prev) => [
         ...prev,
-        { sbX, sbY, pxX, pxY, actionType: actionMode, underPressure },
+        { sbX, sbY, pxX, pxY, actionType: actionMode, underPressure: underPressure || nearRival },
       ]);
       // Limpiar resultado anterior cuando se agrega un punto nuevo
       setSimResult(null);
       setSimError(false);
     },
-    [actionMode, underPressure, backendUrl],
+    [actionMode, underPressure, backendUrl, rivalMode, rivals],
   );
 
   const handleSimulate = async () => {
@@ -605,11 +752,12 @@ function PlayTab({ orgId: _orgId }: { orgId: string }) {
       return;
     }
 
-    // Construir la secuencia: cada punto es una acción desde el punto anterior
+    // Construir la secuencia: cada punto es una acción desde el punto anterior.
+    // El backend usa 'carry' (no 'dribble') para la conducción — se traduce.
     const sequence: PlayAction[] = points.map((pt, i) => {
       const prev = i > 0 ? points[i - 1] : { sbX: 60, sbY: 40 }; // origen ficticio si no hay previo
       return {
-        type: pt.actionType,
+        type: pt.actionType === 'dribble' ? 'carry' : pt.actionType,
         from_x: prev.sbX,
         from_y: prev.sbY,
         to_x: pt.sbX,
@@ -639,6 +787,8 @@ function PlayTab({ orgId: _orgId }: { orgId: string }) {
 
   const handleClear = () => {
     setPoints([]);
+    setRivals([]);
+    setRivalMode(false);
     setSimResult(null);
     setSimError(false);
     setActionMode(null);
@@ -661,9 +811,11 @@ function PlayTab({ orgId: _orgId }: { orgId: string }) {
       {/* Barra de acciones */}
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-xs text-muted-foreground">
-          {actionMode
-            ? t('simulacion.play.clickToAdd', 'Haz clic en la cancha para agregar el punto de la acción')
-            : t('simulacion.play.selectAction', 'Selecciona una acción y luego haz clic en la cancha')}
+          {rivalMode
+            ? t('simulacion.play.clickRival', 'Haz clic para colocar rivales (defensores) que presionan la jugada')
+            : actionMode
+              ? t('simulacion.play.clickToAdd', 'Haz clic en la cancha para encadenar la acción hasta el remate')
+              : t('simulacion.play.selectAction', 'Coloca rivales, luego encadena pases/conducciones y termina con un remate')}
         </span>
 
         <div className="flex flex-wrap gap-2">
@@ -671,7 +823,7 @@ function PlayTab({ orgId: _orgId }: { orgId: string }) {
             <button
               key={type}
               type="button"
-              onClick={() => setActionMode((prev) => (prev === type ? null : type))}
+              onClick={() => { setActionMode((prev) => (prev === type ? null : type)); setRivalMode(false); }}
               className={[
                 'rounded-md border px-3 py-1.5 text-xs font-medium transition-colors',
                 actionMode === type
@@ -680,12 +832,25 @@ function PlayTab({ orgId: _orgId }: { orgId: string }) {
               ].join(' ')}
             >
               {type === 'pass'
-                ? t('simulacion.play.addPass', 'Agregar pase')
+                ? t('simulacion.play.addPass', 'Agregar pase (propio)')
                 : type === 'dribble'
                   ? t('simulacion.play.addDribble', 'Agregar conducción')
-                  : t('simulacion.play.addShot', 'Agregar tiro')}
+                  : t('simulacion.play.addShot', 'Agregar remate')}
             </button>
           ))}
+          {/* Colocar rival (defensor) */}
+          <button
+            type="button"
+            onClick={() => { setRivalMode((v) => !v); setActionMode(null); }}
+            className={[
+              'rounded-md border px-3 py-1.5 text-xs font-medium transition-colors',
+              rivalMode
+                ? 'border-danger bg-danger/10 text-danger'
+                : 'border-border bg-panel text-muted-foreground hover:text-foreground',
+            ].join(' ')}
+          >
+            {t('simulacion.play.addRival', 'Colocar rival')}
+          </button>
         </div>
 
         <div className="flex items-center gap-2">
@@ -725,6 +890,16 @@ function PlayTab({ orgId: _orgId }: { orgId: string }) {
         {/* Cancha con secuencia */}
         <div className="overflow-hidden rounded-lg border border-border">
           <PitchSvg onClick={backendUrl ? handlePitchClick : undefined}>
+            {/* Rivales colocados (defensores) */}
+            {rivals.map(([rx, ry], i) => {
+              const [px, py] = sbToPx(rx, ry);
+              return (
+                <g key={`rival-${i}`}>
+                  <circle cx={px} cy={py} r={11} fill={colors.red} opacity={0.85} stroke="white" strokeWidth={1.5} />
+                  <text x={px} y={py + 4} textAnchor="middle" fill="white" fontSize={9} fontWeight="bold">R</text>
+                </g>
+              );
+            })}
             {/* Flechas y puntos de la secuencia */}
             {points.map((pt, i) => {
               const prev = i > 0 ? points[i - 1] : null;
@@ -770,11 +945,11 @@ function PlayTab({ orgId: _orgId }: { orgId: string }) {
                       x={pt.pxX}
                       y={pt.pxY - 16}
                       textAnchor="middle"
-                      fill={probColor(resultAction.probability)}
+                      fill={probColor(resultAction.success_probability)}
                       fontSize={10}
                       fontWeight="bold"
                     >
-                      {(resultAction.probability * 100).toFixed(0)}%
+                      {(resultAction.success_probability * 100).toFixed(0)}%
                     </text>
                   )}
                 </g>
@@ -876,9 +1051,9 @@ function PlayTab({ orgId: _orgId }: { orgId: string }) {
                         </span>
                         <span
                           className="font-bold"
-                          style={{ color: probColor(action.probability) }}
+                          style={{ color: probColor(action.success_probability) }}
                         >
-                          {(action.probability * 100).toFixed(1)}%
+                          {(action.success_probability * 100).toFixed(1)}%
                         </span>
                       </div>
                       <div className="mt-1 flex items-center gap-3 text-[11px] text-muted-foreground">
@@ -900,8 +1075,8 @@ function PlayTab({ orgId: _orgId }: { orgId: string }) {
                         <div
                           className="h-full rounded-full transition-all"
                           style={{
-                            width: `${action.probability * 100}%`,
-                            backgroundColor: probColor(action.probability),
+                            width: `${action.success_probability * 100}%`,
+                            backgroundColor: probColor(action.success_probability),
                           }}
                         />
                       </div>
@@ -921,11 +1096,18 @@ function PlayTab({ orgId: _orgId }: { orgId: string }) {
 // Pestaña 3: 11 Ideal
 // ---------------------------------------------------------------------------
 
-/** Jugador extraído del campo best_xi de las métricas del backend. */
+/** Jugador extraído del campo best_xi de las métricas del backend.
+ * El backend (simulation_service.suggest_best_xi) devuelve objetos con
+ * `player_name`, `player_id`, `played_line`, `composite_score`,
+ * `physical_readiness` y `technical_score`. */
 interface BestXiPlayer {
   name: string;
+  player_id?: string;
   position?: string;
+  played_line?: string;
   composite_score?: number;
+  physical_readiness?: number;
+  technical_score?: number | null;
   scores?: Record<string, number>;
   pitch_x?: number; // 0–1 relativo al campo de formación
   pitch_y?: number;
@@ -950,26 +1132,34 @@ const FORMATION_POSITIONS: Record<string, [number, number]> = {
 const DEFAULT_POSITIONS = Object.values(FORMATION_POSITIONS);
 
 function parseBestXi(metrics: Record<string, unknown>): BestXiPlayer[] {
-  // El backend puede devolver best_xi como array u objeto
   const raw = metrics['best_xi'];
-  if (!raw) return [];
-  if (Array.isArray(raw)) return raw as BestXiPlayer[];
-  if (typeof raw === 'object') {
-    // Puede ser un diccionario { position: playerData }
-    return Object.entries(raw as Record<string, unknown>).map(([pos, data]) => {
-      if (typeof data === 'object' && data !== null) {
-        return { position: pos, ...(data as object) } as BestXiPlayer;
-      }
-      return { name: String(data), position: pos } as BestXiPlayer;
-    });
-  }
-  return [];
+  if (!Array.isArray(raw)) return [];
+  // El backend manda `player_name`; el componente usa `name`. Se normaliza aquí
+  // (antes se esperaba `name` y por eso los nombres salían vacíos).
+  return (raw as Array<Record<string, unknown>>).map((p) => ({
+    name: String(p['player_name'] ?? p['name'] ?? ''),
+    player_id: p['player_id'] as string | undefined,
+    position: p['position'] as string | undefined,
+    played_line: p['played_line'] as string | undefined,
+    composite_score: p['composite_score'] as number | undefined,
+    physical_readiness: p['physical_readiness'] as number | undefined,
+    technical_score: p['technical_score'] as number | null | undefined,
+    ...p,
+  }));
 }
 
 const FORMATIONS = ['4-3-3', '4-4-2', '3-5-2', '4-2-3-1'];
 
+/** Etiquetas legibles para las métricas del modelo de 11 ideal. */
+const METRIC_LABELS: Record<string, string> = {
+  formation: 'Formación',
+  players_evaluated: 'Jugadores evaluados',
+  best_xi_avg_score: 'Score medio del 11',
+};
+
 function XiTab({ orgId }: { orgId: string }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const [xiResult, setXiResult] = useState<TrainingResult | null>(null);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -1140,19 +1330,24 @@ function XiTab({ orgId }: { orgId: string }) {
                   const displayName = player.name
                     ? player.name.split(' ').slice(-1)[0] // Apellido
                     : `#${i + 1}`;
-                  const score = typeof player.composite_score === 'number'
-                    ? player.composite_score
+                  const score = Number.isFinite(player.composite_score as number)
+                    ? (player.composite_score as number)
                     : null;
+                  const clickable = Boolean(player.player_id);
 
                   return (
-                    <g key={`player-pitch-${i}`}>
+                    <g
+                      key={`player-pitch-${i}`}
+                      onClick={() => player.player_id && navigate(`/atletas/${player.player_id}`)}
+                      style={{ cursor: clickable ? 'pointer' : 'default' }}
+                    >
                       <circle cx={px} cy={py} r={18} fill={colors.blue} opacity={0.9} stroke="white" strokeWidth={1.5} />
-                      <text x={px} y={py + 4} textAnchor="middle" fill="white" fontSize={9} fontWeight="bold">
-                        {displayName.slice(0, 8)}
+                      <text x={px} y={py - 22} textAnchor="middle" fill="white" fontSize={9} fontWeight="bold">
+                        {displayName.slice(0, 12)}
                       </text>
                       {score != null && (
-                        <text x={px} y={py + 27} textAnchor="middle" fill={colors.green} fontSize={8}>
-                          {score.toFixed(2)}
+                        <text x={px} y={py + 4} textAnchor="middle" fill="white" fontSize={9} fontWeight="bold">
+                          {score.toFixed(0)}
                         </text>
                       )}
                     </g>
@@ -1176,13 +1371,20 @@ function XiTab({ orgId }: { orgId: string }) {
               <CardContent className="space-y-2">
                 {xiPlayers.map((player, i) => {
                   const status = getStatus(i);
-                  const score = typeof player.composite_score === 'number'
-                    ? player.composite_score
+                  const score = Number.isFinite(player.composite_score as number)
+                    ? (player.composite_score as number)
                     : null;
+                  const clickable = Boolean(player.player_id);
                   return (
                     <div
                       key={`player-list-${i}`}
-                      className="flex items-center justify-between gap-2 rounded-md border border-border bg-panel/50 px-3 py-2 text-xs"
+                      role={clickable ? 'button' : undefined}
+                      tabIndex={clickable ? 0 : undefined}
+                      onClick={() => player.player_id && navigate(`/atletas/${player.player_id}`)}
+                      onKeyDown={(e) => {
+                        if (clickable && (e.key === 'Enter' || e.key === ' ')) navigate(`/atletas/${player.player_id}`);
+                      }}
+                      className={`flex items-center justify-between gap-2 rounded-md border border-border bg-panel/50 px-3 py-2 text-xs ${clickable ? 'cursor-pointer transition-colors hover:border-ai/40 hover:bg-panel' : ''}`}
                     >
                       <div className="flex min-w-0 items-center gap-2">
                         <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-border text-[9px] text-muted-foreground">
@@ -1190,16 +1392,16 @@ function XiTab({ orgId }: { orgId: string }) {
                         </span>
                         <div className="min-w-0">
                           <p className="truncate font-medium text-foreground">
-                            {player.name ?? `Jugador ${i + 1}`}
+                            {player.name || `Jugador ${i + 1}`}
                           </p>
-                          {player.position && (
-                            <p className="text-muted-foreground">{player.position}</p>
+                          {(player.played_line || player.position) && (
+                            <p className="text-muted-foreground">{player.played_line ?? player.position}</p>
                           )}
                         </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
                         {score != null && (
-                          <span className="font-mono text-foreground">{score.toFixed(3)}</span>
+                          <span className="font-mono font-semibold text-foreground">{score.toFixed(0)}</span>
                         )}
                         <Badge variant={statusBadgeVariant(status)}>
                           {statusLabel(status)}
@@ -1226,12 +1428,14 @@ function XiTab({ orgId }: { orgId: string }) {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {Object.entries(xiResult.metrics)
-                    .filter(([k]) => k !== 'best_xi')
+                    // Solo métricas escalares legibles — nada de objetos/arrays
+                    // anidados (best_xi, bench) que salían como [object Object].
+                    .filter(([k, v]) => k !== 'best_xi' && k !== 'bench' && (typeof v === 'number' || typeof v === 'string'))
                     .map(([key, val]) => (
-                      <div key={key} className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">{key}</span>
-                        <span className="font-mono text-foreground">
-                          {typeof val === 'number' ? val.toFixed(3) : String(val)}
+                      <div key={key} className="flex items-center justify-between gap-3 text-xs">
+                        <span className="text-muted-foreground">{METRIC_LABELS[key] ?? key}</span>
+                        <span className="font-mono font-medium text-foreground">
+                          {typeof val === 'number' ? (Number.isInteger(val) ? val : val.toFixed(2)) : String(val)}
                         </span>
                       </div>
                     ))}
@@ -1264,6 +1468,9 @@ function MatchTab({ orgId }: { orgId: string }) {
   const [teams, setTeams] = useState<TeamOption[]>([]);
   const [homeId, setHomeId] = useState('');
   const [awayId, setAwayId] = useState('');
+  const [opponentType, setOpponentType] = useState<'team' | 'rival'>('team');
+  const [rivals, setRivals] = useState<Rival[]>([]);
+  const [rivalId, setRivalId] = useState('');
   const [result, setResult] = useState<SimulateMatchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const backendUrl = getBackendUrl();
@@ -1276,20 +1483,35 @@ function MatchTab({ orgId }: { orgId: string }) {
         if (rows[1]) setAwayId(rows[1].id);
       })
       .catch(() => setTeams([]));
+    // Rivales para el modo "vs rival" (si la migración no está, queda vacío).
+    listRivals(orgId)
+      .then((rows) => {
+        setRivals(rows);
+        if (rows[0]) setRivalId(rows[0].id);
+      })
+      .catch(() => setRivals([]));
   }, [orgId]);
 
   const run = async () => {
-    if (!homeId || !awayId || homeId === awayId) {
-      toast({
-        title: t('simulacion.match.pickTwo', 'Elige dos equipos distintos'),
-        variant: 'danger',
-      });
+    if (!homeId) {
+      toast({ title: t('simulacion.match.pickHome', 'Elige tu equipo'), variant: 'danger' });
+      return;
+    }
+    if (opponentType === 'team' && (!awayId || homeId === awayId)) {
+      toast({ title: t('simulacion.match.pickTwo', 'Elige dos equipos distintos'), variant: 'danger' });
+      return;
+    }
+    if (opponentType === 'rival' && !rivalId) {
+      toast({ title: t('simulacion.match.pickRival', 'Elige un rival'), variant: 'danger' });
       return;
     }
     setLoading(true);
     setResult(null);
     try {
-      const data = await simulateMatch(orgId, homeId, awayId);
+      const data =
+        opponentType === 'rival'
+          ? await simulateVsRival(orgId, homeId, rivalId)
+          : await simulateMatch(orgId, homeId, awayId);
       setResult(data);
     } catch (err) {
       toast({
@@ -1319,7 +1541,7 @@ function MatchTab({ orgId }: { orgId: string }) {
       <div className="flex flex-wrap items-end gap-3">
         <div>
           <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-            {t('simulacion.match.home', 'Local')}
+            {t('simulacion.match.home', 'Tu equipo (local)')}
           </label>
           <Select value={homeId} onValueChange={setHomeId}>
             <SelectTrigger className="h-9 w-52">
@@ -1337,20 +1559,49 @@ function MatchTab({ orgId }: { orgId: string }) {
         <span className="pb-2 text-sm font-bold text-muted-foreground">vs</span>
         <div>
           <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-            {t('simulacion.match.away', 'Visitante')}
+            {t('simulacion.match.opponentType', 'Oponente')}
           </label>
-          <Select value={awayId} onValueChange={setAwayId}>
-            <SelectTrigger className="h-9 w-52">
-              <SelectValue placeholder={t('simulacion.match.away', 'Visitante')} />
+          <Select value={opponentType} onValueChange={(v) => setOpponentType(v as 'team' | 'rival')}>
+            <SelectTrigger className="h-9 w-44">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {teams.map((team) => (
-                <SelectItem key={team.id} value={team.id}>
-                  {team.name}
-                </SelectItem>
-              ))}
+              <SelectItem value="team">{t('simulacion.match.ownTeam', 'Equipo propio')}</SelectItem>
+              <SelectItem value="rival">{t('simulacion.match.rival', 'Rival')}</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+            {opponentType === 'rival' ? t('simulacion.match.selectRival', 'Rival') : t('simulacion.match.away', 'Visitante')}
+          </label>
+          {opponentType === 'team' ? (
+            <Select value={awayId} onValueChange={setAwayId}>
+              <SelectTrigger className="h-9 w-52">
+                <SelectValue placeholder={t('simulacion.match.away', 'Visitante')} />
+              </SelectTrigger>
+              <SelectContent>
+                {teams.map((team) => (
+                  <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Select value={rivalId} onValueChange={setRivalId}>
+              <SelectTrigger className="h-9 w-52">
+                <SelectValue placeholder={t('simulacion.match.selectRival', 'Elige rival')} />
+              </SelectTrigger>
+              <SelectContent>
+                {rivals.length > 0 ? (
+                  rivals.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="" disabled>{t('simulacion.match.noRivals', 'Sin rivales — crea uno en el módulo Rivales')}</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          )}
         </div>
         <Button variant="primary" isLoading={loading} disabled={!backendUrl} onClick={run}>
           <Swords className="size-4" aria-hidden="true" />

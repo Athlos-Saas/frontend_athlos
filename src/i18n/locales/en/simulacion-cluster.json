@@ -47,6 +47,7 @@
       "zone": "Zone",
       "multipliers": "Multiplier factors",
       "yards": "yards",
+      "meters": "m",
       "errorTitle": "Could not calculate xG",
       "pitchLabel": "Interactive half-pitch — pitch coordinates (0–120 × 0–80)",
       "shotPlaced": "Shot placed",

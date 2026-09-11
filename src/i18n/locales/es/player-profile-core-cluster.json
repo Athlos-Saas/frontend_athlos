@@ -1,4 +1,13 @@
 {
+  "playerRating": {
+    "title": "Rating del jugador",
+    "subtitle": "(nivel dentro de tu plantel)",
+    "rankInSquad": "#{{rank}} de {{total}}",
+    "percentile": "Percentil {{pct}} del plantel",
+    "formulaLabel": "Fórmula",
+    "overallHow": "Cómo se calcula el overall",
+    "overallFormula": "Fórmula del overall"
+  },
   "playerProfile": {
     "backToRoster": "Volver al roster",
     "playerNotSpecified": "Jugador no especificado",

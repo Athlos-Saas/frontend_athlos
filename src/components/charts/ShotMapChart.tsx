@@ -1,112 +1,66 @@
 /**
- * ShotMapChart — scatter plot de tiros sobre una cancha simplificada.
+ * ShotMapChart — mapa de tiros sobre media cancha, dibujado en SVG propio.
  *
- * Usa Recharts ScatterChart. La "cancha" se dibuja con ReferenceLine y
- * ReferenceArea: es una aproximación SVG 0-120 × 0-80 (coordenadas StatsBomb),
- * no un canvas real — suficiente para ubicar los tiros espacialmente sin
- * depender de imágenes externas.
+ * Antes se usaba un ScatterChart de Recharts con ReferenceLines: mostraba la
+ * cancha completa (tiros hacia ambas porterías mezclados) y con 2000 tiros se
+ * saturaba y no se leía. Ahora es un SVG de MEDIA cancha (ataque hacia la
+ * portería de arriba): todos los tiros se normalizan a esa mitad, la cancha se
+ * dibuja con líneas reales (área, área chica, punto de penal, arco, semicírculo)
+ * y el punto se colorea por resultado y se dimensiona por xG. Mucho más claro.
  *
- * Por qué no SVG puro: Recharts ya gestiona el viewport responsivo y el
- * tooltip; agregar un SVG independiente dentro del scatter chart requeriría
- * un wrapper custom. La combinación ReferenceArea + ReferenceLine dentro del
- * mismo ScatterChart es más mantenible y permite que el tooltip siga funcionando
- * sobre los puntos sin hacks de z-index.
+ * Coordenadas StatsBomb: x 0-120 (largo), y 0-80 (ancho); arco rival en x=120.
+ * Los tiros con x<60 (hacia la otra portería, p. ej. de otro equipo) se
+ * reflejan a la mitad atacante para verlos todos juntos.
  */
-import {
-  CartesianGrid,
-  ReferenceLine,
-  ResponsiveContainer,
-  Scatter,
-  ScatterChart,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { useMemo, useState } from 'react';
 
-import { chartAxisColor, chartTooltipStyle, colors } from '@/constants/tokens';
+import { colors } from '@/constants/tokens';
 
 export interface ShotPoint {
   id: string;
   location_x: number;
   location_y: number;
-  /** Campo real de la tabla sb_shots. El alias xg se mantiene por compatibilidad. */
   statsbomb_xg?: number | null;
   xg?: number | null;
-  outcome: string; // 'Goal' | 'Saved Shot' | 'Off T' | 'Blocked' | …
-  /** player_id (integer) viene de sb_shots; player_name se resuelve externamente. */
+  outcome: string;
   player_name?: string;
   player_id?: number | null;
   minute: number;
   team_name?: string;
 }
 
-interface TooltipPayload {
-  payload?: ShotPoint;
-}
-
-interface CustomTooltipProps {
-  active?: boolean;
-  payload?: TooltipPayload[];
-}
-
-/** Verde=gol, naranja=atajada, rojo=cualquier otro resultado. */
 function shotColor(outcome: string): string {
   if (outcome === 'Goal') return colors.green;
   if (outcome === 'Saved Shot') return colors.orange;
   return colors.red;
 }
 
-/** Radio proporcional al xG (mínimo visible = 4px, máximo = 12px). */
 function xgRadius(xg: number | null | undefined): number {
   const v = xg ?? 0.05;
-  return Math.max(4, Math.min(12, 4 + v * 40));
+  return Math.max(3, Math.min(11, 3 + v * 32));
 }
 
-/** Devuelve el valor xG del punto, leyendo statsbomb_xg o xg según cuál esté presente. */
 function resolveXg(point: ShotPoint): number | null {
   return point.statsbomb_xg ?? point.xg ?? null;
 }
 
-function CustomDot(props: {
-  cx?: number;
-  cy?: number;
-  payload?: ShotPoint;
-}) {
-  const { cx = 0, cy = 0, payload } = props;
-  if (!payload) return null;
-  const r = xgRadius(resolveXg(payload));
-  const color = shotColor(payload.outcome);
-  return (
-    <circle
-      cx={cx}
-      cy={cy}
-      r={r}
-      fill={color}
-      fillOpacity={0.75}
-      stroke={color}
-      strokeWidth={1}
-      strokeOpacity={0.9}
-    />
-  );
-}
+// SVG en orientación vertical: media cancha, arco arriba. Se mapea:
+//   x StatsBomb (60..120, hacia el arco) → eje Y del SVG (abajo→arriba)
+//   y StatsBomb (0..80, ancho)           → eje X del SVG (izq→der)
+const W = 340; // ancho SVG (corresponde al ancho de cancha, 80)
+const H = 440; // alto SVG (corresponde a media cancha larga, 60)
+const PAD = 12;
 
-function CustomTooltip({ active, payload }: CustomTooltipProps) {
-  if (!active || !payload?.length) return null;
-  const d = payload[0].payload;
-  if (!d) return null;
-  const xgVal = resolveXg(d);
-  const label = d.player_name ?? (d.player_id != null ? `Jugador #${d.player_id}` : '—');
-  return (
-    <div style={{ ...chartTooltipStyle, padding: '8px 12px', lineHeight: '1.6' }}>
-      <p className="font-semibold">{label}</p>
-      <p className="text-xs text-muted-foreground">
-        Min. {d.minute} · {d.outcome}
-      </p>
-      <p className="text-xs">
-        xG: <span className="font-medium">{xgVal != null ? xgVal.toFixed(3) : '—'}</span>
-      </p>
-    </div>
-  );
+/** Convierte (x,y) StatsBomb a píxeles SVG, reflejando a la mitad atacante. */
+function toPx(sx: number, sy: number): [number, number] {
+  // Reflejar tiros de la otra mitad (x<60) hacia la mitad atacante.
+  const x = sx < 60 ? 120 - sx : sx;
+  const y = sx < 60 ? 80 - sy : sy;
+  // x: 60..120 → alto SVG invertido (120 = arriba = arco)
+  const py = PAD + (1 - (x - 60) / 60) * (H - 2 * PAD);
+  // y: 0..80 → ancho SVG
+  const px = PAD + (y / 80) * (W - 2 * PAD);
+  return [px, py];
 }
 
 export interface ShotMapChartProps {
@@ -114,69 +68,116 @@ export interface ShotMapChartProps {
 }
 
 export function ShotMapChart({ shots }: ShotMapChartProps) {
+  const [hover, setHover] = useState<{ shot: ShotPoint; x: number; y: number } | null>(null);
+
+  // Escalas de referencia (bordes del área en coords StatsBomb).
+  const [boxLeftX] = useMemo(() => toPx(102, 18), []);
+  const [boxRightX] = useMemo(() => toPx(102, 62), []);
+  const [, boxTopY] = useMemo(() => toPx(102, 40), []);
+  const [, goalLineY] = useMemo(() => toPx(120, 40), []);
+  const [sixLeftX] = useMemo(() => toPx(114, 30), []);
+  const [sixRightX] = useMemo(() => toPx(114, 50), []);
+  const [, sixTopY] = useMemo(() => toPx(114, 40), []);
+  const [penX, penY] = useMemo(() => toPx(108, 40), []);
+  const [goalPostLX] = useMemo(() => toPx(120, 36), []);
+  const [goalPostRX] = useMemo(() => toPx(120, 44), []);
+
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <ScatterChart
-        margin={{ top: 8, right: 16, bottom: 8, left: 0 }}
-        style={{ background: 'linear-gradient(180deg, #14532d 0%, #0f3d24 100%)', borderRadius: 8 }}
-      >
-        <CartesianGrid stroke="rgba(255,255,255,0.08)" />
+    <div className="relative h-full w-full">
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" style={{ display: 'block' }}>
+        {/* Césped */}
+        <defs>
+          <linearGradient id="pitchGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#15803d" />
+            <stop offset="100%" stopColor="#0f5132" />
+          </linearGradient>
+        </defs>
+        <rect x={0} y={0} width={W} height={H} rx={8} fill="url(#pitchGrad)" />
+        {/* Franjas de césped */}
+        {Array.from({ length: 6 }).map((_, i) => (
+          <rect
+            key={i}
+            x={0}
+            y={PAD + (i * (H - 2 * PAD)) / 6}
+            width={W}
+            height={(H - 2 * PAD) / 6}
+            fill={i % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'transparent'}
+          />
+        ))}
 
-        {/* Ejes: coordenadas StatsBomb (x: 0-120 largo, y: 0-80 ancho) */}
-        <XAxis
-          type="number"
-          dataKey="location_x"
-          domain={[0, 120]}
-          tick={false}
-          axisLine={false}
-          tickLine={false}
-          stroke={chartAxisColor}
+        {/* Borde de cancha */}
+        <rect x={PAD} y={PAD} width={W - 2 * PAD} height={H - 2 * PAD} fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth={1.5} />
+        {/* Línea de fondo inferior (medio campo) */}
+        <line x1={PAD} y1={H - PAD} x2={W - PAD} y2={H - PAD} stroke="rgba(255,255,255,0.5)" strokeWidth={1.5} />
+
+        {/* Área grande */}
+        <rect x={boxLeftX} y={boxTopY} width={boxRightX - boxLeftX} height={goalLineY < boxTopY ? boxTopY - goalLineY : PAD} fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth={1.3} />
+        {/* Área chica */}
+        <rect x={sixLeftX} y={sixTopY} width={sixRightX - sixLeftX} height={sixTopY - goalLineY} fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth={1.1} />
+        {/* Arco */}
+        <line x1={goalPostLX} y1={PAD} x2={goalPostRX} y2={PAD} stroke="#fff" strokeWidth={3} />
+        {/* Punto de penal */}
+        <circle cx={penX} cy={penY} r={2} fill="rgba(255,255,255,0.8)" />
+        {/* Semicírculo del área */}
+        <path
+          d={`M ${boxLeftX + (boxRightX - boxLeftX) * 0.28} ${boxTopY} A 40 40 0 0 0 ${boxLeftX + (boxRightX - boxLeftX) * 0.72} ${boxTopY}`}
+          fill="none"
+          stroke="rgba(255,255,255,0.3)"
+          strokeWidth={1}
         />
-        <YAxis
-          type="number"
-          dataKey="location_y"
-          domain={[0, 80]}
-          tick={false}
-          axisLine={false}
-          tickLine={false}
-          stroke={chartAxisColor}
-          width={0}
-        />
 
-        {/* Líneas de cancha simplificada */}
-        {/* Línea de medio campo */}
-        <ReferenceLine x={60} stroke="rgba(255,255,255,0.30)" strokeWidth={1} />
-        {/* Área grande izquierda (x: 0-18, y: 18-62) */}
-        <ReferenceLine x={18} stroke="rgba(255,255,255,0.25)" strokeDasharray="4 3" strokeWidth={1} />
-        {/* Área grande derecha (x: 102-120, y: 18-62) */}
-        <ReferenceLine x={102} stroke="rgba(255,255,255,0.25)" strokeDasharray="4 3" strokeWidth={1} />
-        {/* Líneas horizontales del área grande */}
-        <ReferenceLine y={18} stroke="rgba(255,255,255,0.20)" strokeDasharray="4 3" strokeWidth={1} />
-        <ReferenceLine y={62} stroke="rgba(255,255,255,0.20)" strokeDasharray="4 3" strokeWidth={1} />
-        {/* Punto de penal izquierdo */}
-        <ReferenceLine x={12} stroke="rgba(255,255,255,0.20)" strokeWidth={1} strokeDasharray="1 8" />
-        {/* Punto de penal derecho */}
-        <ReferenceLine x={108} stroke="rgba(255,255,255,0.20)" strokeWidth={1} strokeDasharray="1 8" />
-        {/* Portería izquierda (y: 36-44) */}
-        <ReferenceLine y={36} stroke="rgba(255,255,255,0.45)" strokeWidth={1.5} segment={[{ x: 0, y: 36 }, { x: 2, y: 36 }]} />
-        <ReferenceLine y={44} stroke="rgba(255,255,255,0.45)" strokeWidth={1.5} segment={[{ x: 0, y: 44 }, { x: 2, y: 44 }]} />
-        {/* Portería derecha */}
-        <ReferenceLine y={36} stroke="rgba(255,255,255,0.45)" strokeWidth={1.5} segment={[{ x: 118, y: 36 }, { x: 120, y: 36 }]} />
-        <ReferenceLine y={44} stroke="rgba(255,255,255,0.45)" strokeWidth={1.5} segment={[{ x: 118, y: 44 }, { x: 120, y: 44 }]} />
+        {/* Tiros — se pintan los goles al final para que queden encima */}
+        {[...shots]
+          .sort((a) => (a.outcome === 'Goal' ? 1 : -1))
+          .map((s) => {
+            const [px, py] = toPx(s.location_x, s.location_y);
+            const r = xgRadius(resolveXg(s));
+            const color = shotColor(s.outcome);
+            return (
+              <circle
+                key={s.id}
+                cx={px}
+                cy={py}
+                r={r}
+                fill={color}
+                fillOpacity={0.7}
+                stroke={color}
+                strokeWidth={s.outcome === 'Goal' ? 2 : 1}
+                strokeOpacity={0.95}
+                style={{ cursor: 'pointer' }}
+                onMouseEnter={() => setHover({ shot: s, x: px, y: py })}
+                onMouseLeave={() => setHover(null)}
+              />
+            );
+          })}
+      </svg>
 
-        <Tooltip content={<CustomTooltip />} cursor={false} />
-
-        <Scatter
-          data={shots}
-          shape={(props: { cx?: number; cy?: number; payload?: ShotPoint }) => <CustomDot {...props} />}
-          isAnimationActive={false}
-        />
-      </ScatterChart>
-    </ResponsiveContainer>
+      {/* Tooltip */}
+      {hover && (
+        <div
+          className="pointer-events-none absolute z-10 rounded-md border border-border bg-bg/95 px-3 py-2 text-xs shadow-elevated"
+          style={{
+            left: `${(hover.x / W) * 100}%`,
+            top: `${(hover.y / H) * 100}%`,
+            transform: 'translate(-50%, -120%)',
+          }}
+        >
+          <p className="font-semibold text-foreground">
+            {hover.shot.player_name ?? (hover.shot.player_id != null ? `Jugador #${hover.shot.player_id}` : '—')}
+          </p>
+          <p className="text-muted-foreground">
+            Min. {hover.shot.minute} · {hover.shot.outcome}
+          </p>
+          <p className="text-foreground">
+            xG: <span className="font-medium">{(resolveXg(hover.shot) ?? 0).toFixed(3)}</span>
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
 
-/** Leyenda estática de colores de resultado. */
+/** Leyenda estática de colores de resultado + tamaño por xG. */
 export function ShotMapLegend() {
   const items = [
     { color: colors.green, label: 'Gol' },
@@ -184,17 +185,18 @@ export function ShotMapLegend() {
     { color: colors.red, label: 'Fallado / Bloqueado' },
   ];
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex flex-wrap items-center gap-4">
       {items.map((item) => (
         <span key={item.label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span
-            className="inline-block size-2.5 rounded-full"
-            style={{ backgroundColor: item.color }}
-            aria-hidden="true"
-          />
+          <span className="inline-block size-2.5 rounded-full" style={{ backgroundColor: item.color }} aria-hidden="true" />
           {item.label}
         </span>
       ))}
+      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <span className="inline-block size-1.5 rounded-full bg-muted-foreground" aria-hidden="true" />
+        <span className="inline-block size-3 rounded-full bg-muted-foreground" aria-hidden="true" />
+        tamaño = xG
+      </span>
     </div>
   );
 }

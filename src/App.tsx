@@ -31,9 +31,11 @@ const Scouting = lazy(() => import('./pages/Scouting'));
 const SimulacionIA = lazy(() => import('./pages/SimulacionIA'));
 const StatsBombAnalytics = lazy(() => import('./pages/StatsBombAnalytics'));
 const StatsBombPlayers = lazy(() => import('./pages/StatsBombPlayers'));
+const PronosticosIA = lazy(() => import('./pages/PronosticosIA'));
+const Rivales = lazy(() => import('./pages/Rivales'));
 const Temporadas = lazy(() => import('./pages/Temporadas'));
 
-const PLACEHOLDER_ROUTES = new Set(['/pronosticos']);
+const PLACEHOLDER_ROUTES = new Set<string>([]);
 
 export default function App() {
   const { t } = useTranslation();
@@ -94,12 +96,14 @@ export default function App() {
           <Route path="/competiciones" element={<NavGate navKey="/competiciones"><Competiciones orgId={orgId} role={role} /></NavGate>} />
           <Route path="/modelos" element={<NavGate navKey="/modelos"><ModelosIa orgId={orgId} role={role} /></NavGate>} />
           <Route path="/ai" element={<NavGate navKey="/ai"><AiIntelligenceCenter orgId={orgId} /></NavGate>} />
+          <Route path="/pronosticos" element={<NavGate navKey="/pronosticos"><PronosticosIA orgId={orgId} /></NavGate>} />
           <Route path="/equipos" element={<NavGate navKey="/equipos"><Equipos orgId={orgId} /></NavGate>} />
           <Route path="/temporadas" element={<NavGate navKey="/temporadas"><Temporadas orgId={orgId} /></NavGate>} />
           <Route path="/scouting" element={<NavGate navKey="/scouting"><Scouting orgId={orgId} /></NavGate>} />
           <Route path="/statsbomb" element={<NavGate navKey="/statsbomb"><StatsBombAnalytics orgId={orgId} /></NavGate>} />
           <Route path="/statsbomb-jugadores" element={<NavGate navKey="/statsbomb-jugadores"><StatsBombPlayers /></NavGate>} />
           <Route path="/simulacion" element={<NavGate navKey="/simulacion"><SimulacionIA orgId={orgId} role={role} /></NavGate>} />
+          <Route path="/rivales" element={<NavGate navKey="/rivales"><Rivales orgId={orgId} role={role} /></NavGate>} />
           <Route path="/alertas" element={<NavGate navKey="/alertas"><Alertas orgId={orgId} /></NavGate>} />
           <Route path="/configuracion" element={<NavGate navKey="/configuracion"><Configuracion orgId={orgId} role={role} /></NavGate>} />
           <Route

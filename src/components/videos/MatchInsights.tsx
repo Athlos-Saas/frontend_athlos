@@ -131,11 +131,15 @@ function HeatmapGrid({ heatmap, label }: { heatmap: VideoHeatmap; label: string 
   );
 }
 
-const EVENT_STYLE: Record<VideoEventType, { label: string; variant: 'ai' | 'danger' | 'purple' | 'neutral' }> = {
+const EVENT_STYLE: Record<VideoEventType, { label: string; variant: 'ai' | 'danger' | 'purple' | 'neutral' | 'success' | 'warning' }> = {
   pass: { label: 'Pase', variant: 'ai' },
   turnover: { label: 'Pérdida', variant: 'danger' },
   carry: { label: 'Conducción', variant: 'purple' },
   possession_change: { label: 'Cambio de posesión', variant: 'neutral' },
+  // Los remates los emite el backend (shot / shot_on_target); antes caían al
+  // fallback y se veían como texto crudo. "A puerta" en verde para que salte.
+  shot: { label: 'Remate', variant: 'warning' },
+  shot_on_target: { label: 'Remate a puerta', variant: 'success' },
 };
 
 export function MatchInsights({
@@ -392,6 +396,13 @@ export function MatchInsights({
                         : null}
                       unit="%"
                     />
+                    <Stat label={t('videos.insights.passes', 'Pases')} value={team.passes ?? null} unit="" />
+                    <Stat label={t('videos.insights.shots', 'Tiros')} value={team.shots ?? null} unit="" />
+                    <Stat
+                      label={t('videos.insights.shotsOnTarget', 'Tiros a puerta')}
+                      value={team.shots_on_target ?? null}
+                      unit=""
+                    />
                   </div>
                 </div>
               ))}
@@ -466,6 +477,20 @@ export function MatchInsights({
                           {t('videos.insights.lossesShort', 'Pérdidas')}:{' '}
                           <span className="font-semibold text-foreground">{player.turnovers_lost}</span>
                         </span>
+                        {/* Remates por jugador (match_metrics los cuenta por
+                         * track). Se muestran solo si el jugador remató, para
+                         * no llenar de ceros a los que no lo hicieron. */}
+                        {(player.shots ?? 0) > 0 && (
+                          <span>
+                            {t('videos.insights.shotsShort', 'Remates')}:{' '}
+                            <span className="font-semibold text-foreground">
+                              {player.shots}
+                              {(player.shots_on_target ?? 0) > 0
+                                ? ` (${player.shots_on_target} ${t('videos.insights.onTargetShort', 'a puerta')})`
+                                : ''}
+                            </span>
+                          </span>
+                        )}
                       </div>
                     ) : (
                       isHeatmap(heatmap) && (
@@ -516,12 +541,16 @@ export function MatchInsights({
 }
 
 function Stat({ label, value, unit }: { label: string; value: number | null | undefined; unit: string }) {
+  const formatted =
+    value === null || value === undefined
+      ? '—'
+      : Number.isInteger(value)
+        ? `${value}${unit ? ` ${unit}` : ''}`
+        : `${value.toFixed(1)}${unit ? ` ${unit}` : ''}`;
   return (
     <div>
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="tabular-nums font-semibold text-foreground">
-        {value === null || value === undefined ? '—' : `${value.toFixed(1)} ${unit}`}
-      </p>
+      <p className="tabular-nums font-semibold text-foreground">{formatted}</p>
     </div>
   );
 }

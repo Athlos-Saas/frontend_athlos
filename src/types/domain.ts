@@ -204,7 +204,16 @@ export interface VideoMetricsStats {
   warnings?: string[];
 }
 
-export type VideoEventType = 'pass' | 'turnover' | 'possession_change' | 'carry';
+export type VideoEventType =
+  | 'pass'
+  | 'turnover'
+  | 'possession_change'
+  | 'carry'
+  // Remates derivados del final de una posesión cerca del arco atacado. Los
+  // emite event_detection._detect_shots y se cuentan en match_metrics; el
+  // frontend los tenía sin tipar, así que aparecían como texto crudo "shot".
+  | 'shot'
+  | 'shot_on_target';
 
 export interface VideoEvent {
   id: string;
@@ -246,6 +255,10 @@ export interface VideoPlayerMetrics {
   progressive_passes: number;
   progression_m: number;
   possession_time_s: number;
+  /** Remates del jugador (match_metrics los cuenta por track). Opcionales
+   * porque los videos procesados antes de la migración 025 no los traen. */
+  shots?: number;
+  shots_on_target?: number;
 }
 
 export interface VideoTeamMetrics {
@@ -263,6 +276,8 @@ export interface VideoTeamMetrics {
   possession_share?: number | null;
   passes: number;
   turnovers: number;
+  shots?: number;
+  shots_on_target?: number;
   pass_network: { from: number; to: number; count: number }[];
 }
 

@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { StatCard } from '@/components/ui/StatCard';
 import { PlayerRadar, type RadarDatum } from '../components/PlayerRadar';
+import { PlayerRatingCard } from '../components/PlayerRatingCard';
 import { deriveInsights, deriveStatus } from '../insights';
 import { usePlayerGpsSessions, usePlayerInjuries, usePlayerLeagueStats, usePlayerPredictions } from '../queries';
 import type { GpsSession } from '@/types/domain';
@@ -119,7 +120,11 @@ export default function TabResumen({ orgId, playerId, playerName }: { orgId: str
         <StatCard label={t('tabResumen.stat.gamesPlayed', 'Partidos jugados')} value={gamesPlayed ?? '--'} accent="ai" />
       </div>
 
+      {/* Radar físico arriba */}
       <PlayerRadar data={radarData} playerName={playerName} />
+
+      {/* Rating tipo FIFA del jugador propio (grande, con desglose de cómo se calcula) */}
+      <PlayerRatingCard orgId={orgId} playerId={playerId} size="lg" />
 
       {(insights.strengths.length > 0 || insights.weaknesses.length > 0) && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

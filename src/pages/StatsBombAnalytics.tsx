@@ -49,6 +49,20 @@ interface KpiData {
   totalCompetitions: number;
 }
 
+/**
+ * StatsBomb codifica la formación como un entero pegado (433, 442, 4231).
+ * Lo convierte en la notación legible con guiones (4-3-3, 4-4-2, 4-2-3-1)
+ * separando dígito a dígito. Si ya viene con guiones o no es numérico, se
+ * devuelve tal cual.
+ */
+function formatFormation(formation: string | number | null | undefined): string {
+  if (formation === null || formation === undefined) return '—';
+  const raw = String(formation).trim();
+  if (raw.includes('-')) return raw;
+  if (!/^\d+$/.test(raw)) return raw;
+  return raw.split('').join('-');
+}
+
 interface PlayerStat {
   player_name: string;
   matches: number;
@@ -64,7 +78,7 @@ interface FormationStat {
   match_count: number;
 }
 
-type Tab = 'shotmap' | 'rankings' | 'formations' | 'train';
+type Tab = 'shotmap' | 'rankings' | 'formations' | 'myteam' | 'train';
 type LoadState = 'loading' | 'error' | 'ready';
 
 // ---------------------------------------------------------------------------
@@ -152,15 +166,24 @@ function PlayerRankingsTab({ orgId }: { orgId: string }) {
 
     // sb_player_match_stats no tiene player_name ni org_id.
     // Cargamos stats y jugadores por separado, luego unimos del lado cliente.
-    Promise.all([
-      supabase
-        .from('sb_player_match_stats')
-        .select('player_id, goals, xg_total, assists, passes_completed, match_id')
-        .limit(5000),
-      supabase
-        .from('sb_players')
-        .select('id, player_name'),
-    ]).then(([statsResult, playersResult]) => {
+    // OJO: sb_players tiene miles de filas y Supabase devuelve máximo 1000 por
+    // request; antes se pedían "todos" sin paginar y los jugadores con id>1000
+    // quedaban sin nombre → aparecía "Jugador #XXXX". Ahora se cargan primero
+    // las stats, se sacan los player_id presentes y se piden SOLO esos nombres.
+    supabase
+      .from('sb_player_match_stats')
+      .select('player_id, goals, xg_total, assists, passes_completed, match_id')
+      .limit(8000)
+      .then(async (statsResult) => {
+      if (!isMounted) return;
+      const presentIds = [...new Set((statsResult.data ?? []).map((r) => r.player_id as number))];
+      // Pedir nombres por lotes de 500 ids (evita URLs enormes en el filtro IN).
+      const nameEntries: Array<[number, string]> = [];
+      for (let i = 0; i < presentIds.length; i += 500) {
+        const batch = presentIds.slice(i, i + 500);
+        const { data: pdata } = await supabase.from('sb_players').select('id, player_name').in('id', batch);
+        for (const p of pdata ?? []) nameEntries.push([p.id as number, p.player_name as string]);
+      }
       if (!isMounted) return;
       if (statsResult.error) {
         toast({
@@ -171,20 +194,9 @@ function PlayerRankingsTab({ orgId }: { orgId: string }) {
         setState('error');
         return;
       }
-      if (playersResult.error) {
-        toast({
-          title: t('statsbomb.toast.loadPlayersErrorTitle', 'No se pudo cargar el ranking'),
-          description: playersResult.error.message,
-          variant: 'danger',
-        });
-        setState('error');
-        return;
-      }
 
-      // Mapa id → nombre de jugador
-      const nameMap = new Map<number, string>(
-        (playersResult.data ?? []).map((p) => [p.id as number, p.player_name as string]),
-      );
+      // Mapa id → nombre de jugador (armado por lotes arriba).
+      const nameMap = new Map<number, string>(nameEntries);
 
       // Agrupar por player_id del lado cliente — la tabla tiene una fila por partido
       const map = new Map<number, PlayerStat>();
@@ -366,7 +378,7 @@ function FormationsTab({ orgId }: { orgId: string }) {
         const result = [...formMap.entries()]
           .filter(([, v]) => v.total >= 3) // mínimo 3 partidos para ser significativo
           .map(([formation, v]) => ({
-            formation,
+            formation: formatFormation(formation),
             win_rate: Math.round((v.wins / v.total) * 100),
             match_count: v.total,
           }))
@@ -589,6 +601,103 @@ function TrainModelsTab({ orgId }: { orgId: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Pestaña: Mi equipo vs mercado
+// Compara las medias de MIS jugadores (league_attacker_stats con player_id
+// resuelto = jugadores propios) contra la media de TODOS los de la liga.
+// ---------------------------------------------------------------------------
+
+interface MetricComparison {
+  metric: string;
+  team: number;
+  market: number;
+}
+
+function MyTeamVsMarketTab({ orgId }: { orgId: string }) {
+  const { t } = useTranslation();
+  const [rows, setRows] = useState<MetricComparison[] | null>(null);
+  const [state, setState] = useState<LoadState>('loading');
+  const [teamCount, setTeamCount] = useState(0);
+
+  useEffect(() => {
+    let isMounted = true;
+    setState('loading');
+    supabase
+      .from('league_attacker_stats')
+      .select('player_id, goals_per_game, assists_per_game, shots_per_game, sh_pct, proba_top_scorer')
+      .eq('org_id', orgId)
+      .then(({ data, error }) => {
+        if (!isMounted) return;
+        if (error) {
+          setState('error');
+          return;
+        }
+        const all = data ?? [];
+        const mine = all.filter((r) => r.player_id != null);
+        if (mine.length === 0) {
+          setRows([]);
+          setState('ready');
+          return;
+        }
+        const avg = (arr: typeof all, key: string) => {
+          const vals = arr.map((r) => Number((r as Record<string, unknown>)[key])).filter((v) => !Number.isNaN(v));
+          return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+        };
+        const metrics: Array<[string, string]> = [
+          ['goals_per_game', t('statsbomb.myteam.goals', 'Goles/partido')],
+          ['assists_per_game', t('statsbomb.myteam.assists', 'Asist./partido')],
+          ['shots_per_game', t('statsbomb.myteam.shots', 'Tiros/partido')],
+          ['sh_pct', t('statsbomb.myteam.shpct', '% conversión')],
+          ['proba_top_scorer', t('statsbomb.myteam.proba', 'Prob. goleador')],
+        ];
+        setTeamCount(mine.length);
+        setRows(
+          metrics.map(([key, label]) => ({
+            metric: label,
+            team: Math.round(avg(mine, key) * 100) / 100,
+            market: Math.round(avg(all, key) * 100) / 100,
+          })),
+        );
+        setState('ready');
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [orgId, t]);
+
+  if (state === 'error') return <ErrorState />;
+  if (rows === null || state === 'loading') return <Skeleton className="h-[380px] w-full" />;
+
+  if (rows.length === 0) {
+    return (
+      <EmptyState
+        icon={Users}
+        title={t('statsbomb.myteam.emptyTitle', 'Sin jugadores propios vinculados')}
+        description={t('statsbomb.myteam.emptyDescription', 'Importa estadísticas de tu liga con tus jugadores para comparar tu equipo contra el mercado.')}
+      />
+    );
+  }
+
+  return (
+    <ChartCard
+      title={t('statsbomb.myteam.chartTitle', 'Mi equipo vs mercado')}
+      description={t('statsbomb.myteam.chartDescription', 'Media de tus {{count}} atacantes vinculados vs media de toda la liga', { count: teamCount })}
+      height={380}
+    >
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={rows} margin={{ top: 8, right: 24, bottom: 0, left: 8 }}>
+          <CartesianGrid stroke={chartGridColor} vertical={false} />
+          <XAxis dataKey="metric" stroke={chartAxisColor} tick={{ fontSize: 11, fill: colors.textSecondary }} />
+          <YAxis stroke={chartAxisColor} tick={{ fontSize: 11, fill: colors.textSecondary }} />
+          <Tooltip contentStyle={chartTooltipStyle} />
+          <Bar dataKey="team" name={t('statsbomb.myteam.myTeam', 'Mi equipo')} fill={colors.green} radius={[4, 4, 0, 0]} />
+          <Bar dataKey="market" name={t('statsbomb.myteam.market', 'Mercado')} fill={colors.blue} radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartCard>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Componente principal
 // ---------------------------------------------------------------------------
 
@@ -641,6 +750,7 @@ export default function StatsBombAnalytics({ orgId }: { orgId: string }) {
     { key: 'shotmap', label: t('statsbomb.tabs.shotmap', 'Mapa de tiros') },
     { key: 'rankings', label: t('statsbomb.tabs.rankings', 'Ranking jugadores') },
     { key: 'formations', label: t('statsbomb.tabs.formations', 'Formaciones') },
+    { key: 'myteam', label: t('statsbomb.tabs.myteam', 'Mi equipo vs mercado') },
     { key: 'train', label: t('statsbomb.tabs.train', 'Entrenar modelos') },
   ];
 
@@ -649,7 +759,7 @@ export default function StatsBombAnalytics({ orgId }: { orgId: string }) {
       {/* Cabecera */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          {t('statsbomb.title', 'StatsBomb Analytics')}
+          {t('statsbomb.title', 'Benchmark Analytics')}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {t('statsbomb.subtitle', 'Datos de eventos profesionales de partidos de élite')}
@@ -717,6 +827,7 @@ export default function StatsBombAnalytics({ orgId }: { orgId: string }) {
       {activeTab === 'shotmap' && <ShotMapTab orgId={orgId} />}
       {activeTab === 'rankings' && <PlayerRankingsTab orgId={orgId} />}
       {activeTab === 'formations' && <FormationsTab orgId={orgId} />}
+      {activeTab === 'myteam' && <MyTeamVsMarketTab orgId={orgId} />}
       {activeTab === 'train' && <TrainModelsTab orgId={orgId} />}
     </div>
   );

@@ -71,6 +71,19 @@ export function LiveMatchMap({
       .filter((entry): entry is { trackId: string; position: { x: number; y: number } } => entry.position !== null);
   }, [trajectories, currentTime]);
 
+  // Estela del balón: sus posiciones reales de los últimos ~1.2 s, para leer
+  // hacia dónde va, no solo un punto quieto. Son puntos MEDIDOS (los mismos de
+  // la trayectoria), recortados a la ventana previa a `currentTime` — no se
+  // extrapola nada hacia adelante.
+  const ballTrail = useMemo(() => {
+    const points = trajectories[BALL_TRAJECTORY_KEY];
+    if (!points || points.length === 0) return [];
+    const windowStart = currentTime - 1.2;
+    return points
+      .filter((p) => p.t <= currentTime && p.t >= windowStart)
+      .map((p) => toPitch(p));
+  }, [trajectories, currentTime]);
+
   const possessionTrackId = useMemo(() => {
     if (!highlightPossession) return null;
     const ballPosition = livePositions.find((entry) => entry.trackId === BALL_TRAJECTORY_KEY)?.position;
@@ -102,9 +115,40 @@ export function LiveMatchMap({
           opacity={0.75}
         />
       )}
+      {/* Estela del balón: segmentos que se desvanecen hacia el pasado. */}
+      {ballTrail.length >= 2 &&
+        ballTrail.slice(1).map((point, index) => {
+          const previous = ballTrail[index];
+          const fade = (index + 1) / ballTrail.length; // 0 (viejo) -> 1 (reciente)
+          return (
+            <line
+              key={`ball-trail-${index}`}
+              x1={previous.x}
+              y1={previous.y}
+              x2={point.x}
+              y2={point.y}
+              stroke="#fde047"
+              strokeWidth={0.35 + 0.5 * fade}
+              strokeLinecap="round"
+              opacity={0.15 + 0.55 * fade}
+            />
+          );
+        })}
       {livePositions.map(({ trackId, position }) =>
         trackId === BALL_TRAJECTORY_KEY ? (
-          <circle key={trackId} cx={position.x} cy={position.y} r={0.75} fill="#ffffff" style={{ filter: 'drop-shadow(0 0 2px #ffffff)' }} />
+          <g key={trackId}>
+            {/* Halo + punto: el balón blanco chico se perdía sobre el mapa de
+             * calor claro; el borde oscuro y el halo lo hacen legible siempre. */}
+            <circle cx={position.x} cy={position.y} r={1.15} fill="#fde047" opacity={0.35} />
+            <circle
+              cx={position.x}
+              cy={position.y}
+              r={0.7}
+              fill="#ffffff"
+              stroke="#0b1220"
+              strokeWidth={0.22}
+            />
+          </g>
         ) : (
           <g key={trackId} transform={`translate(${position.x}, ${position.y})`}>
             {trackId === possessionTrackId && <circle r={2.6} fill="none" stroke="#fbbf24" strokeWidth={0.4} opacity={0.9} />}

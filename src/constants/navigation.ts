@@ -69,6 +69,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: 'Benchmark', labelKey: 'nav.statsbomb', to: '/statsbomb', icon: Database },
       { label: 'Jugadores Benchmark', labelKey: 'nav.statsbombPlayers', to: '/statsbomb-jugadores', icon: UserRound },
       { label: 'Simulación IA', labelKey: 'nav.simulacion', to: '/simulacion', icon: Gamepad2 },
+      { label: 'Rivales', labelKey: 'nav.rivales', to: '/rivales', icon: Shield },
     ],
   },
   {
