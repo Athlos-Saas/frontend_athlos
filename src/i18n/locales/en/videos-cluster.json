@@ -80,6 +80,7 @@
     "result": {
       "cardTitle": "Analysis result",
       "selectPlaceholder": "Select a processed video",
+      "originalFallbackNotice": "The annotated video cannot be played in this browser (it was processed without converting to H.264). Showing the original video instead; re-analyze it to get the annotations back.",
       "annotatedVideoLabel": "Annotated video",
       "emptyPositionsTitle": "No position data",
       "emptyPositionsDescription": "Not enough positions were detected to draw the tactical board.",

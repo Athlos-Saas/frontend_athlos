@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { AthlosBot } from '@/components/ui/AthlosBot';
 import { CommandPalette } from '@/components/ui/CommandPalette';
 import { Drawer, DrawerContent } from '@/components/ui/Drawer';
+import { Spinner } from '@/components/ui/Spinner';
 import { Toaster } from '@/components/ui/Toast';
 import { TooltipProvider } from '@/components/ui/Tooltip';
 import { NAV_SECTIONS } from '@/constants/navigation';
@@ -13,6 +14,7 @@ import { cn } from '@/utils/cn';
 import { canUseAssistant } from '@/utils/permissions';
 
 import { Header, type HeaderProfile } from './Header';
+import { ModuleErrorBoundary } from './ModuleErrorBoundary';
 import { Sidebar, SidebarNavContent } from './Sidebar';
 
 export interface AppShellProps {
@@ -82,7 +84,13 @@ export function AppShell({ profile, onSignOut }: AppShellProps) {
           <Header profile={profile} onSignOut={onSignOut} onOpenMobileNav={() => setIsMobileNavOpen(true)} />
           <main id="main-content" tabIndex={-1} className="flex-1 px-4 py-6 focus:outline-none sm:px-6 lg:px-8 lg:py-8">
             <div className="mx-auto w-full max-w-[1400px]">
-              <Outlet />
+              {/* Boundary + Suspense alrededor del Outlet (no de toda la app): si un
+                  módulo falla o tarda, el sidebar sigue usable para ir a otro. */}
+              <ModuleErrorBoundary key={location.pathname}>
+                <Suspense fallback={<Spinner label={t('common.loadingModule', 'Cargando módulo…')} className="min-h-[60vh]" />}>
+                  <Outlet />
+                </Suspense>
+              </ModuleErrorBoundary>
             </div>
           </main>
         </div>

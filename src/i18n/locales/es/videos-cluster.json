@@ -80,6 +80,7 @@
     "result": {
       "cardTitle": "Resultado del análisis",
       "selectPlaceholder": "Selecciona un video procesado",
+      "originalFallbackNotice": "El video anotado no se puede reproducir en este navegador (se procesó sin convertir a H.264). Se muestra el video original; vuelve a analizarlo para recuperar las anotaciones.",
       "annotatedVideoLabel": "Video anotado",
       "emptyPositionsTitle": "Sin datos de posición",
       "emptyPositionsDescription": "No se detectaron suficientes posiciones para dibujar el tablero táctico.",

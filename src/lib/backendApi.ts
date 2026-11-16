@@ -17,6 +17,39 @@ export function pingBackend(): void {
   fetch(`${backendUrl}/health`).catch(() => {});
 }
 
+/**
+ * Mensaje cuando `fetch` lanza. En producción casi nunca significa "backend
+ * apagado": Render responde 502/503 SIN cabeceras CORS mientras el servicio
+ * despierta del plan free o reinicia (p. ej. tras quedarse sin RAM), y el
+ * navegador lo reporta como error de red. Decir "no está conectado" hacía
+ * creer que faltaba configuración cuando bastaba con reintentar.
+ */
+function unreachableMessage(backendUrl: string): string {
+  return `El backend (${backendUrl}) no respondió: puede estar despertando o reiniciándose. Reintenta en unos segundos.`;
+}
+
+/** Esperas entre reintentos (ms): ~26 s en total, lo que tarda Render en despertar. */
+const WAKE_RETRY_DELAYS_MS = [3000, 8000, 15000];
+
+/**
+ * fetch que reintenta SOLO lecturas (GET) ante error de red — cubre el
+ * despertar/reinicio de Render sin que el usuario vea un error. Las
+ * escrituras no se reintentan: un POST que sí llegó (crear rival, disparar
+ * un análisis) se duplicaría.
+ */
+async function fetchWithWakeRetry(url: string, init?: RequestInit): Promise<Response> {
+  const method = (init?.method ?? 'GET').toUpperCase();
+  const delays = method === 'GET' ? WAKE_RETRY_DELAYS_MS : [];
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await fetch(url, init);
+    } catch (error) {
+      if (attempt >= delays.length) throw error;
+      await new Promise((resolve) => setTimeout(resolve, delays[attempt]));
+    }
+  }
+}
+
 export interface TrainingResult {
   model_name: string;
   model_version: string;
@@ -51,7 +84,7 @@ export async function triggerTraining(
       headers: { Authorization: `Bearer ${token}` },
     });
   } catch {
-    throw new Error(`No se pudo conectar a ${backendUrl}. ¿El backend está corriendo y accesible desde aquí?`);
+    throw new Error(unreachableMessage(backendUrl));
   }
 
   if (!response.ok) {
@@ -90,7 +123,7 @@ export async function triggerVideoProcessing(
       headers: { Authorization: `Bearer ${token}` },
     });
   } catch {
-    throw new Error(`No se pudo conectar a ${backendUrl}. ¿El backend está corriendo y accesible desde aquí?`);
+    throw new Error(unreachableMessage(backendUrl));
   }
 
   if (!response.ok) {
@@ -114,12 +147,12 @@ async function backendFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
   let response: Response;
   try {
-    response = await fetch(`${backendUrl}${path}`, {
+    response = await fetchWithWakeRetry(`${backendUrl}${path}`, {
       ...init,
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...init?.headers },
     });
   } catch {
-    throw new Error(`No se pudo conectar a ${backendUrl}. ¿El backend está corriendo y accesible desde aquí?`);
+    throw new Error(unreachableMessage(backendUrl));
   }
 
   if (!response.ok) {
@@ -311,12 +344,12 @@ async function backendFetchPublic<T>(path: string, init?: RequestInit): Promise<
   if (!backendUrl) throw new Error('VITE_API_URL no está configurado.');
   let response: Response;
   try {
-    response = await fetch(`${backendUrl}${path}`, {
+    response = await fetchWithWakeRetry(`${backendUrl}${path}`, {
       ...init,
       headers: { 'Content-Type': 'application/json', ...init?.headers },
     });
   } catch {
-    throw new Error(`No se pudo conectar a ${backendUrl}.`);
+    throw new Error(unreachableMessage(backendUrl));
   }
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));

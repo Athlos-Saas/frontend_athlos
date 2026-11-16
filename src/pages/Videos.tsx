@@ -21,6 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableSke
 import { usePagedRows } from '@/hooks/usePagedRows';
 import { pingBackend, triggerVideoProcessing, type YoloModelKey } from '@/lib/backendApi';
 import { supabase } from '@/lib/supabase';
+import { signOriginalVideoUrl } from '@/lib/videoPlayback';
 import { toast } from '@/store/toastStore';
 import { getDateLocale } from '@/utils/dateLocale';
 import { canWrite } from '@/utils/permissions';
@@ -92,6 +93,8 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
   const [playerMetrics, setPlayerMetrics] = useState<VideoPlayerMetrics[]>([]);
   const [teamMetrics, setTeamMetrics] = useState<VideoTeamMetrics[]>([]);
   const [resultVideoUrl, setResultVideoUrl] = useState<string | null>(null);
+  // true cuando el anotado no se pudo reproducir y se muestra el original.
+  const [isShowingOriginalVideo, setIsShowingOriginalVideo] = useState(false);
   const [trajectories, setTrajectories] = useState<Record<string, TrajectoryPoint[]>>({});
   const [rosterPlayers, setRosterPlayers] = useState<RosterOption[]>([]);
   const [isAssigning, setIsAssigning] = useState(false);
@@ -208,6 +211,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
     loadInsights(selectedVideoId);
 
     const selected = (videos ?? []).find((video) => video.id === selectedVideoId);
+    setIsShowingOriginalVideo(false);
     if (selected?.processed_path) {
       supabase.storage
         .from('processed')
@@ -727,7 +731,29 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                 {t('videos.result.annotatedVideoLabel', 'Video anotado')}
               </p>
               {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-              <video src={resultVideoUrl} controls playsInline className="mx-auto max-h-[420px] w-full rounded-lg border border-border bg-panel" />
+              <video
+                src={resultVideoUrl}
+                controls
+                playsInline
+                className="mx-auto max-h-[420px] w-full rounded-lg border border-border bg-panel"
+                onError={async () => {
+                  if (isShowingOriginalVideo) return;
+                  const selected = (videos ?? []).find((video) => video.id === selectedVideoId);
+                  const originalUrl = await signOriginalVideoUrl(selected?.storage_path);
+                  if (originalUrl) {
+                    setIsShowingOriginalVideo(true);
+                    setResultVideoUrl(originalUrl);
+                  }
+                }}
+              />
+              {isShowingOriginalVideo && (
+                <p className="mt-2 text-xs text-warning">
+                  {t(
+                    'videos.result.originalFallbackNotice',
+                    'El video anotado no se puede reproducir en este navegador (se procesó sin convertir a H.264). Se muestra el video original; vuelve a analizarlo para recuperar las anotaciones.',
+                  )}
+                </p>
+              )}
             </div>
           )}
 

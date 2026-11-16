@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { StatCard } from '@/components/ui/StatCard';
 import { Switch } from '@/components/ui/Switch';
 import { supabase } from '@/lib/supabase';
+import { signOriginalVideoUrl } from '@/lib/videoPlayback';
 
 interface VideoOption {
   id: string;
@@ -109,6 +110,8 @@ export function MatchAnalysisTab({ orgId }: { orgId: string }) {
   const [videos, setVideos] = useState<VideoOption[] | null>(null);
   const [selectedVideoId, setSelectedVideoId] = useState('');
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  // true cuando el anotado no se pudo reproducir y se muestra el original.
+  const [isShowingOriginalVideo, setIsShowingOriginalVideo] = useState(false);
   const [trajectories, setTrajectories] = useState<Record<string, TrajectoryPoint[]>>({});
   const [tracks, setTracks] = useState<TrackRow[]>([]);
   const [playerNameById, setPlayerNameById] = useState<Map<string, string>>(new Map());
@@ -147,6 +150,7 @@ export function MatchAnalysisTab({ orgId }: { orgId: string }) {
     setIsLoadingMatch(true);
     setCurrentTime(0);
     setVideoUrl(null);
+    setIsShowingOriginalVideo(false);
     setTrajectories({});
     setTracks([]);
 
@@ -207,6 +211,18 @@ export function MatchAnalysisTab({ orgId }: { orgId: string }) {
   const nameFor = (trackId: number) => labelByTrackId.get(String(trackId)) ?? `J${trackId}`;
 
   const moments = useMemo(() => (showMoments ? computeMoments(trajectories) : []), [showMoments, trajectories]);
+
+  /** El anotado puede venir en mp4v (ffmpeg falló en el backend): caer al original H.264. */
+  const handleVideoError = async () => {
+    if (isShowingOriginalVideo) return;
+    const video = videos?.find((v) => v.id === selectedVideoId);
+    if (!video?.processed_path) return;
+    const originalUrl = await signOriginalVideoUrl(video.storage_path);
+    if (originalUrl) {
+      setIsShowingOriginalVideo(true);
+      setVideoUrl(originalUrl);
+    }
+  };
 
   const seekTo = (time: number) => {
     if (videoRef.current) videoRef.current.currentTime = time;
@@ -275,6 +291,7 @@ export function MatchAnalysisTab({ orgId }: { orgId: string }) {
                     playsInline
                     className="max-h-[420px] w-full rounded-lg"
                     onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+                    onError={handleVideoError}
                   />
                   <div className="absolute bottom-4 right-4 w-40 overflow-hidden rounded-lg shadow-lg ring-1 ring-black/30 sm:w-56">
                     <LiveMatchMap
@@ -307,6 +324,7 @@ export function MatchAnalysisTab({ orgId }: { orgId: string }) {
                     playsInline
                     className="max-h-[420px] w-full rounded-lg"
                     onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+                    onError={handleVideoError}
                   />
                 ) : (
                   <EmptyState
@@ -314,6 +332,14 @@ export function MatchAnalysisTab({ orgId }: { orgId: string }) {
                     title={t('coachModule.matches.noVideoTitle', 'Sin video para reproducir')}
                     description={t('coachModule.matches.noVideoDescription', 'Este análisis no tiene un archivo de video asociado.')}
                   />
+                )}
+                {isShowingOriginalVideo && (
+                  <p className="mt-2 px-1 text-xs text-warning">
+                    {t(
+                      'coachModule.matches.originalFallbackNotice',
+                      'El video anotado no se puede reproducir en este navegador (se procesó sin convertir a H.264). Se muestra el video original; vuelve a analizarlo para recuperar las anotaciones.',
+                    )}
+                  </p>
                 )}
               </Card>
               <div>

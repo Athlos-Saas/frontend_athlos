@@ -59,6 +59,9 @@ export default function Rivales({ orgId, role }: { orgId: string; role: string |
   const [state, setState] = useState<LoadState>('loading');
   const [rivals, setRivals] = useState<Rival[]>([]);
   const [saving, setSaving] = useState(false);
+  // Motivo real del fallo: antes se mostraba siempre "¿ejecutaste la migración
+  // 024?" aunque el problema fuera un 403 de rol o el backend reiniciando.
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Formulario de alta.
   const [name, setName] = useState('');
@@ -74,9 +77,13 @@ export default function Rivales({ orgId, role }: { orgId: string; role: string |
     listRivals(orgId)
       .then((data) => {
         setRivals(data);
+        setLoadError(null);
         setState('ready');
       })
-      .catch(() => setState('error'));
+      .catch((err) => {
+        setLoadError(err instanceof Error ? err.message : String(err));
+        setState('error');
+      });
   };
 
   useEffect(load, [orgId]);
@@ -131,7 +138,7 @@ export default function Rivales({ orgId, role }: { orgId: string; role: string |
     return (
       <ErrorState
         title={t('rivals.loadError', 'No se pudieron cargar los rivales')}
-        description={t('rivals.loadErrorDesc', '¿Ejecutaste la migración 024_rivals.sql y el backend está corriendo?')}
+        description={loadError ?? t('rivals.loadErrorDesc', '¿Ejecutaste la migración 024_rivals.sql y el backend está corriendo?')}
         onRetry={load}
       />
     );

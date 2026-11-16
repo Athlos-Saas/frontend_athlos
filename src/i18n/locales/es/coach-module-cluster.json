@@ -88,6 +88,7 @@
       "momentsEmptyTitle": "Sin tramos rápidos detectados",
       "momentsEmptyDescription": "Ningún jugador superó el umbral en este partido.",
       "noVideoTitle": "Sin video para reproducir",
+      "originalFallbackNotice": "El video anotado no se puede reproducir en este navegador (se procesó sin convertir a H.264). Se muestra el video original; vuelve a analizarlo para recuperar las anotaciones.",
       "noVideoDescription": "Este análisis no tiene un archivo de video asociado.",
       "liveMapLabel": "Mapa en vivo — sincronizado con el video",
       "statsTitle": "Lo relevante de este partido",

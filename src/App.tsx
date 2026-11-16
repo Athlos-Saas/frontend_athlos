@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -9,31 +9,32 @@ import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { useModulePreviews } from '@/constants/modulePreviews';
 import { NAV_ITEMS_FLAT } from '@/constants/navigation';
+import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { fetchNavAccessSettings } from '@/lib/permissionSettings';
 import { useNavAccessStore } from '@/store/navAccessStore';
 
 import { useAuth } from './hooks/useAuth';
 import Login from './pages/Login';
 
-const Administracion = lazy(() => import('./pages/Administracion'));
-const AiIntelligenceCenter = lazy(() => import('./pages/AiIntelligenceCenter'));
-const Alertas = lazy(() => import('./pages/Alertas'));
-const Analisis = lazy(() => import('./pages/Analisis'));
-const Atletas = lazy(() => import('./pages/Atletas'));
-const Competiciones = lazy(() => import('./pages/Competiciones'));
-const Configuracion = lazy(() => import('./pages/Configuracion'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const Equipos = lazy(() => import('./pages/Equipos'));
-const ModuloEntrenador = lazy(() => import('./pages/ModuloEntrenador'));
-const ModelosIa = lazy(() => import('./pages/ModelosIa'));
-const PlayerProfile = lazy(() => import('./pages/PlayerProfile'));
-const Scouting = lazy(() => import('./pages/Scouting'));
-const SimulacionIA = lazy(() => import('./pages/SimulacionIA'));
-const StatsBombAnalytics = lazy(() => import('./pages/StatsBombAnalytics'));
-const StatsBombPlayers = lazy(() => import('./pages/StatsBombPlayers'));
-const PronosticosIA = lazy(() => import('./pages/PronosticosIA'));
-const Rivales = lazy(() => import('./pages/Rivales'));
-const Temporadas = lazy(() => import('./pages/Temporadas'));
+const Administracion = lazyWithRetry(() => import('./pages/Administracion'));
+const AiIntelligenceCenter = lazyWithRetry(() => import('./pages/AiIntelligenceCenter'));
+const Alertas = lazyWithRetry(() => import('./pages/Alertas'));
+const Analisis = lazyWithRetry(() => import('./pages/Analisis'));
+const Atletas = lazyWithRetry(() => import('./pages/Atletas'));
+const Competiciones = lazyWithRetry(() => import('./pages/Competiciones'));
+const Configuracion = lazyWithRetry(() => import('./pages/Configuracion'));
+const Dashboard = lazyWithRetry(() => import('./pages/Dashboard'));
+const Equipos = lazyWithRetry(() => import('./pages/Equipos'));
+const ModuloEntrenador = lazyWithRetry(() => import('./pages/ModuloEntrenador'));
+const ModelosIa = lazyWithRetry(() => import('./pages/ModelosIa'));
+const PlayerProfile = lazyWithRetry(() => import('./pages/PlayerProfile'));
+const Scouting = lazyWithRetry(() => import('./pages/Scouting'));
+const SimulacionIA = lazyWithRetry(() => import('./pages/SimulacionIA'));
+const StatsBombAnalytics = lazyWithRetry(() => import('./pages/StatsBombAnalytics'));
+const StatsBombPlayers = lazyWithRetry(() => import('./pages/StatsBombPlayers'));
+const PronosticosIA = lazyWithRetry(() => import('./pages/PronosticosIA'));
+const Rivales = lazyWithRetry(() => import('./pages/Rivales'));
+const Temporadas = lazyWithRetry(() => import('./pages/Temporadas'));
 
 const PLACEHOLDER_ROUTES = new Set<string>([]);
 

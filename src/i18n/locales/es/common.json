@@ -1,5 +1,12 @@
 {
   "common": {
+    "loadingModule": "Cargando módulo…",
+    "moduleError": {
+      "title": "Este módulo no pudo cargarse",
+      "description": "Ocurrió un error inesperado en este módulo. El resto de la plataforma sigue funcionando.",
+      "staleTitle": "Hay una versión nueva de ATHLOS",
+      "staleDescription": "Recarga la página para usar la versión más reciente."
+    },
     "skipToContent": "Saltar al contenido principal",
     "smartSearch": "Buscador inteligente",
     "noResults": "Sin resultados."

@@ -88,6 +88,7 @@
       "momentsEmptyTitle": "No fast segments detected",
       "momentsEmptyDescription": "No player crossed the threshold in this match.",
       "noVideoTitle": "No video to play",
+      "originalFallbackNotice": "The annotated video cannot be played in this browser (it was processed without converting to H.264). Showing the original video instead; re-analyze it to get the annotations back.",
       "noVideoDescription": "This analysis has no video file attached.",
       "liveMapLabel": "Live map — synced with the video",
       "statsTitle": "What matters in this match",

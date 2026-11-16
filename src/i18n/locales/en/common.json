@@ -1,5 +1,12 @@
 {
   "common": {
+    "loadingModule": "Loading module…",
+    "moduleError": {
+      "title": "This module could not be loaded",
+      "description": "An unexpected error occurred in this module. The rest of the platform keeps working.",
+      "staleTitle": "A new version of ATHLOS is available",
+      "staleDescription": "Reload the page to use the latest version."
+    },
     "skipToContent": "Skip to main content",
     "smartSearch": "Smart search",
     "noResults": "No results."
