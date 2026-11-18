@@ -2,6 +2,7 @@
   "coachModule": {
     "title": "Módulo Entrenador",
     "subtitle": "Lo más importante, en lenguaje simple — el detalle técnico está a un click de distancia",
+    "openTacticalBoard": "Pizarra táctica",
     "confidential": "Información confidencial · uso del cuerpo técnico",
     "briefing": "Hoy tenés {{available}}/{{total}} disponibles y {{watching}} para vigilar. Tu once sugerido está listo.",
     "selectTeam": "Equipo",

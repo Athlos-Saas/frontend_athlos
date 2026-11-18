@@ -1,0 +1,186 @@
+{
+  "trainingBoard": {
+    "anim": {
+      "add": "Add frame",
+      "delete": "Delete frame",
+      "empty": "No frames yet.",
+      "exit": "Edit without frame",
+      "fast": "Fast",
+      "frameN": "Frame {{n}}",
+      "frameOf": "Frame {{n}} of {{total}}",
+      "help": "Each frame stores where every piece is. Add one, move players and ball, add another and repeat. On playback, pieces move from one frame to the next.",
+      "loop": "Loop",
+      "normal": "Normal",
+      "once": "Once",
+      "play": "Play",
+      "repeat": "Repeat",
+      "slow": "Slow",
+      "speed": "Speed",
+      "stop": "Stop"
+    },
+    "board": "Board",
+    "ctx": {
+      "color": "Color {{c}}",
+      "delete": "Delete",
+      "dragHint": "Drag on the field",
+      "duplicate": "Duplicate",
+      "goalkeeper": "Goalkeeper",
+      "name": "Name",
+      "number": "Number",
+      "placeHint": "Tap the field to place. Drag a piece to move it.",
+      "playing": "Playing animation",
+      "rotate": "Rotate",
+      "text": "Text"
+    },
+    "defaults": {
+      "copyOf": "{{name}} (copy)",
+      "drill": "Drill",
+      "drillN": "Drill {{n}}",
+      "imported": "Imported session",
+      "newSession": "New session",
+      "text": "Text"
+    },
+    "demo": {
+      "buildUpName": "Build-up under pressure",
+      "buildUpNotes": "Team A builds from the goalkeeper with two wide center-backs and the holding midfielder in support. Team B presses in a 4-4-2. Point if A crosses the halfway line with the ball under control.",
+      "buildUpPlayers": "11 vs 11",
+      "rondoName": "5 vs 2 rondo",
+      "rondoNotes": "One- or two-touch circulation inside the square. If the defenders win the ball, whoever lost it swaps with them. Variant: 8 passes in a row scores a point.",
+      "rondoPlayers": "7 per group",
+      "sessionTitle": "Sample session"
+    },
+    "drill": {
+      "clear": "Clear board",
+      "clearConfirm": "Tap again to clear",
+      "colors": "Colors",
+      "field": "Field",
+      "formations": "Formations",
+      "gkA": "Goalkeeper A",
+      "gkB": "Goalkeeper B",
+      "minutes": "Duration (min)",
+      "name": "Drill name",
+      "notes": "Goal and rules",
+      "notesPlaceholder": "What it works on, rules, variants…",
+      "place": "Place",
+      "players": "Players",
+      "playersPlaceholder": "14 + 2 goalkeepers",
+      "teamA": "Team A",
+      "teamB": "Team B"
+    },
+    "export": {
+      "import": "Import session",
+      "json": "Export session",
+      "png": "Export image"
+    },
+    "field": {
+      "basket": "Basketball",
+      "f11": "11-a-side",
+      "f7": "7-a-side",
+      "free": "Free",
+      "half": "Half pitch",
+      "sala": "Futsal"
+    },
+    "kind": {
+      "ball": "Ball",
+      "cone": "Cone",
+      "dribble": "Dribble",
+      "ellipse": "Round zone",
+      "free": "Freehand",
+      "goal": "Goal",
+      "line": "Line",
+      "pass": "Pass",
+      "player": "Player",
+      "pole": "Pole",
+      "rect": "Zone",
+      "ring": "Ring",
+      "run": "Run",
+      "text": "Text"
+    },
+    "lib": {
+      "confirm": "Confirm",
+      "delete": "Delete session",
+      "drillsCount_one": "{{count}} drill",
+      "drillsCount_other": "{{count}} drills",
+      "loading": "Loading…",
+      "new": "New session",
+      "title": "My sessions"
+    },
+    "panel": {
+      "close": "Close panel",
+      "label": "Session and drill",
+      "open": "Open session panel"
+    },
+    "rail": {
+      "draw": "Draw",
+      "label": "Tools",
+      "move": "Move",
+      "pieces": "Pieces"
+    },
+    "session": {
+      "addDrill": "Add drill",
+      "date": "Date",
+      "down": "Move down",
+      "drills": "Drills",
+      "share": "Share and save",
+      "team": "Team or category",
+      "teamPlaceholder": "U16 A",
+      "title": "Session title",
+      "total": "Total duration",
+      "up": "Move up"
+    },
+    "status": {
+      "cloud": "Saved to your account",
+      "error": "Could not save",
+      "local": "Saved on this device",
+      "saving": "Saving…"
+    },
+    "sync": {
+      "cloud": "Your sessions are saved to your account: open them from your phone, tablet or computer.",
+      "local": "Your sessions are saved in this browser and will be uploaded to your account when there is a connection."
+    },
+    "tabs": {
+      "animation": "Animation",
+      "drill": "Drill",
+      "session": "Session"
+    },
+    "toast": {
+      "cleared": "Board cleared. You can undo it.",
+      "created": "New session created",
+      "deleted": "Session deleted",
+      "firstFrame": "Frame 1 saved. Add another one and move the pieces.",
+      "importError": "That file is not a board session.",
+      "imported": "Session imported",
+      "jsonDone": "Session exported",
+      "jsonError": "Could not export the session.",
+      "pngDone": "Image exported",
+      "pngError": "Could not export the image.",
+      "quota": "Your cloud space is full. Delete old sessions."
+    },
+    "tool": {
+      "ball": "Ball",
+      "cone": "Cone",
+      "dribble": "Dribble",
+      "ellipse": "Round zone",
+      "free": "Freehand",
+      "gk": "Goalkeeper",
+      "goal": "Goal",
+      "line": "Line",
+      "pa": "Team A",
+      "pass": "Pass",
+      "pb": "Team B",
+      "pole": "Pole",
+      "rect": "Zone",
+      "ring": "Ring",
+      "run": "Run",
+      "select": "Move",
+      "text": "Text"
+    },
+    "top": {
+      "redo": "Redo (Ctrl+Y)",
+      "redoShort": "Redo",
+      "rotate": "Rotate field",
+      "undo": "Undo (Ctrl+Z)",
+      "undoShort": "Undo"
+    }
+  }
+}

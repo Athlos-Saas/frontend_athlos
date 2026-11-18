@@ -10,6 +10,7 @@ import {
   FileBarChart2,
   Gamepad2,
   LayoutDashboard,
+  PenTool,
   Plug,
   Radar,
   Settings,
@@ -17,8 +18,8 @@ import {
   ShieldCheck,
   Sparkles,
   Trophy,
-  UserRound,
   type LucideIcon,
+  UserRound,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -45,6 +46,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: 'Dashboard', labelKey: 'nav.dashboard', to: '/', icon: LayoutDashboard },
       { label: 'Módulo Entrenador', labelKey: 'nav.coachModule', to: '/entrenador', icon: ClipboardCheck },
+      { label: 'Pizarra táctica', labelKey: 'nav.tacticalBoard', to: '/pizarra', icon: PenTool },
     ],
   },
   {

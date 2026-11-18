@@ -2,6 +2,7 @@
   "coachModule": {
     "title": "Coach Module",
     "subtitle": "The most important things, in plain language — technical detail is one click away",
+    "openTacticalBoard": "Tactical board",
     "confidential": "Confidential information · coaching staff use",
     "briefing": "Today you have {{available}}/{{total}} available and {{watching}} to watch. Your suggested lineup is ready.",
     "selectTeam": "Team",

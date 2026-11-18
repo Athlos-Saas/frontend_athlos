@@ -11,6 +11,7 @@ import {
   HeartPulse,
   Lock,
   MessageCircleQuestion,
+  PenTool,
   Shield,
   ShieldAlert,
   Sparkles,
@@ -494,6 +495,12 @@ export default function ModuloEntrenador({ orgId }: { orgId: string }) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            {/* Acceso directo: planificar el próximo entrenamiento es lo que sigue
+                a revisar el estado del plantel. */}
+            <Button variant="secondary" onClick={() => navigate('/pizarra')}>
+              <PenTool className="size-4" aria-hidden="true" />
+              {t('coachModule.openTacticalBoard', 'Pizarra táctica')}
+            </Button>
           </div>
         </div>
       </div>

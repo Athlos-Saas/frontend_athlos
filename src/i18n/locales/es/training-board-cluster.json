@@ -1,0 +1,186 @@
+{
+  "trainingBoard": {
+    "anim": {
+      "add": "Añadir fotograma",
+      "delete": "Eliminar fotograma",
+      "empty": "Aún no hay fotogramas.",
+      "exit": "Editar sin fotograma",
+      "fast": "Rápida",
+      "frameN": "Fotograma {{n}}",
+      "frameOf": "Fotograma {{n}} de {{total}}",
+      "help": "Cada fotograma guarda dónde está cada pieza. Añade uno, mueve jugadores y balón, añade otro y repite. Al reproducir, las piezas se desplazan de un fotograma al siguiente.",
+      "loop": "En bucle",
+      "normal": "Normal",
+      "once": "Una vez",
+      "play": "Reproducir",
+      "repeat": "Repetición",
+      "slow": "Lenta",
+      "speed": "Velocidad",
+      "stop": "Detener"
+    },
+    "board": "Pizarra",
+    "ctx": {
+      "color": "Color {{c}}",
+      "delete": "Eliminar",
+      "dragHint": "Arrastra sobre el campo",
+      "duplicate": "Duplicar",
+      "goalkeeper": "Portero",
+      "name": "Nombre",
+      "number": "Número",
+      "placeHint": "Toca el campo para colocar. Arrastra una pieza para moverla.",
+      "playing": "Reproduciendo animación",
+      "rotate": "Girar",
+      "text": "Texto"
+    },
+    "defaults": {
+      "copyOf": "{{name}} (copia)",
+      "drill": "Ejercicio",
+      "drillN": "Ejercicio {{n}}",
+      "imported": "Sesión importada",
+      "newSession": "Nueva sesión",
+      "text": "Texto"
+    },
+    "demo": {
+      "buildUpName": "Salida de balón ante presión",
+      "buildUpNotes": "El equipo A sale desde el portero con dos centrales abiertos y el mediocentro de apoyo. El equipo B presiona en 4-4-2. Punto si A supera la línea media con el balón controlado.",
+      "buildUpPlayers": "11 contra 11",
+      "rondoName": "Rondo 5 contra 2",
+      "rondoNotes": "Circulación a uno o dos toques dentro del cuadrado. Si los defensores recuperan, cambia con ellos quien perdió el balón. Variante: tras 8 pases seguidos, punto.",
+      "rondoPlayers": "7 por grupo",
+      "sessionTitle": "Sesión de ejemplo"
+    },
+    "drill": {
+      "clear": "Vaciar pizarra",
+      "clearConfirm": "Toca otra vez para vaciar",
+      "colors": "Colores",
+      "field": "Campo",
+      "formations": "Formaciones",
+      "gkA": "Portero A",
+      "gkB": "Portero B",
+      "minutes": "Duración (min)",
+      "name": "Nombre del ejercicio",
+      "notes": "Objetivo y reglas",
+      "notesPlaceholder": "Qué se trabaja, reglas, variantes…",
+      "place": "Colocar",
+      "players": "Jugadores",
+      "playersPlaceholder": "14 + 2 porteros",
+      "teamA": "Equipo A",
+      "teamB": "Equipo B"
+    },
+    "export": {
+      "import": "Importar sesión",
+      "json": "Exportar sesión",
+      "png": "Exportar imagen"
+    },
+    "field": {
+      "basket": "Baloncesto",
+      "f11": "Fútbol 11",
+      "f7": "Fútbol 7",
+      "free": "Libre",
+      "half": "Media cancha",
+      "sala": "Fútbol sala"
+    },
+    "kind": {
+      "ball": "Balón",
+      "cone": "Cono",
+      "dribble": "Conducción",
+      "ellipse": "Zona circular",
+      "free": "Trazo",
+      "goal": "Portería",
+      "line": "Línea",
+      "pass": "Pase",
+      "player": "Jugador",
+      "pole": "Pica",
+      "rect": "Zona",
+      "ring": "Aro",
+      "run": "Desmarque",
+      "text": "Texto"
+    },
+    "lib": {
+      "confirm": "Confirmar",
+      "delete": "Eliminar sesión",
+      "drillsCount_one": "{{count}} ejercicio",
+      "drillsCount_other": "{{count}} ejercicios",
+      "loading": "Cargando…",
+      "new": "Nueva sesión",
+      "title": "Mis sesiones"
+    },
+    "panel": {
+      "close": "Cerrar panel",
+      "label": "Sesión y ejercicio",
+      "open": "Abrir panel de sesión"
+    },
+    "rail": {
+      "draw": "Dibujo",
+      "label": "Herramientas",
+      "move": "Mover",
+      "pieces": "Piezas"
+    },
+    "session": {
+      "addDrill": "Añadir ejercicio",
+      "date": "Fecha",
+      "down": "Bajar",
+      "drills": "Ejercicios",
+      "share": "Compartir y guardar",
+      "team": "Equipo o categoría",
+      "teamPlaceholder": "Sub-16 A",
+      "title": "Título de la sesión",
+      "total": "Duración total",
+      "up": "Subir"
+    },
+    "status": {
+      "cloud": "Guardado en tu cuenta",
+      "error": "No se pudo guardar",
+      "local": "Guardado en este dispositivo",
+      "saving": "Guardando…"
+    },
+    "sync": {
+      "cloud": "Tus sesiones se guardan en tu cuenta: ábrelas desde el móvil, la tablet o el ordenador.",
+      "local": "Tus sesiones se guardan en este navegador y se subirán a tu cuenta cuando haya conexión."
+    },
+    "tabs": {
+      "animation": "Animación",
+      "drill": "Ejercicio",
+      "session": "Sesión"
+    },
+    "toast": {
+      "cleared": "Pizarra vacía. Puedes deshacerlo.",
+      "created": "Sesión nueva creada",
+      "deleted": "Sesión eliminada",
+      "firstFrame": "Fotograma 1 guardado. Añade otro y mueve las piezas.",
+      "importError": "Ese archivo no es una sesión de la pizarra.",
+      "imported": "Sesión importada",
+      "jsonDone": "Sesión exportada",
+      "jsonError": "No se pudo exportar la sesión.",
+      "pngDone": "Imagen exportada",
+      "pngError": "No se pudo exportar la imagen.",
+      "quota": "Tu espacio en la nube está lleno. Elimina sesiones antiguas."
+    },
+    "tool": {
+      "ball": "Balón",
+      "cone": "Cono",
+      "dribble": "Conducción",
+      "ellipse": "Zona circular",
+      "free": "Trazo",
+      "gk": "Portero",
+      "goal": "Portería",
+      "line": "Línea",
+      "pa": "Equipo A",
+      "pass": "Pase",
+      "pb": "Equipo B",
+      "pole": "Pica",
+      "rect": "Zona",
+      "ring": "Aro",
+      "run": "Desmarque",
+      "select": "Mover",
+      "text": "Texto"
+    },
+    "top": {
+      "redo": "Rehacer (Ctrl+Y)",
+      "redoShort": "Rehacer",
+      "rotate": "Girar campo",
+      "undo": "Deshacer (Ctrl+Z)",
+      "undoShort": "Deshacer"
+    }
+  }
+}

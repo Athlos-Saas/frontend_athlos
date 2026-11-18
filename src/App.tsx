@@ -28,6 +28,7 @@ const Equipos = lazyWithRetry(() => import('./pages/Equipos'));
 const ModuloEntrenador = lazyWithRetry(() => import('./pages/ModuloEntrenador'));
 const ModelosIa = lazyWithRetry(() => import('./pages/ModelosIa'));
 const PlayerProfile = lazyWithRetry(() => import('./pages/PlayerProfile'));
+const PizarraTactica = lazyWithRetry(() => import('./pages/PizarraTactica'));
 const Scouting = lazyWithRetry(() => import('./pages/Scouting'));
 const SimulacionIA = lazyWithRetry(() => import('./pages/SimulacionIA'));
 const StatsBombAnalytics = lazyWithRetry(() => import('./pages/StatsBombAnalytics'));
@@ -91,6 +92,7 @@ export default function App() {
         <Route element={<AppShell profile={profile} onSignOut={signOut} />}>
           <Route index element={<Dashboard orgId={orgId} />} />
           <Route path="/entrenador" element={<NavGate navKey="/entrenador"><ModuloEntrenador orgId={orgId} /></NavGate>} />
+          <Route path="/pizarra" element={<NavGate navKey="/pizarra"><PizarraTactica orgId={orgId} userId={profile.user_id} /></NavGate>} />
           <Route path="/analisis" element={<NavGate navKey="/analisis"><Analisis orgId={orgId} role={role} /></NavGate>} />
           <Route path="/atletas" element={<NavGate navKey="/atletas"><Atletas orgId={orgId} role={role} /></NavGate>} />
           <Route path="/atletas/:playerId" element={<NavGate navKey="/atletas"><PlayerProfile orgId={orgId} role={role} /></NavGate>} />
