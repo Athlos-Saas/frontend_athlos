@@ -1,0 +1,54 @@
+{
+  "dataviz": {
+    "sports": {
+      "soccer": "Fútbol",
+      "basketball": "Baloncesto",
+      "rugby": "Rugby"
+    },
+    "export": {
+      "menu": "Descargar",
+      "png": "Descargar imagen (PNG)",
+      "csv": "Descargar datos (CSV)",
+      "pngError": "No se pudo generar la imagen",
+      "pngErrorDescription": "Este gráfico no tiene contenido que se pueda capturar. Prueba con el CSV.",
+      "generatedOn": "Generado el {{date}}",
+      "statsbombCredit": "Datos: StatsBomb Open Data"
+    },
+    "table": {
+      "exportCsv": "Exportar CSV",
+      "exportExcel": "Exportar Excel"
+    },
+    "columns": {
+      "date": "Fecha",
+      "label": "Etiqueta",
+      "count": "Cantidad",
+      "metric": "Métrica",
+      "normalizedValue": "Valor (normalizado)",
+      "minute": "Minuto",
+      "player": "Jugador",
+      "team": "Equipo",
+      "outcome": "Resultado",
+      "myTeam": "Mi equipo",
+      "market": "Mercado",
+      "attribute": "Atributo",
+      "value": "Valor"
+    },
+    "passNetwork": {
+      "title": "Red de pases",
+      "description": "Cada nodo es un jugador en la posición media donde inició sus pases; el grosor de la línea es la cantidad de pases entre el par.",
+      "passCount": "{{count}} pases · {{team}}",
+      "approximate": "Posiciones aproximadas (cancha sin calibrar).",
+      "team": "Equipo",
+      "bothTeams": "Ambos",
+      "filterLabel": "Filtrar por equipo",
+      "fileName": "red-de-pases",
+      "aria": "Red de pases: {{nodes}} jugadores, {{edges}} conexiones",
+      "edgeTitle": "{{a}} → {{b}}: {{ab}} · {{b}} → {{a}}: {{ba}}",
+      "nodeTitle": "{{name}}: {{made}} pases dados, {{received}} recibidos",
+      "nodeTitleReception": "{{name}}: {{received}} recibidos, sin pases dados (ubicado donde recibió)",
+      "emptyTitle": "No hay pases suficientes para una red",
+      "emptyDescription": "Se detectaron {{count}} pases con emisor, receptor y posición para este filtro. Hacen falta más de {{min}} para que la red diga algo; con menos, revisa los pases uno por uno en la tabla de eventos.",
+      "loadError": "No se pudieron cargar los eventos del video"
+    }
+  }
+}

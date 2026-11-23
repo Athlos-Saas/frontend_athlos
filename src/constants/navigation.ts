@@ -1,5 +1,6 @@
 import {
   Activity,
+  BadgeCheck,
   Bell,
   BrainCircuit,
   Building2,
@@ -68,6 +69,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: 'Pronósticos IA', labelKey: 'nav.pronosticos', to: '/pronosticos', icon: BrainCircuit },
       { label: 'Modelos IA', labelKey: 'nav.modelosIa', to: '/modelos', icon: BrainCircuit },
       { label: 'Búsqueda de talento', labelKey: 'nav.scouting', to: '/scouting', icon: Radar },
+      { label: 'Vitrina', labelKey: 'nav.vitrina', to: '/vitrina', icon: BadgeCheck },
       { label: 'Benchmark', labelKey: 'nav.statsbomb', to: '/statsbomb', icon: Database },
       { label: 'Jugadores Benchmark', labelKey: 'nav.statsbombPlayers', to: '/statsbomb-jugadores', icon: UserRound },
       { label: 'Simulación IA', labelKey: 'nav.simulacion', to: '/simulacion', icon: Gamepad2 },
@@ -78,7 +80,7 @@ export const NAV_SECTIONS: NavSection[] = [
     section: 'Operaciones',
     sectionKey: 'nav.section.operaciones',
     items: [
-      { label: 'Reportes', labelKey: 'nav.reportes', to: '/reportes', icon: FileBarChart2, comingSoon: true },
+      { label: 'Reportes', labelKey: 'nav.reportes', to: '/reportes', icon: FileBarChart2 },
       { label: 'Dispositivos', labelKey: 'nav.dispositivos', to: '/dispositivos', icon: Cpu, comingSoon: true },
       { label: 'Integraciones', labelKey: 'nav.integraciones', to: '/integraciones', icon: Plug, comingSoon: true },
       { label: 'Alertas', labelKey: 'nav.alertas', to: '/alertas', icon: Bell },

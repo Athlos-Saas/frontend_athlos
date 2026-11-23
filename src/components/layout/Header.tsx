@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/DropdownMenu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
+import { sportLabel } from '@/constants/sports';
 import { supabase } from '@/lib/supabase';
 import { useNavAccessStore } from '@/store/navAccessStore';
 import { useNotificationsStore } from '@/store/notificationsStore';
@@ -36,11 +37,9 @@ export interface HeaderProps {
   onOpenMobileNav: () => void;
 }
 
-const SPORT_LABEL: Record<string, string> = {
-  soccer: 'Fútbol',
-  basketball: 'Baloncesto',
-  rugby: 'Rugby',
-};
+// La etiqueta de cada deporte vivía acá (SPORT_LABEL) y era el único lugar
+// del frontend que conocía la lista de deportes. Ahora sale de
+// constants/sports.ts, el archivo de configuración por deporte, traducida.
 
 const ALERT_WINDOW_DAYS = 14;
 
@@ -215,7 +214,7 @@ export function Header({ profile, onSignOut, onOpenMobileNav }: HeaderProps) {
             <SelectContent>
               {sports.map((sport) => (
                 <SelectItem key={sport} value={sport}>
-                  {SPORT_LABEL[sport] ?? sport}
+                  {sportLabel(sport, (key, fallback) => t(key, fallback))}
                 </SelectItem>
               ))}
             </SelectContent>

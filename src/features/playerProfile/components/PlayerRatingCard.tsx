@@ -8,7 +8,9 @@
  * fórmula del overall. Así el número nunca es una caja negra: se ve de dónde
  * sale ese "90" y qué datos alimentan cada RIT/RES/ACE/TIR/CRE/DIS.
  *
- * Consume /v1/player-ratings/{id} (OwnPlayerRatingService).
+ * Consume /v1/player-ratings/{id} (OwnPlayerRatingService). El Portal del
+ * atleta pasa `loader` para usar /v1/athlete/me/rating (mismo payload, pero el
+ * backend saca el jugador del JWT: el atleta no puede pedir la ficha de otro).
  */
 import { useEffect, useState } from 'react';
 import { ChevronDown, Info } from 'lucide-react';
@@ -32,10 +34,13 @@ export function PlayerRatingCard({
   orgId,
   playerId,
   size = 'md',
+  loader,
 }: {
   orgId: string;
   playerId: string;
   size?: 'md' | 'lg';
+  /** Fuente alternativa del rating (Portal del atleta). Por defecto, getOwnPlayerRating. */
+  loader?: () => Promise<OwnPlayerRatingProfile>;
 }) {
   const { t } = useTranslation();
   const [profile, setProfile] = useState<OwnPlayerRatingProfile | null>(null);
@@ -46,7 +51,7 @@ export function PlayerRatingCard({
   useEffect(() => {
     let mounted = true;
     setState('loading');
-    getOwnPlayerRating(orgId, playerId)
+    (loader ? loader() : getOwnPlayerRating(orgId, playerId))
       .then((data) => {
         if (!mounted) return;
         setProfile(data);
@@ -59,6 +64,9 @@ export function PlayerRatingCard({
     return () => {
       mounted = false;
     };
+    // `loader` fuera de las deps a propósito: suele ser una función inline
+    // (nueva en cada render) y re-pediría el rating en bucle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgId, playerId]);
 
   if (state === 'loading') return <Skeleton className="h-64 w-full" />;

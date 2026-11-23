@@ -89,9 +89,10 @@
       "coach": "Coach",
       "medical": "Medical",
       "analyst": "Analyst",
-      "viewer": "Read-only"
+      "viewer": "Read-only",
+      "athlete": "Athlete"
     },
-    "introBefore": "The 5 permission levels that exist in ATHLOS (",
+    "introBefore": "The 6 permission levels that exist in ATHLOS (",
     "introAfter": " in the database) and what each one can do. How many users in your organization have each role assigned today — see the full detail in the Users tab.",
     "error": {
       "title": "Couldn't load the user count"
@@ -101,7 +102,8 @@
       "coach": "Can create and edit operational data (roster, wellness, videos, GPS loads, league stats), but cannot manage users, edit the Organization, or delete the rows protected for admins.",
       "medical": "Same data-writing permissions as coach — intended for medical staff.",
       "analyst": "Same data-writing permissions as coach — intended for analytics staff.",
-      "viewer": "Read-only role. Not on the list of roles with write permission — the database rejects any attempt to create, edit, or delete data, though some screens don't visually block it beforehand (see Permission matrix)."
+      "viewer": "Read-only role. Not on the list of roles with write permission — the database rejects any attempt to create, edit, or delete data, though some screens don't visually block it beforehand (see Permission matrix).",
+      "athlete": "Personal account of a player, linked to their profile. Only enters the Athlete portal: logs their daily wellness and sees their own load, their rating card and their video metrics. Cannot see teammates, the rest of the dashboard, or AthlosBot. Invited from Users by choosing the player."
     },
     "userCountSingular": "user",
     "userCountPlural": "users",

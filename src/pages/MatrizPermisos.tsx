@@ -8,7 +8,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip';
 import { NAV_PERMISSION_GROUP, PERMISSION_GROUPS, type PermissionGroup, type PermissionRow } from '@/constants/permissionCatalog';
-import { ALL_ROLES, ROLE_LABEL } from '@/constants/roles';
+import { ROLE_LABEL, STAFF_ROLES } from '@/constants/roles';
 import type { OrgUserRole } from '@/lib/backendApi';
 import {
   fetchNavAccessSettings,
@@ -61,7 +61,7 @@ function PermissionFolder({ group, isOpen, onToggle, isNavGroup, overrides, savi
             <TableHeader>
               <TableRow>
                 <TableHead>{t('matrizPermisos.col.option', 'Opción')}</TableHead>
-                {ALL_ROLES.map((role) => (
+                {STAFF_ROLES.map((role) => (
                   <TableHead key={role} className="text-center">
                     {t(`roles.label.${role}`, ROLE_LABEL[role])}
                   </TableHead>
@@ -83,7 +83,7 @@ function PermissionFolder({ group, isOpen, onToggle, isNavGroup, overrides, savi
                         </p>
                       )}
                     </TableCell>
-                    {ALL_ROLES.map((role) => {
+                    {STAFF_ROLES.map((role) => {
                       // Cuando varias filas comparten enforcementKeys (misma policy real en
                       // la base), el checkbox refleja el AND de esas claves — no puede
                       // mostrarse "permitido" acá y "bloqueado" en la fila hermana si

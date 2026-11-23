@@ -1,0 +1,54 @@
+{
+  "dataviz": {
+    "sports": {
+      "soccer": "Soccer",
+      "basketball": "Basketball",
+      "rugby": "Rugby"
+    },
+    "export": {
+      "menu": "Download",
+      "png": "Download image (PNG)",
+      "csv": "Download data (CSV)",
+      "pngError": "Could not generate the image",
+      "pngErrorDescription": "This chart has no content that can be captured. Try the CSV instead.",
+      "generatedOn": "Generated on {{date}}",
+      "statsbombCredit": "Data: StatsBomb Open Data"
+    },
+    "table": {
+      "exportCsv": "Export CSV",
+      "exportExcel": "Export Excel"
+    },
+    "columns": {
+      "date": "Date",
+      "label": "Label",
+      "count": "Count",
+      "metric": "Metric",
+      "normalizedValue": "Value (normalized)",
+      "minute": "Minute",
+      "player": "Player",
+      "team": "Team",
+      "outcome": "Outcome",
+      "myTeam": "My team",
+      "market": "Market",
+      "attribute": "Attribute",
+      "value": "Value"
+    },
+    "passNetwork": {
+      "title": "Pass network",
+      "description": "Each node is a player at the average location where they started their passes; line thickness is the number of passes between the pair.",
+      "passCount": "{{count}} passes · {{team}}",
+      "approximate": "Approximate positions (field not calibrated).",
+      "team": "Team",
+      "bothTeams": "Both",
+      "filterLabel": "Filter by team",
+      "fileName": "pass-network",
+      "aria": "Pass network: {{nodes}} players, {{edges}} connections",
+      "edgeTitle": "{{a}} → {{b}}: {{ab}} · {{b}} → {{a}}: {{ba}}",
+      "nodeTitle": "{{name}}: {{made}} passes made, {{received}} received",
+      "nodeTitleReception": "{{name}}: {{received}} received, no passes made (placed where they received)",
+      "emptyTitle": "Not enough passes for a network",
+      "emptyDescription": "{{count}} passes with passer, receiver and location were detected for this filter. More than {{min}} are needed for the network to mean anything; with fewer, review the passes one by one in the events table.",
+      "loadError": "Could not load the video events"
+    }
+  }
+}

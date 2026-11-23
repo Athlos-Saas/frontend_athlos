@@ -26,6 +26,12 @@ export function PlayerRadar({ data, playerName }: { data: RadarDatum[]; playerNa
       title={t('playerRadar.title', 'Radar físico')}
       description={t('playerRadar.description', 'Promedios del jugador, normalizados sobre su propio historial de sesiones')}
       height={320}
+      exportData={data}
+      exportColumns={[
+        { key: 'metric', header: t('dataviz.columns.metric', 'Métrica') },
+        { key: 'value', header: t('dataviz.columns.normalizedValue', 'Valor (normalizado)') },
+      ]}
+      exportFileName={`radar-${playerName}`}
     >
       <RadarComparisonChart data={data} dataKey="value" angleKey="metric" name={playerName} color={colors.purple} />
     </ChartCard>

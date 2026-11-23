@@ -135,7 +135,7 @@ export async function triggerVideoProcessing(
 }
 
 /** fetch autenticado genérico contra atlos-backend con la sesión del usuario. */
-async function backendFetch<T>(path: string, init?: RequestInit): Promise<T> {
+export async function backendFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const backendUrl = getBackendUrl();
   if (!backendUrl) {
     throw new Error('VITE_API_URL no está configurado: no hay un backend accesible desde el navegador.');
@@ -165,7 +165,8 @@ async function backendFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
 // --- Gestión de usuarios (solo admin; el backend valida el rol) ---
 
-export type OrgUserRole = 'admin' | 'coach' | 'medical' | 'analyst' | 'viewer';
+/** Espejo de public.user_role ('athlete' desde 030_athlete_role.sql). */
+export type OrgUserRole = 'admin' | 'coach' | 'medical' | 'analyst' | 'viewer' | 'athlete';
 
 export interface OrgUser {
   user_id: string;
@@ -181,7 +182,8 @@ export function listOrgUsers(orgId: string): Promise<OrgUser[]> {
 
 export function inviteOrgUser(
   orgId: string,
-  payload: { email: string; full_name: string; role: OrgUserRole },
+  // player_id: obligatorio (y solo válido) con role 'athlete' — el backend lo valida contra la org.
+  payload: { email: string; full_name: string; role: OrgUserRole; player_id?: string },
 ): Promise<{ user_id: string; email: string }> {
   return backendFetch(`/v1/users/invite?org_id=${orgId}`, { method: 'POST', body: JSON.stringify(payload) });
 }
@@ -339,7 +341,7 @@ export interface XgResult {
 }
 
 /** fetch público contra atlos-backend (sin auth) para endpoints que no la requieren. */
-async function backendFetchPublic<T>(path: string, init?: RequestInit): Promise<T> {
+export async function backendFetchPublic<T>(path: string, init?: RequestInit): Promise<T> {
   const backendUrl = getBackendUrl();
   if (!backendUrl) throw new Error('VITE_API_URL no está configurado.');
   let response: Response;

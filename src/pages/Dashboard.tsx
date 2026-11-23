@@ -318,6 +318,11 @@ export default function Dashboard({ orgId }: { orgId: string }) {
           description={t('dashboard.chart.sessions.description', 'Volumen de sesiones registradas por toda la organización')}
           isLoading={state === 'loading'}
           className="lg:col-span-2"
+          exportData={sessionSeries}
+          exportColumns={[
+            { key: 'date', header: t('dataviz.columns.date', 'Fecha') },
+            { key: 'sesiones', header: t('dashboard.chart.sessions.seriesName', 'Sesiones') },
+          ]}
         >
           <TrendAreaChart
             data={sessionSeries}
@@ -332,6 +337,11 @@ export default function Dashboard({ orgId }: { orgId: string }) {
           title={t('dashboard.chart.predictions.title', 'Distribución de predicciones')}
           description={t('dashboard.chart.predictions.description', 'Últimas 120 predicciones del modelo, por etiqueta')}
           isLoading={state === 'loading'}
+          exportData={donutData}
+          exportColumns={[
+            { key: 'name', header: t('dataviz.columns.label', 'Etiqueta') },
+            { key: 'value', header: t('dataviz.columns.count', 'Cantidad') },
+          ]}
         >
           <DistributionDonutChart data={donutData} />
         </ChartCard>

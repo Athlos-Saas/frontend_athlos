@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Radar, ShieldHalf, Sparkles, Target } from 'lucide-react';
+import { Globe2, Radar, ShieldHalf, Sparkles, Target } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ExportMenu } from '@/components/ui/ExportMenu';
 import { Input } from '@/components/ui/Input';
 import { Pagination } from '@/components/ui/Pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
@@ -12,11 +13,13 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { AiScoutPanel } from '@/features/scouting/AiScoutPanel';
+import { MarketScoutPanel } from '@/features/scouting/MarketScoutPanel';
 import { usePagedRows } from '@/hooks/usePagedRows';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/store/toastStore';
 import { useUiStore } from '@/store/uiStore';
 import type { LeagueAttackerStat, LeagueGoalkeeperStat } from '@/types/domain';
+import { brandedFileName, downloadCsv, objectsToRows } from '@/utils/chartExport';
 
 /** Barra de probabilidad inline para celdas de tabla. */
 function ProbabilityCell({ value, gradient }: { value: number | null; gradient: string }) {
@@ -178,6 +181,26 @@ function LeagueRankingTab({ orgId }: { orgId: string }) {
               {t('scoutingPage.attackersDescription', '{{count}} jugadores · ordenados por probabilidad de goleador élite (clasificador entrenado con datos de la liga)', { count: prospects.length })}
             </CardDescription>
           </div>
+          {/* CSV de la lista filtrada completa (no solo la página visible). */}
+          <ExportMenu
+            onExportCsv={
+              prospects.length > 0
+                ? () =>
+                    downloadCsv(
+                      brandedFileName(t('scoutingPage.attackersTitle', 'Prospectos ofensivos'), 'csv'),
+                      objectsToRows(prospects, [
+                        { key: 'player_name', header: t('scoutingPage.col.player', 'Jugador') },
+                        { key: 'team_name', header: t('scoutingPage.col.team', 'Equipo') },
+                        { key: 'gp', header: t('scoutingPage.col.gp', 'PJ') },
+                        { key: 'goals', header: t('scoutingPage.col.goals', 'Goles') },
+                        { key: 'points', header: t('scoutingPage.col.points', 'Pts') },
+                        { key: 'role_name', header: t('scoutingPage.col.role', 'Rol') },
+                        { key: 'proba_top_scorer', header: t('scoutingPage.col.eliteProb', 'Prob. élite') },
+                      ]),
+                    )
+                : undefined
+            }
+          />
         </CardHeader>
         {prospects.length === 0 ? (
           <EmptyState title={t('scoutingPage.noResultsTitle', 'Sin resultados')} description={t('scoutingPage.noResultsDescription', 'Ningún jugador coincide con los filtros actuales.')} />
@@ -236,6 +259,21 @@ function LeagueRankingTab({ orgId }: { orgId: string }) {
                 {t('scoutingPage.goalkeepersDescription', '{{count}} porteros · ordenados por porcentaje de atajadas', { count: keepers.length })}
               </CardDescription>
             </div>
+            <ExportMenu
+              onExportCsv={() =>
+                downloadCsv(
+                  brandedFileName(t('scoutingPage.goalkeepersTitle', 'Porteros'), 'csv'),
+                  objectsToRows(keepers, [
+                    { key: 'player_name', header: t('scoutingPage.col.player', 'Jugador') },
+                    { key: 'team_name', header: t('scoutingPage.col.team', 'Equipo') },
+                    { key: 'gp', header: t('scoutingPage.col.gp', 'PJ') },
+                    { key: 'gaa', header: t('scoutingPage.col.gaa', 'GAA') },
+                    { key: 'gk_role', header: t('scoutingPage.col.role', 'Rol') },
+                    { key: 'save_pct', header: t('scoutingPage.col.savePct', '% atajadas') },
+                  ]),
+                )
+              }
+            />
           </CardHeader>
           <Table>
             <TableHeader>
@@ -312,6 +350,10 @@ export default function Scouting({ orgId }: { orgId: string }) {
             <Target className="mr-1.5 size-4" aria-hidden="true" />
             {t('scoutingPage.tabs.league', 'Ranking de liga')}
           </TabsTrigger>
+          <TabsTrigger value="market">
+            <Globe2 className="mr-1.5 size-4" aria-hidden="true" />
+            {t('market.tab', 'Mercado actual')}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="ai">
@@ -319,6 +361,9 @@ export default function Scouting({ orgId }: { orgId: string }) {
         </TabsContent>
         <TabsContent value="league">
           <LeagueRankingTab orgId={orgId} />
+        </TabsContent>
+        <TabsContent value="market">
+          <MarketScoutPanel orgId={orgId} />
         </TabsContent>
       </Tabs>
     </div>

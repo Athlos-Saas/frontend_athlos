@@ -180,6 +180,12 @@ export interface VideoEventStats {
   fallback_warning?: string;
   skipped_reason?: string;
   warnings?: string[];
+  /** Deporte y dimensiones de campo con que el pipeline proyectó a metros
+   * (backend core/sports.py, según `teams.sport` del equipo del video).
+   * Ausentes en videos procesados antes: esos son todos de fútbol 105x68. */
+  sport?: string;
+  field_length_m?: number;
+  field_width_m?: number;
 }
 
 export interface VideoMetricsStats {

@@ -65,7 +65,14 @@ export default function TabRendimiento({ orgId, playerId }: { orgId: string; pla
     <div className="space-y-5">
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {sessionRows.length > 0 && (
-          <ChartCard title={t('tabRendimiento.chart.playerLoad', 'Player Load por sesión')}>
+          <ChartCard
+            title={t('tabRendimiento.chart.playerLoad', 'Player Load por sesión')}
+            exportData={sessionRows}
+            exportColumns={[
+              { key: 'session_date', header: t('dataviz.columns.date', 'Fecha') },
+              { key: 'player_load', header: 'Player Load' },
+            ]}
+          >
             <TrendLineChart
               data={sessionRows}
               xKey="session_date"
@@ -76,7 +83,7 @@ export default function TabRendimiento({ orgId, playerId }: { orgId: string; pla
           </ChartCard>
         )}
         {speedTimeline.length > 0 && (
-          <ChartCard title={t('tabRendimiento.chart.speedComparison', 'Velocidad máxima: GPS vs. video (km/h)')}>
+          <ChartCard title={t('tabRendimiento.chart.speedComparison', 'Velocidad máxima: GPS vs. video (km/h)')} exportData={speedTimeline}>
             <SpeedComparisonChart data={speedTimeline} />
           </ChartCard>
         )}

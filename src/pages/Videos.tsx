@@ -181,7 +181,18 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
       .select('*')
       .eq('video_id', videoId)
       .order('frame', { ascending: true })
-      .then(({ data }) => setEvents((data as VideoEvent[]) ?? []));
+      .then(({ data, error }) => {
+        // No se traga el error: la red de pases y la tabla de eventos leen
+        // esto, y un fallo silencioso se vería como "0 pases detectados".
+        if (error) {
+          toast({
+            title: t('dataviz.passNetwork.loadError', 'No se pudieron cargar los eventos del video'),
+            description: error.message,
+            variant: 'danger',
+          });
+        }
+        setEvents((data as VideoEvent[]) ?? []);
+      });
 
     supabase
       .from('video_player_metrics')
@@ -794,6 +805,7 @@ export default function Videos({ orgId, role }: { orgId: string; role: string | 
                 metricsStats={selectedVideo?.metrics_stats ?? null}
                 trackingPoints={selectedVideo?.tracking_points ?? null}
                 playerNameByTrack={playerNameByTrack}
+                videoTitle={selectedVideo?.title}
               />
             </div>
           )}

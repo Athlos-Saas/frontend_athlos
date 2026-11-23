@@ -14,6 +14,7 @@ export * from './Drawer';
 export * from './DropdownMenu';
 export * from './EmptyState';
 export * from './ErrorState';
+export * from './ExportMenu';
 export * from './Field';
 export * from './Input';
 export * from './Label';

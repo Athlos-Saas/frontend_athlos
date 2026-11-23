@@ -1,0 +1,103 @@
+{
+  "athletePortal": {
+    "loading": "Cargando tu portal…",
+    "signOut": "Salir",
+    "greeting": "Hola, {{name}}",
+    "noTeam": "Sin equipo asignado",
+    "error": {
+      "title": "No se pudo cargar tu portal",
+      "sectionTitle": "No se pudo cargar esta sección"
+    },
+    "unlinked": {
+      "title": "Tu cuenta todavía no está enlazada a un jugador",
+      "description": "Pide a un administrador de tu club que enlace tu cuenta a tu ficha de jugador desde Usuarios."
+    },
+    "nav": {
+      "label": "Secciones del portal",
+      "today": "Hoy",
+      "load": "Mi carga",
+      "card": "Mi ficha",
+      "video": "Video"
+    },
+    "wellness": {
+      "title": "Wellness de hoy",
+      "subtitle": "30 segundos. Tu staff lo usa para cuidar tu carga.",
+      "doneTitle": "Ya registraste tu wellness de hoy",
+      "doneDescription": "Puedes corregirlo durante el día si algo cambió.",
+      "edit": "Corregir",
+      "rpe": "Esfuerzo del último entrenamiento (RPE 0-10)",
+      "rpeHint": "0 = reposo · 10 = máximo esfuerzo",
+      "sleepHours": "Horas de sueño",
+      "sleepQuality": "Calidad del sueño",
+      "soreness": "Dolor muscular (0-10)",
+      "sorenessHint": "0 = sin dolor · 10 = dolor fuerte",
+      "mood": "Ánimo",
+      "scaleLow": "Mal",
+      "scaleHigh": "Muy bien",
+      "decrease": "Menos",
+      "increase": "Más",
+      "hoursUnit": "h",
+      "submit": "Enviar wellness",
+      "savedTitle": "Wellness guardado",
+      "saveErrorTitle": "No se pudo guardar tu wellness"
+    },
+    "load": {
+      "title": "Mi carga reciente",
+      "lastSession": "Última sesión",
+      "playerLoad": "Player Load",
+      "distance": "Distancia (km)",
+      "topSpeed": "Vel. máxima (km/h)",
+      "trendTitle": "Player Load por sesión",
+      "trendDescription": "Tus últimas {{count}} sesiones GPS",
+      "wellnessTrendTitle": "Tu dolor muscular reciente",
+      "sorenessSeries": "Dolor",
+      "empty": {
+        "title": "Todavía no hay sesiones GPS",
+        "description": "Cuando tu staff cargue las sesiones de entrenamiento vas a ver tu carga acá."
+      }
+    },
+    "card": {
+      "title": "Mi ficha",
+      "empty": "Tu ficha aparece cuando haya suficientes datos de entrenamiento y competición."
+    },
+    "video": {
+      "title": "Mis partidos en video",
+      "untitled": "Partido sin título",
+      "noDate": "Sin fecha",
+      "distance": "Distancia",
+      "maxSpeed": "Vel. máx.",
+      "avgSpeed": "Vel. media",
+      "timeVisible": "Tiempo en cámara",
+      "passes": "Pases",
+      "passesReceived": "Pases recibidos",
+      "carries": "Conducciones",
+      "shots": "Remates (a puerta)",
+      "possession": "Posesión",
+      "empty": {
+        "title": "Todavía no apareces en un video analizado",
+        "description": "Cuando tu staff te asigne en el análisis de un partido, vas a ver tus métricas acá."
+      }
+    },
+    "injuries": {
+      "title": "Mi historial de lesiones",
+      "note": "Ves fechas, zona, tipo y severidad. Las notas clínicas quedan con el staff médico.",
+      "active": "En recuperación",
+      "returned": "Alta: {{date}}",
+      "empty": "Sin lesiones registradas.",
+      "severity": {
+        "minor": "Leve",
+        "moderate": "Moderada",
+        "severe": "Grave"
+      }
+    },
+    "invite": {
+      "playerLabel": "Jugador",
+      "playerPlaceholder": "Elige el jugador de esta cuenta",
+      "playerHelp": "La cuenta de atleta ve solo los datos de este jugador. Un jugador puede tener una sola cuenta.",
+      "playerLinked": "ya tiene cuenta",
+      "playerInactive": "inactivo",
+      "playersError": "No se pudieron cargar los jugadores",
+      "playerRequired": "Elige el jugador al que corresponde la cuenta de atleta"
+    }
+  }
+}

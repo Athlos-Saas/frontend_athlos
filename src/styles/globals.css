@@ -17,6 +17,15 @@
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
 
+  /* Superficies de campo (espejo de fieldColors en tokens.ts). */
+  --color-field-grass-top: #14532d;
+  --color-field-grass-bottom: #0f3d24;
+  --color-field-court-top: #7c4a1e;
+  --color-field-court-bottom: #5c3615;
+  --color-field-line: rgba(255, 255, 255, 0.35);
+  --color-field-line-strong: rgba(255, 255, 255, 0.6);
+  --color-field-ink: #0b1220;
+
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
 
   --radius-sm: 8px;

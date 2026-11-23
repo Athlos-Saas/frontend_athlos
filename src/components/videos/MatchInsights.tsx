@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { PassNetworkPanel } from '@/components/videos/PassNetworkPanel';
 import type {
   VideoEvent,
   VideoEventStats,
@@ -151,6 +152,7 @@ export function MatchInsights({
   metricsStats,
   trackingPoints,
   playerNameByTrack,
+  videoTitle,
 }: {
   events: VideoEvent[];
   playerMetrics: VideoPlayerMetrics[];
@@ -161,6 +163,8 @@ export function MatchInsights({
   trackingPoints: number | null;
   /** Nombre del jugador del roster asignado a cada track, si lo hay. */
   playerNameByTrack: Map<number, string>;
+  /** Título del video, para nombrar los archivos exportados. */
+  videoTitle?: string;
 }) {
   const { t } = useTranslation();
   const [showAllPlayers, setShowAllPlayers] = useState(false);
@@ -410,6 +414,23 @@ export function MatchInsights({
           )}
         </Panel>
       </div>
+
+      {/* ------------------------------------------------ Red de pases */}
+      {/* Solo con eventos: sin ellos el panel de eventos ya explica por qué
+       * no hay nada, y un segundo cartel vacío repetiría lo mismo. El `key`
+       * remonta el panel al cambiar de video, para que el filtro de equipo
+       * vuelva al default (el equipo con más pases) del video nuevo. */}
+      {hasEvents && (
+        <PassNetworkPanel
+          key={events[0]?.id ?? 'none'}
+          events={events}
+          eventStats={eventStats}
+          teamColors={colorByTeam}
+          playerNameByTrack={playerNameByTrack}
+          approximate={geometryReliable === false}
+          videoTitle={videoTitle}
+        />
+      )}
 
       {/* ------------------------------------------------ Por jugador */}
       <Panel

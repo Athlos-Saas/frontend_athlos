@@ -84,6 +84,21 @@ Wrappers delgados sobre Recharts, ya tematizados con los tokens:
 Se usan dentro de `<ChartCard title=… isLoading=…>` para heredar el estado
 de carga (skeleton) y el layout consistente de header/descripción.
 
+**Exportación** (opcional, apagada por defecto): `exportable` muestra el botón
+de descarga con PNG (SVG serializado → canvas, con título, descripción y firma
+ATHLOS al pie; sin dependencias); `exportData` (+ `exportColumns` para
+encabezados) agrega CSV y activa el botón solo. `exportCredit` imprime la fuente
+en la firma (obligatorio para datos de terceros, p. ej. StatsBomb). El botón es
+`ui/ExportMenu`, reutilizable en cards con tabla a mano. Utils en
+`utils/chartExport.ts` (CSV con BOM UTF-8 y celdas anti-fórmula; DataTable usa
+el mismo). Un fondo de gráfico que deba salir en el PNG va DENTRO del SVG
+(`<rect>`), no como `background` CSS.
+
+**Campos de juego**: `SoccerPitchMap`/`PitchMarkings`/`FieldSurface` aceptan
+`sport` opcional (default fútbol). Dimensiones y etiquetas por deporte viven
+solo en `constants/sports.ts` (espejo de `atlos-backend/src/atlos/core/sports.py`).
+Convención de ejes: x = largo a la derecha, y = ancho con 0 arriba, sin invertir.
+
 ## 5. Arquitectura de carpetas
 
 ```

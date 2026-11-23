@@ -14,7 +14,8 @@ import { Input } from '@/components/ui/Input';
 import { Pagination } from '@/components/ui/Pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableSkeletonRows } from '@/components/ui/Table';
-import { ALL_ROLES, ROLE_BADGE, ROLE_LABEL } from '@/constants/roles';
+import { ALL_ROLES, ROLE_BADGE, ROLE_LABEL, STAFF_ROLES } from '@/constants/roles';
+import { useLinkablePlayers } from '@/features/athletePortal/queries';
 import { usePagedRows } from '@/hooks/usePagedRows';
 import {
   deleteOrgUser,
@@ -26,18 +27,21 @@ import {
 } from '@/lib/backendApi';
 import { toast } from '@/store/toastStore';
 import { getDateLocale } from '@/utils/dateLocale';
-import { isAdmin } from '@/utils/permissions';
+import { ATHLETE_ROLE, isAdmin } from '@/utils/permissions';
 
 export default function Usuarios({ orgId, role, currentUserId }: { orgId: string; role: string | null; currentUserId: string }) {
   const { t } = useTranslation();
   const [users, setUsers] = useState<OrgUser[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
-  const [inviteForm, setInviteForm] = useState({ email: '', full_name: '', role: 'viewer' as OrgUserRole });
+  const [inviteForm, setInviteForm] = useState({ email: '', full_name: '', role: 'viewer' as OrgUserRole, player_id: '' });
   const [isInviting, setIsInviting] = useState(false);
   const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
 
   const isAdminUser = isAdmin(role);
+  const isAthleteInvite = inviteForm.role === ATHLETE_ROLE;
+  // Solo se consulta al elegir el rol atleta (ver useLinkablePlayers).
+  const linkablePlayers = useLinkablePlayers(orgId, isAdminUser && isInviteOpen && isAthleteInvite);
   const usersPager = usePagedRows(users ?? [], 10);
 
   const loadUsers = () => {
@@ -57,9 +61,15 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
       toast({ title: t('usuarios.toast.completeFields', 'Completa email y nombre'), variant: 'warning' });
       return;
     }
+    if (isAthleteInvite && !inviteForm.player_id) {
+      toast({ title: t('athletePortal.invite.playerRequired', 'Elige el jugador al que corresponde la cuenta de atleta'), variant: 'warning' });
+      return;
+    }
     setIsInviting(true);
     try {
-      await inviteOrgUser(orgId, inviteForm);
+      // player_id solo viaja con el rol atleta; el backend valida que sea de esta org.
+      const { player_id: playerId, ...base } = inviteForm;
+      await inviteOrgUser(orgId, isAthleteInvite ? { ...base, player_id: playerId } : base);
       toast({
         title: t('usuarios.toast.inviteSentTitle', 'Invitación enviada'),
         description: t('usuarios.toast.inviteSentDesc', '{{email}} recibirá un correo para establecer su contraseña.', {
@@ -68,7 +78,7 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
         variant: 'success',
       });
       setIsInviteOpen(false);
-      setInviteForm({ email: '', full_name: '', role: 'viewer' });
+      setInviteForm({ email: '', full_name: '', role: 'viewer', player_id: '' });
       loadUsers();
     } catch (error) {
       toast({
@@ -207,8 +217,10 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {ALL_ROLES.map((roleOption) => (
-                                <SelectItem key={roleOption} value={roleOption}>
+                              {/* 'athlete' no se asigna desde acá: exige elegir el jugador (Invitar).
+                                  Solo aparece, deshabilitado, como valor actual de un atleta. */}
+                              {(user.role === ATHLETE_ROLE ? ALL_ROLES : STAFF_ROLES).map((roleOption) => (
+                                <SelectItem key={roleOption} value={roleOption} disabled={roleOption === ATHLETE_ROLE}>
                                   {t(`roles.label.${roleOption}`, ROLE_LABEL[roleOption])}
                                 </SelectItem>
                               ))}
@@ -282,7 +294,7 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
           <Field label={t('usuarios.dialog.roleLabel', 'Rol')} htmlFor="invite-role">
             <Select
               value={inviteForm.role}
-              onValueChange={(value) => setInviteForm((form) => ({ ...form, role: value as OrgUserRole }))}
+              onValueChange={(value) => setInviteForm((form) => ({ ...form, role: value as OrgUserRole, player_id: '' }))}
             >
               <SelectTrigger id="invite-role">
                 <SelectValue />
@@ -296,6 +308,41 @@ export default function Usuarios({ orgId, role, currentUserId }: { orgId: string
               </SelectContent>
             </Select>
           </Field>
+          {isAthleteInvite && (
+            <Field label={t('athletePortal.invite.playerLabel', 'Jugador')} htmlFor="invite-player">
+              {linkablePlayers.isError ? (
+                <p className="text-xs text-danger">
+                  {t('athletePortal.invite.playersError', 'No se pudieron cargar los jugadores')}
+                  {linkablePlayers.error instanceof Error ? `: ${linkablePlayers.error.message}` : ''}
+                </p>
+              ) : (
+                <Select
+                  value={inviteForm.player_id || undefined}
+                  onValueChange={(value) => setInviteForm((form) => ({ ...form, player_id: value }))}
+                  disabled={linkablePlayers.isLoading}
+                >
+                  <SelectTrigger id="invite-player">
+                    <SelectValue placeholder={t('athletePortal.invite.playerPlaceholder', 'Elige el jugador de esta cuenta')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(linkablePlayers.data ?? []).map((player) => (
+                      <SelectItem key={player.id} value={player.id} disabled={player.linked_user_id !== null}>
+                        {player.full_name}
+                        {player.linked_user_id !== null && ` (${t('athletePortal.invite.playerLinked', 'ya tiene cuenta')})`}
+                        {!player.is_active && ` (${t('athletePortal.invite.playerInactive', 'inactivo')})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {t(
+                  'athletePortal.invite.playerHelp',
+                  'La cuenta de atleta ve solo los datos de este jugador. Un jugador puede tener una sola cuenta.'
+                )}
+              </p>
+            </Field>
+          )}
           <DialogFooter>
             <Button variant="secondary" size="sm" onClick={() => setIsInviteOpen(false)}>
               {t('usuarios.dialog.cancel', 'Cancelar')}

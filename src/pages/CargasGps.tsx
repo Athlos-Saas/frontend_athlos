@@ -48,6 +48,8 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
   const [hasError, setHasError] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
   const { teams, teamId, setTeamId } = useTeamSelection(orgId);
+  // Para nombrar los archivos exportados (PNG/CSV) con el atleta del gráfico.
+  const selectedPlayerName = players?.find((player) => player.id === selectedPlayerId)?.full_name ?? '';
 
   useEffect(() => {
     supabase
@@ -199,10 +201,28 @@ export default function CargasGps({ orgId, role }: { orgId: string; role: string
             <EmptyState icon={Activity} title={t('cargasGps.noSessionsTitle', 'Sin sesiones registradas')} description={t('cargasGps.noSessionsDescription', 'Este jugador todavía no tiene sesiones GPS.')} />
           ) : (
             <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <ChartCard title={t('cargasGps.chart.playerLoad', 'Player Load por sesión')} isLoading={isLoadingDetail}>
+              <ChartCard
+                title={t('cargasGps.chart.playerLoad', 'Player Load por sesión')}
+                isLoading={isLoadingDetail}
+                exportData={sessions}
+                exportColumns={[
+                  { key: 'session_date', header: t('dataviz.columns.date', 'Fecha') },
+                  { key: 'player_load', header: 'Player Load' },
+                ]}
+                exportFileName={`player-load-${selectedPlayerName}`}
+              >
                 <TrendLineChart data={sessions} xKey="session_date" yKey="player_load" name="Player Load" color={colors.green} />
               </ChartCard>
-              <ChartCard title={t('cargasGps.chart.topSpeed', 'Velocidad máxima (km/h)')} isLoading={isLoadingDetail}>
+              <ChartCard
+                title={t('cargasGps.chart.topSpeed', 'Velocidad máxima (km/h)')}
+                isLoading={isLoadingDetail}
+                exportData={sessions}
+                exportColumns={[
+                  { key: 'session_date', header: t('dataviz.columns.date', 'Fecha') },
+                  { key: 'top_speed_kmh', header: t('cargasGps.chart.topSpeed', 'Velocidad máxima (km/h)') },
+                ]}
+                exportFileName={`velocidad-maxima-${selectedPlayerName}`}
+              >
                 <ComparisonBarChart data={sessions} xKey="session_date" yKey="top_speed_kmh" name={t('cargasGps.chart.topSpeedSeries', 'Vel. máx')} color={colors.blue} />
               </ChartCard>
             </div>

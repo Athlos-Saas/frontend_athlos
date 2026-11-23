@@ -12,9 +12,9 @@ import { Sparkles, Target, UserRound, Wand2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { RadarComparisonChart } from '@/components/charts/RadarComparisonChart';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
+import { ChartCard } from '@/components/ui/ChartCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import {
@@ -214,32 +214,34 @@ export function AiScoutPanel({ orgId }: { orgId: string }) {
 
       {!loading && result && (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[280px_1fr]">
-          {/* Perfil ideal buscado */}
-          <Card>
-            <CardContent className="py-5">
-              <h3 className="mb-1 text-sm font-semibold text-foreground">
-                {t('scoutAi.idealProfile', 'Perfil ideal buscado')}
-              </h3>
-              <p className="mb-3 text-xs text-muted-foreground">
-                {POSITIONS.find((p) => p.value === result.position)?.label} ·{' '}
-                {STYLES.find((s) => s.value === result.style)?.label ?? result.style}
-                {result.style_inferred_from_team && (
-                  <Badge variant="purple" className="ml-2">
-                    {t('scoutAi.inferred', 'estilo inferido')}
-                  </Badge>
-                )}
-              </p>
-              <div className="h-52">
-                <RadarComparisonChart
-                  data={targetRadar}
-                  dataKey="value"
-                  angleKey="attribute"
-                  name={t('scoutAi.ideal', 'Ideal')}
-                  color={colors.blue}
-                />
-              </div>
-            </CardContent>
-          </Card>
+          {/* Perfil ideal buscado — en ChartCard para heredar la exportación
+           * (PNG con firma + CSV de los atributos objetivo). El badge de
+           * "estilo inferido" pasa a texto porque la descripción es string. */}
+          <ChartCard
+            title={t('scoutAi.idealProfile', 'Perfil ideal buscado')}
+            description={[
+              POSITIONS.find((p) => p.value === result.position)?.label,
+              STYLES.find((s) => s.value === result.style)?.label ?? result.style,
+              result.style_inferred_from_team ? t('scoutAi.inferred', 'estilo inferido') : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+            height={208}
+            exportData={targetRadar}
+            exportColumns={[
+              { key: 'attribute', header: t('dataviz.columns.attribute', 'Atributo') },
+              { key: 'value', header: t('dataviz.columns.value', 'Valor') },
+            ]}
+            exportCredit={t('dataviz.export.statsbombCredit', 'Datos: StatsBomb Open Data')}
+          >
+            <RadarComparisonChart
+              data={targetRadar}
+              dataKey="value"
+              angleKey="attribute"
+              name={t('scoutAi.ideal', 'Ideal')}
+              color={colors.blue}
+            />
+          </ChartCard>
 
           {/* Candidatos */}
           <div>

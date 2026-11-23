@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Download, FileSpreadsheet } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import * as XLSX from 'xlsx';
 
 import { Button } from '@/components/ui/Button';
@@ -21,6 +22,7 @@ import {
   TableRow,
   TableSkeletonRows,
 } from '@/components/ui/Table';
+import { brandedFileName, downloadCsv } from '@/utils/chartExport';
 import { cn } from '@/utils/cn';
 
 export interface DataTableColumn<T> {
@@ -77,21 +79,9 @@ function loadPersistedState(persistKey: string | undefined): Partial<PersistedTa
   }
 }
 
-function toCsvValue(value: unknown) {
-  const raw = value === null || value === undefined ? '' : String(value);
-  return `"${raw.replace(/"/g, '""')}"`;
-}
-
-function downloadCsv(filename: string, rows: string[][]) {
-  const csv = rows.map((row) => row.map(toCsvValue).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-}
+// El CSV usa el util compartido con ChartCard (utils/chartExport): agrega BOM
+// UTF-8 (sin él Excel en Windows rompe tildes y eñes de los nombres) y
+// neutraliza celdas que Excel interpretaría como fórmula.
 
 function downloadXlsx(filename: string, rows: string[][]) {
   const sheet = XLSX.utils.aoa_to_sheet(rows);
@@ -122,6 +112,7 @@ export function DataTable<T>({
     initial.sort ?? { columnId: '', direction: false },
   );
   const [page, setPage] = useState(initial.page ?? 1);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!persistKey) return;
@@ -188,7 +179,9 @@ export function DataTable<T>({
 
   function handleExportCsv() {
     if (!exportFileName) return;
-    downloadCsv(exportFileName, exportRows());
+    // Se respeta el nombre que pidió la pantalla y se le agrega la fecha, para
+    // que dos exportaciones de días distintos no se pisen en Descargas.
+    downloadCsv(brandedFileName(exportFileName.replace(/\.csv$/i, ''), 'csv'), exportRows());
   }
 
   function handleExportXlsx() {
@@ -237,10 +230,10 @@ export function DataTable<T>({
           {exportFileName && (
             <div className="ml-auto flex gap-2">
               <Button variant="secondary" size="sm" onClick={handleExportCsv}>
-                <Download className="size-4" aria-hidden="true" /> Exportar CSV
+                <Download className="size-4" aria-hidden="true" /> {t('dataviz.table.exportCsv', 'Exportar CSV')}
               </Button>
               <Button variant="secondary" size="sm" onClick={handleExportXlsx}>
-                <FileSpreadsheet className="size-4" aria-hidden="true" /> Exportar Excel
+                <FileSpreadsheet className="size-4" aria-hidden="true" /> {t('dataviz.table.exportExcel', 'Exportar Excel')}
               </Button>
             </div>
           )}

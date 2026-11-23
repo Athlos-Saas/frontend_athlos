@@ -23,6 +23,7 @@ import { calculateAge, formatDateTime, type Model3DExtension } from '@/features/
 import { deriveStatus } from '@/features/playerProfile/insights';
 import { uploadPlayerActionPhoto, uploadPlayerModel, uploadPlayerPhoto } from '@/features/playerProfile/mediaStorage';
 import { usePlayerCore, usePlayerInjuries, usePlayerMediaUrl } from '@/features/playerProfile/queries';
+import { VerifiedProfileAction } from '@/features/athleteProfile/components/VerifiedProfileAction';
 
 const TabResumen = lazy(() => import('@/features/playerProfile/tabs/TabResumen'));
 const TabEstadisticas = lazy(() => import('@/features/playerProfile/tabs/TabEstadisticas'));
@@ -153,6 +154,7 @@ export default function PlayerProfile({ orgId, role }: { orgId: string; role: st
             </div>
 
             <div className="flex items-center gap-2">
+              <VerifiedProfileAction orgId={orgId} role={role} playerId={core.data.id} playerName={core.data.full_name} />
               {canWrite(role) && (
                 <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
                   <Pencil className="size-4" aria-hidden="true" /> {t('playerProfile.editPlayer', 'Editar jugador')}

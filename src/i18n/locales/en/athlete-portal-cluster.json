@@ -1,0 +1,103 @@
+{
+  "athletePortal": {
+    "loading": "Loading your portal…",
+    "signOut": "Sign out",
+    "greeting": "Hi, {{name}}",
+    "noTeam": "No team assigned",
+    "error": {
+      "title": "Your portal could not be loaded",
+      "sectionTitle": "This section could not be loaded"
+    },
+    "unlinked": {
+      "title": "Your account is not linked to a player yet",
+      "description": "Ask an administrator of your club to link your account to your player profile from Users."
+    },
+    "nav": {
+      "label": "Portal sections",
+      "today": "Today",
+      "load": "My load",
+      "card": "My card",
+      "video": "Video"
+    },
+    "wellness": {
+      "title": "Today's wellness",
+      "subtitle": "30 seconds. Your staff uses it to manage your load.",
+      "doneTitle": "You already logged today's wellness",
+      "doneDescription": "You can correct it during the day if something changed.",
+      "edit": "Correct",
+      "rpe": "Effort of your last session (RPE 0-10)",
+      "rpeHint": "0 = rest · 10 = maximal effort",
+      "sleepHours": "Hours of sleep",
+      "sleepQuality": "Sleep quality",
+      "soreness": "Muscle soreness (0-10)",
+      "sorenessHint": "0 = no soreness · 10 = severe soreness",
+      "mood": "Mood",
+      "scaleLow": "Bad",
+      "scaleHigh": "Great",
+      "decrease": "Less",
+      "increase": "More",
+      "hoursUnit": "h",
+      "submit": "Send wellness",
+      "savedTitle": "Wellness saved",
+      "saveErrorTitle": "Your wellness could not be saved"
+    },
+    "load": {
+      "title": "My recent load",
+      "lastSession": "Last session",
+      "playerLoad": "Player Load",
+      "distance": "Distance (km)",
+      "topSpeed": "Top speed (km/h)",
+      "trendTitle": "Player Load per session",
+      "trendDescription": "Your last {{count}} GPS sessions",
+      "wellnessTrendTitle": "Your recent muscle soreness",
+      "sorenessSeries": "Soreness",
+      "empty": {
+        "title": "No GPS sessions yet",
+        "description": "Once your staff uploads training sessions you will see your load here."
+      }
+    },
+    "card": {
+      "title": "My card",
+      "empty": "Your card appears once there is enough training and competition data."
+    },
+    "video": {
+      "title": "My matches on video",
+      "untitled": "Untitled match",
+      "noDate": "No date",
+      "distance": "Distance",
+      "maxSpeed": "Top speed",
+      "avgSpeed": "Avg speed",
+      "timeVisible": "Time on camera",
+      "passes": "Passes",
+      "passesReceived": "Passes received",
+      "carries": "Carries",
+      "shots": "Shots (on target)",
+      "possession": "Possession",
+      "empty": {
+        "title": "You are not in an analyzed video yet",
+        "description": "Once your staff assigns you in a match analysis, you will see your metrics here."
+      }
+    },
+    "injuries": {
+      "title": "My injury history",
+      "note": "You see dates, area, type and severity. Clinical notes stay with the medical staff.",
+      "active": "Recovering",
+      "returned": "Cleared: {{date}}",
+      "empty": "No injuries recorded.",
+      "severity": {
+        "minor": "Minor",
+        "moderate": "Moderate",
+        "severe": "Severe"
+      }
+    },
+    "invite": {
+      "playerLabel": "Player",
+      "playerPlaceholder": "Choose this account's player",
+      "playerHelp": "The athlete account only sees this player's data. A player can have only one account.",
+      "playerLinked": "already has an account",
+      "playerInactive": "inactive",
+      "playersError": "Players could not be loaded",
+      "playerRequired": "Choose the player this athlete account belongs to"
+    }
+  }
+}

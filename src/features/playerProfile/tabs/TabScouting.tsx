@@ -101,6 +101,7 @@ export default function TabScouting({ orgId, playerId }: { orgId: string; player
                 })
               : t('tabScouting.teamDataOnly', 'Dato de equipo, no individual del jugador')
           }
+          exportData={benchmarkData}
         >
           <BenchmarkBarChart data={benchmarkData} teamLabel={teamName ?? t('tabScouting.teamFallback', 'Equipo')} />
         </ChartCard>

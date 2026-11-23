@@ -54,3 +54,23 @@ export const profileColors: Record<string, string> = {
   Equilibrado: colors.blue,
   Resistente: colors.green,
 };
+
+/**
+ * Superficies y líneas de campo de juego (cancha de pasto, parquet de
+ * básquet). Viven acá y no en `colors` porque no son colores de interfaz:
+ * solo los usan los diagramas de campo (SoccerPitchMap, PassNetworkChart) y la
+ * exportación a PNG, que necesita el valor resuelto y no una clase de
+ * Tailwind. Antes estaban como hex sueltos en cada componente de cancha.
+ * Espejo en CSS: `--color-field-*` en globals.css.
+ */
+export const fieldColors = {
+  grassTop: '#14532D',
+  grassBottom: '#0F3D24',
+  courtTop: '#7C4A1E',
+  courtBottom: '#5C3615',
+  line: 'rgba(255, 255, 255, 0.35)',
+  lineStrong: 'rgba(255, 255, 255, 0.6)',
+  /** Contorno oscuro de nodos/etiquetas sobre la cancha, para que se lean
+   * aunque el color de camiseta sea claro. */
+  ink: '#0B1220',
+} as const;

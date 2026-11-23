@@ -142,6 +142,20 @@ function ShotMapTab({ orgId }: { orgId: string }) {
       title={t('statsbomb.shotmap.chartTitle', 'Mapa de tiros')}
       description={t('statsbomb.shotmap.chartDescription', 'Coordenadas de cancha (120×80m) — tamaño proporcional a xG')}
       height={420}
+      exportData={shots}
+      exportColumns={[
+        { key: 'minute', header: t('dataviz.columns.minute', 'Minuto') },
+        { key: 'player_name', header: t('dataviz.columns.player', 'Jugador') },
+        { key: 'team_name', header: t('dataviz.columns.team', 'Equipo') },
+        { key: 'outcome', header: t('dataviz.columns.outcome', 'Resultado') },
+        { key: 'location_x', header: 'x' },
+        { key: 'location_y', header: 'y' },
+        { key: 'statsbomb_xg', header: 'xG', format: (value, row) => value ?? row.xg ?? '' },
+      ]}
+      // Atribución obligatoria: los datos son de StatsBomb Open Data, no
+      // nuestros. Una imagen con marca ATHLOS sin el crédito se leería como
+      // dato propio al circular por redes.
+      exportCredit={t('dataviz.export.statsbombCredit', 'Datos: StatsBomb Open Data')}
       footer={
         <div className="flex flex-wrap items-center justify-between gap-3">
           <ShotMapLegend />
@@ -418,6 +432,8 @@ function FormationsTab({ orgId }: { orgId: string }) {
       title={t('statsbomb.formations.chartTitle', 'Tasa de victoria por formación')}
       description={t('statsbomb.formations.chartDescription', 'Solo formaciones con ≥ 3 partidos — porcentaje de victorias')}
       height={360}
+      exportData={formations}
+      exportCredit={t('dataviz.export.statsbombCredit', 'Datos: StatsBomb Open Data')}
     >
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
@@ -682,6 +698,12 @@ function MyTeamVsMarketTab({ orgId }: { orgId: string }) {
       title={t('statsbomb.myteam.chartTitle', 'Mi equipo vs mercado')}
       description={t('statsbomb.myteam.chartDescription', 'Media de tus {{count}} atacantes vinculados vs media de toda la liga', { count: teamCount })}
       height={380}
+      exportData={rows}
+      exportColumns={[
+        { key: 'metric', header: t('dataviz.columns.metric', 'Métrica') },
+        { key: 'team', header: t('dataviz.columns.myTeam', 'Mi equipo') },
+        { key: 'market', header: t('dataviz.columns.market', 'Mercado') },
+      ]}
     >
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={rows} margin={{ top: 8, right: 24, bottom: 0, left: 8 }}>

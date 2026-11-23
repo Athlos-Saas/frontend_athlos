@@ -1,0 +1,71 @@
+{
+  "reportsModule": {
+    "title": "Reportes",
+    "subtitle": "Reportes profesionales del plantel, de cada partido y de tus rivales, listos para compartir con el cuerpo técnico.",
+    "types": {
+      "squad_weekly": "Semanal del plantel",
+      "post_match": "Post-partido",
+      "rival_scouting": "Rival",
+      "team_readiness": "Plantel (AthlosBot)",
+      "watchlist": "A vigilar (AthlosBot)",
+      "match_report": "Partido (AthlosBot)",
+      "general": "General"
+    },
+    "generator": {
+      "title": "Generar reporte",
+      "subtitle": "PDF con marca ATHLOS y datos reales. Si falta un dato, el reporte lo dice: nunca se rellena.",
+      "readOnly": "Tu rol puede ver y descargar reportes, pero generarlos requiere un rol con escritura (admin, entrenador, médico o analista).",
+      "optionsError": "No se pudieron cargar las opciones",
+      "squadWeeklyHelp": "Carga GPS y ACWR por atleta, alertas y wellness del equipo solo agregado (sin datos médicos individuales).",
+      "postMatchHelp": "Métricas por equipo, eventos, velocidades, jugadores y mapas de calor de un análisis de video terminado.",
+      "rivalHelp": "Perfil, plantel scouteado y, si eliges un equipo propio, la simulación del enfrentamiento.",
+      "submit": "Generar PDF",
+      "generating": "Generando…",
+      "success": "Reporte generado",
+      "error": "No se pudo generar el reporte",
+      "downloadLast": "Descargar \"{{title}}\" ({{size}})"
+    },
+    "fields": {
+      "team": "Equipo",
+      "noTeams": "Sin equipos",
+      "periodEnd": "Último día de la semana",
+      "periodEndHint": "El reporte cubre los 7 días que terminan en esta fecha.",
+      "pickDate": "Elige una fecha",
+      "video": "Análisis de video",
+      "pickVideo": "Elige un análisis terminado",
+      "noVideos": "No hay análisis terminados",
+      "rival": "Rival",
+      "pickRival": "Elige un rival",
+      "noRivals": "No hay rivales: cárgalos en el módulo Rivales",
+      "ownTeam": "Simular contra (opcional)",
+      "ownTeamHint": "Sin equipo propio, el reporte no incluye simulación.",
+      "noSimulation": "Sin simulación"
+    },
+    "history": {
+      "title": "Historial de reportes",
+      "subtitle": "Todos los reportes de tu organización, incluidos los Excel que genera AthlosBot. Los enlaces de descarga duran una hora.",
+      "loadError": "No se pudo cargar el historial",
+      "search": "Buscar por título o autor…",
+      "emptyTitle": "Todavía no hay reportes",
+      "emptyDescription": "Genera el primero desde el panel de arriba: semanal del plantel, post-partido o rival.",
+      "columns": {
+        "date": "Fecha",
+        "title": "Reporte",
+        "type": "Tipo",
+        "format": "Formato",
+        "author": "Autor"
+      },
+      "systemAuthor": "Sistema",
+      "unnamedAuthor": "Usuario sin nombre",
+      "download": "Descargar",
+      "downloadAria": "Descargar {{title}}",
+      "downloadError": "No se pudo descargar el reporte",
+      "deleteAria": "Eliminar {{title}}",
+      "deleteTitle": "¿Eliminar este reporte?",
+      "deleteDescription": "Se borra el archivo y su entrada del historial para toda la organización. No se puede deshacer.",
+      "deleteConfirm": "Eliminar",
+      "deleted": "Reporte eliminado",
+      "deleteError": "No se pudo eliminar el reporte"
+    }
+  }
+}

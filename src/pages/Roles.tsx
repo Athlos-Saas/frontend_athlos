@@ -57,6 +57,17 @@ const ROLE_DEFINITIONS: RoleDefinition[] = [
     puedeAdministrar: false,
     puedeEliminarProtegidas: false,
   },
+  {
+    // 030_athlete_role.sql: no es staff. "Escribir datos operativos" queda en
+    // falso aunque cargue su propio wellness — esa escritura es solo sobre sí
+    // mismo, por políticas RLS aparte, no can_write().
+    role: 'athlete',
+    descripcion:
+      'Cuenta personal de un jugador, enlazada a su ficha. Entra solo al Portal del atleta: carga su wellness diario y ve su propia carga, su ficha y sus métricas de video. No ve a sus compañeros, ni el resto del dashboard, ni AthlosBot. Se invita desde Usuarios eligiendo el jugador.',
+    puedeEscribirDatos: false,
+    puedeAdministrar: false,
+    puedeEliminarProtegidas: false,
+  },
 ];
 
 function CapabilityRow({ label, value }: { label: string; value: boolean }) {
@@ -98,7 +109,7 @@ export default function Roles({ orgId }: { orgId: string }) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        {t('roles.introBefore', 'Los 5 niveles de permiso que existen en ATHLOS (')}
+        {t('roles.introBefore', 'Los 6 niveles de permiso que existen en ATHLOS (')}
         <code>public.user_role</code>
         {t(
           'roles.introAfter',

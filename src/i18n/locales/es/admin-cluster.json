@@ -89,9 +89,10 @@
       "coach": "Entrenador",
       "medical": "Médico",
       "analyst": "Analista",
-      "viewer": "Solo lectura"
+      "viewer": "Solo lectura",
+      "athlete": "Atleta"
     },
-    "introBefore": "Los 5 niveles de permiso que existen en ATHLOS (",
+    "introBefore": "Los 6 niveles de permiso que existen en ATHLOS (",
     "introAfter": " en la base) y qué puede hacer cada uno. Cuántos usuarios de tu organización tienen cada rol asignado hoy — ver el detalle completo en la pestaña Usuarios.",
     "error": {
       "title": "No se pudo cargar el conteo de usuarios"
@@ -101,7 +102,8 @@
       "coach": "Puede crear y editar datos operativos (roster, wellness, videos, cargas GPS, stats de liga), pero no gestionar usuarios, no editar la Organización, y no puede eliminar las filas protegidas a admin.",
       "medical": "Mismos permisos que coach a nivel de escritura de datos — pensado para el staff médico.",
       "analyst": "Mismos permisos que coach a nivel de escritura de datos — pensado para el staff analítico.",
-      "viewer": "Rol de solo lectura. No está en la lista de roles con permiso de escritura — la base de datos rechaza cualquier intento de crear, editar o eliminar datos, aunque algunas pantallas no lo bloqueen visualmente de antemano (ver Matriz de permisos)."
+      "viewer": "Rol de solo lectura. No está en la lista de roles con permiso de escritura — la base de datos rechaza cualquier intento de crear, editar o eliminar datos, aunque algunas pantallas no lo bloqueen visualmente de antemano (ver Matriz de permisos).",
+      "athlete": "Cuenta personal de un jugador, enlazada a su ficha. Entra solo al Portal del atleta: carga su wellness diario y ve su propia carga, su ficha y sus métricas de video. No ve a sus compañeros, ni el resto del dashboard, ni AthlosBot. Se invita desde Usuarios eligiendo el jugador."
     },
     "userCountSingular": "usuario",
     "userCountPlural": "usuarios",
