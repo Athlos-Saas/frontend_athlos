@@ -116,6 +116,28 @@
       "move": "Mover",
       "pieces": "Piezas"
     },
+    "roster": {
+      "clear": "Quitar jugadores",
+      "count_one": "{{count}} jugador activo",
+      "count_other": "{{count}} jugadores activos",
+      "fill": "Asignar jugadores a las fichas",
+      "filled_one": "{{count}} ficha asignada",
+      "filled_other": "{{count}} fichas asignadas",
+      "help": "Al colocar una formación del equipo A, las fichas se rellenan con tus jugadores según su posición. Selecciona una ficha (o haz doble clic) para cambiar el jugador.",
+      "loading": "Cargando plantel…",
+      "noPlayers": "Este equipo no tiene jugadores activos.",
+      "noTeams": "Tu organización aún no tiene equipos. Créalos en Equipos para asignar jugadores a las fichas.",
+      "noneToFill": "No hay fichas libres del equipo A o ya no quedan jugadores disponibles.",
+      "onField": "ya en el campo",
+      "outOfRoster": "fuera del plantel",
+      "player": "Jugador",
+      "playersError": "No se pudo cargar el plantel.",
+      "retry": "Reintentar",
+      "team": "Equipo",
+      "teamsError": "No se pudieron cargar tus equipos.",
+      "title": "Mi equipo (fichas del equipo A)",
+      "unassigned": "Sin asignar"
+    },
     "session": {
       "addDrill": "Añadir ejercicio",
       "date": "Fecha",
@@ -176,6 +198,8 @@
       "text": "Texto"
     },
     "top": {
+      "exitFullscreen": "Salir de pantalla completa (Esc)",
+      "fullscreen": "Pantalla completa",
       "redo": "Rehacer (Ctrl+Y)",
       "redoShort": "Rehacer",
       "rotate": "Girar campo",

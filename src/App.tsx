@@ -139,7 +139,7 @@ export default function App() {
           <Route path="/statsbomb-jugadores" element={<NavGate navKey="/statsbomb-jugadores"><StatsBombPlayers /></NavGate>} />
           <Route path="/simulacion" element={<NavGate navKey="/simulacion"><SimulacionIA orgId={orgId} role={role} /></NavGate>} />
           <Route path="/rivales" element={<NavGate navKey="/rivales"><Rivales orgId={orgId} role={role} /></NavGate>} />
-          <Route path="/vitrina" element={<NavGate navKey="/vitrina"><Vitrina orgId={orgId} /></NavGate>} />
+          <Route path="/vitrina" element={<NavGate navKey="/vitrina"><Vitrina orgId={orgId} role={role} /></NavGate>} />
           <Route path="/reportes" element={<NavGate navKey="/reportes"><Reportes orgId={orgId} role={role} /></NavGate>} />
           <Route path="/alertas" element={<NavGate navKey="/alertas"><Alertas orgId={orgId} /></NavGate>} />
           <Route path="/configuracion" element={<NavGate navKey="/configuracion"><Configuracion orgId={orgId} role={role} /></NavGate>} />

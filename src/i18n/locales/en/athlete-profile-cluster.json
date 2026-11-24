@@ -95,7 +95,7 @@
       "minorNotice": "The athlete is a minor: the profile cannot be published without guardian consent.",
       "noBirthdateNotice": "No date of birth on file: the athlete is treated as a minor and guardian consent is required.",
       "evidence": "Evidence reference (internal)",
-      "evidenceHint": "Where the signed form is filed. No personal data about the guardian. Never published.",
+      "evidenceHint": "Where the signed form is filed. Never published.",
       "consentRecorded": "Recorded by {{name}} on {{date}}",
       "listed": "Show in the showcase",
       "listedHint": "Scouts and clubs from other ATHLOS organizations will be able to find this athlete in search. Without it, only people with the link can see it.",
@@ -109,7 +109,27 @@
       "unpublishBody": "The link will stop working and the profile will leave the showcase immediately.",
       "unpublished": "Profile unpublished",
       "unpublishedByConsent": "Profile unpublished",
-      "unpublishedByConsentBody": "A required consent was withdrawn, so the link stopped working."
+      "unpublishedByConsentBody": "A required consent was withdrawn, so the link stopped working.",
+      "notSpecified": "Not specified",
+      "chooseEmail": "Choose an email",
+      "contactEmailHint": "Your ATHLOS account email is used. If someone else on staff should receive contacts, have them publish the profile."
+    },
+    "contactLabel": {
+      "sporting_director": "Sporting director",
+      "head_coach": "Head coach",
+      "coaching_staff": "Coaching staff",
+      "recruiting": "Recruiting",
+      "athletics_department": "Athletics department",
+      "academy_director": "Academy director",
+      "scholarships_office": "Scholarships office",
+      "administration": "Club administration"
+    },
+    "evidence": {
+      "signed_paper_club_archive": "Paper form, club archive",
+      "signed_digital_club_drive": "Scanned form, club digital folder",
+      "esignature_platform": "E-signature platform",
+      "enrollment_file": "Athlete's enrollment file",
+      "federation_registration": "Federation/league registration form"
     }
   },
   "publicAthlete": {
@@ -139,7 +159,13 @@
       "minDistance": "Min. distance per match (km)",
       "note": "Filters only apply to data each club chose to show.",
       "reset": "Clear",
-      "search": "Search"
+      "search": "Search",
+      "any": "Any",
+      "allPositions": "All",
+      "allCountries": "All",
+      "ageValue": "{{age}} years",
+      "speedValue": "≥ {{value}} km/h",
+      "distanceValue": "≥ {{value}} km"
     },
     "card": {
       "age": "{{age}} yrs",
@@ -154,6 +180,36 @@
     "page": "Page {{page}}",
     "refineHint": "There are more results: refine the filters to see them.",
     "detailTitle": "Verified profile",
-    "detailError": "This profile is no longer available"
+    "detailError": "This profile is no longer available",
+    "positionGroup": {
+      "GK": "Goalkeeper",
+      "DEF": "Defender",
+      "MID": "Midfielder",
+      "FWD": "Forward"
+    },
+    "emptyAllTitle": "The showcase has no profiles yet",
+    "emptyAllBodyManager": "Only athletes whose club published their verified profile, with consent, and turned on \"Show in the showcase\" are listed. Start with yours: publish them from the list below.",
+    "emptyAllBody": "Only athletes whose club published their verified profile, with consent, and turned on \"Show in the showcase\" are listed. Ask an admin or coach in your organization to publish their athletes.",
+    "emptyAllCta": "Publish my athletes",
+    "roster": {
+      "title": "Your athletes in the showcase",
+      "description": "An athlete appears in the showcase only after you publish their verified profile with consent and turn on \"Show in the showcase\".",
+      "colName": "Athlete",
+      "colPosition": "Position",
+      "colStatus": "Status",
+      "filterStatus": "Status",
+      "filterAll": "All statuses",
+      "status": {
+        "listed": "In the showcase",
+        "published": "Published, not in showcase",
+        "draft": "Draft",
+        "none": "No profile"
+      },
+      "publish": "Publish",
+      "manage": "Manage",
+      "loadError": "Could not load your roster",
+      "emptyTitle": "Your organization has no athletes yet",
+      "emptyBody": "Load your roster in Athletes to publish their profiles."
+    }
   }
 }

@@ -116,6 +116,28 @@
       "move": "Move",
       "pieces": "Pieces"
     },
+    "roster": {
+      "clear": "Remove players",
+      "count_one": "{{count}} active player",
+      "count_other": "{{count}} active players",
+      "fill": "Assign players to tokens",
+      "filled_one": "{{count}} token assigned",
+      "filled_other": "{{count}} tokens assigned",
+      "help": "When you place a team A formation, its tokens are filled with your players by position. Select a token (or double-click it) to change the player.",
+      "loading": "Loading roster…",
+      "noPlayers": "This team has no active players.",
+      "noTeams": "Your organization has no teams yet. Create them in Teams to assign players to tokens.",
+      "noneToFill": "There are no free team A tokens or no players left to assign.",
+      "onField": "already on the field",
+      "outOfRoster": "not in roster",
+      "player": "Player",
+      "playersError": "Could not load the roster.",
+      "retry": "Retry",
+      "team": "Team",
+      "teamsError": "Could not load your teams.",
+      "title": "My team (team A tokens)",
+      "unassigned": "Unassigned"
+    },
     "session": {
       "addDrill": "Add drill",
       "date": "Date",
@@ -176,6 +198,8 @@
       "text": "Text"
     },
     "top": {
+      "exitFullscreen": "Exit full screen (Esc)",
+      "fullscreen": "Full screen",
       "redo": "Redo (Ctrl+Y)",
       "redoShort": "Redo",
       "rotate": "Rotate field",

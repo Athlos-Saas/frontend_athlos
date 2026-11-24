@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/utils/cn';
 import type { PublicAthleteProfile } from '../api';
+import { countryName } from '../constants';
 
 const ATTRIBUTE_CODES = ['RIT', 'RES', 'ACE', 'TIR', 'CRE'] as const;
 
@@ -56,8 +57,12 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
  * muestran ni con placeholder, para no insinuar que hay datos ocultos.
  */
 export function VerifiedAthleteCard({ profile, className }: { profile: PublicAthleteProfile; className?: string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { athlete, club, attributes, physical, media, competition, contact } = profile;
+  // País y área de contacto se guardan como códigos (desplegables); se
+  // traducen aquí. Un valor que no es código se muestra tal cual.
+  const countryLabel = countryName(profile.country, i18n.language);
+  const contactLabel = contact?.label ? t(`verifiedProfile.contactLabel.${contact.label}`, contact.label) : null;
   const photo = media?.action_photo_url ?? media?.photo_url ?? null;
   const sportLabel = t(`verifiedProfile.sport.${profile.sport}`, profile.sport);
 
@@ -93,7 +98,7 @@ export function VerifiedAthleteCard({ profile, className }: { profile: PublicAth
               <span>{sportLabel}</span>
               {club.name && <span>· {club.name}</span>}
               {club.team && <span>· {club.team}</span>}
-              {profile.country && <span>· {profile.country}</span>}
+              {countryLabel && <span>· {countryLabel}</span>}
             </div>
             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-foreground sm:justify-start">
               {athlete.age != null && <span>{t('verifiedProfile.card.age', '{{age}} años', { age: athlete.age })}</span>}
@@ -250,7 +255,7 @@ export function VerifiedAthleteCard({ profile, className }: { profile: PublicAth
               className="focus-ring inline-flex items-center gap-2 rounded-md border border-border bg-panel px-4 py-2 text-sm font-medium text-foreground hover:bg-card"
             >
               <Mail className="size-4 text-ai" aria-hidden="true" />
-              {contact.label ? `${contact.label} · ${contact.email}` : contact.email}
+              {contactLabel ? `${contactLabel} · ${contact.email}` : contact.email}
             </a>
             <p className="text-xs text-muted-foreground">
               {t('verifiedProfile.card.contactNote', 'El contacto se gestiona a través del club, nunca directamente con el atleta.')}

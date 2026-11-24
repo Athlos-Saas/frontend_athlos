@@ -6,7 +6,9 @@ import {
   Copy,
   FolderOpen,
   ImageDown,
+  Maximize2,
   Menu,
+  Minimize2,
   Play,
   Plus,
   Redo2,
@@ -14,12 +16,14 @@ import {
   Square,
   Trash2,
   Undo2,
+  Users,
   X,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Input, Textarea } from '@/components/ui/Input';
+import { Toaster } from '@/components/ui/Toast';
 import { toast } from '@/store/toastStore';
 import { cn } from '@/utils/cn';
 
@@ -74,6 +78,8 @@ import {
   saveCloudSession,
   type SaveStatus,
 } from './storage';
+import { assignPlayer, autoAssign, isOwnPlayerToken, useRosterPlayers, useRosterTeams, usedPlayerIds } from './roster';
+import { useFullscreen } from './useFullscreen';
 
 /**
  * Pizarra táctica: port del prototipo "Tiza" (ideas/Tiza, pizarra táctica.html)
@@ -157,6 +163,8 @@ export function TacticalBoard({ orgId, userId }: { orgId: string; userId: string
   const objRef = useRef<SVGGElement>(null);
   const tempRef = useRef<SVGGElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const playerSelectRef = useRef<HTMLSelectElement>(null);
   const frameTagRef = useRef<HTMLSpanElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const saveTimer = useRef<number | undefined>(undefined);
@@ -204,6 +212,19 @@ export function TacticalBoard({ orgId, userId }: { orgId: string; userId: string
   }
   const s = st.current;
   const drill = () => s.S.drills[s.cur];
+
+  const fs = useFullscreen(rootRef);
+
+  // Plantel para las fichas del equipo A (el propio). El equipo elegido se
+  // guarda en la sesión; si no hay o ya no existe, el primero (temporada más
+  // reciente), igual que Equipos y el Módulo entrenador.
+  const teamsQ = useRosterTeams(orgId);
+  const teams = teamsQ.data ?? [];
+  const rosterTeamId = teams.find((x) => x.id === s.S.rosterTeamId)?.id ?? teams[0]?.id ?? null;
+  const playersQ = useRosterPlayers(orgId, rosterTeamId);
+  const players = useMemo(() => playersQ.data ?? [], [playersQ.data]);
+  const rosterMode: 'loading' | 'ready' | 'none' =
+    teamsQ.isPending || (!!rosterTeamId && playersQ.isPending) ? 'loading' : players.length ? 'ready' : 'none';
   const field = (): FieldSpec => fieldOf(drill());
 
   /* ---------- Render del tablero (imperativo) ---------- */
@@ -878,6 +899,8 @@ export function TacticalBoard({ orgId, userId }: { orgId: string; userId: string
       s.hist.pop();
       return;
     }
+    // Las fichas del equipo propio salen ya con jugadores del plantel; el rival queda genérico.
+    if (team === 'a' && players.length) autoAssign(drill(), players);
     s.sel = null;
     commit();
     bump();
@@ -957,6 +980,8 @@ export function TacticalBoard({ orgId, userId }: { orgId: string; userId: string
     if (!it) return;
     pushHist();
     it.team = team;
+    // El rival no tiene plantel: una ficha que pasa al equipo B deja de ser un jugador real.
+    if (team === 'b' && it.playerId) assignPlayer(it, null);
     commit();
     bump();
   };
@@ -986,12 +1011,75 @@ export function TacticalBoard({ orgId, userId }: { orgId: string; userId: string
     n.x += 15 * f.s * 1.6;
     n.y += 15 * f.s * 1.6;
     if (n.kind === 'player') n.num = String(nextNum(d, n.team));
+    // Un jugador no puede estar en dos fichas del mismo ejercicio.
+    if (n.playerId) assignPlayer(n, null);
     clampObj(f, n);
     d.objects.push(n);
     addToFrames(d, n);
     s.sel = { id: n.id };
     commit();
     bump();
+  };
+
+  /* ---------- Plantel (fichas del equipo A) ---------- */
+
+  const assignSel = (playerId: string) => {
+    const it = findSel() as BoardObject | null;
+    if (!it || it.kind !== 'player') return;
+    const p = players.find((x) => x.id === playerId) ?? null;
+    if (p && usedPlayerIds(drill(), it.id).has(p.id)) return;
+    pushHist();
+    assignPlayer(it, p);
+    commit();
+    bump();
+  };
+
+  const fillRoster = () => {
+    pushHist();
+    const n = autoAssign(drill(), players);
+    if (!n) {
+      s.hist.pop();
+      toast({ title: t('trainingBoard.roster.noneToFill', 'No hay fichas libres del equipo A o ya no quedan jugadores disponibles.'), variant: 'default' });
+      return;
+    }
+    commit();
+    bump();
+    toast({ title: t('trainingBoard.roster.filled', '{{count}} fichas asignadas', { count: n }), variant: 'success' });
+  };
+
+  const clearRoster = () => {
+    const own = drill().objects.filter((o) => isOwnPlayerToken(o) && o.playerId);
+    if (!own.length) return;
+    pushHist();
+    own.forEach((o) => assignPlayer(o, null));
+    commit();
+    bump();
+  };
+
+  const pickRosterTeam = (id: string) => {
+    if (id === rosterTeamId) return;
+    pushHist();
+    s.S.rosterTeamId = id;
+    scheduleSave();
+    bump();
+  };
+
+  const onDoubleClick = () => {
+    // Doble clic sobre una ficha propia: abre directamente el selector de jugador.
+    // Se mira la selección (la fijó el pointerdown) y no e.target: con
+    // setPointerCapture en el <svg>, el navegador redirige click/dblclick al svg.
+    const o = findSel() as BoardObject | null;
+    if (!o || !isOwnPlayerToken(o)) return;
+    window.requestAnimationFrame(() => {
+      const el = playerSelectRef.current as (HTMLSelectElement & { showPicker?: () => void }) | null;
+      if (!el) return;
+      el.focus();
+      try {
+        el.showPicker?.();
+      } catch {
+        // showPicker en <select> no existe en todos los navegadores; basta el foco
+      }
+    });
   };
 
   /* ---------- Biblioteca ---------- */
@@ -1113,6 +1201,41 @@ export function TacticalBoard({ orgId, userId }: { orgId: string; userId: string
       />
     ));
 
+  /** Selector de jugador para una ficha propia: solo jugadores del plantel, nunca texto libre. */
+  const playerPicker = (obj: BoardObject) => {
+    const taken = usedPlayerIds(d, obj.id);
+    const orphan = !!obj.playerId && !players.some((p) => p.id === obj.playerId);
+    return (
+      <select
+        ref={playerSelectRef}
+        className="h-8 max-w-[220px] rounded-md border border-border bg-panel px-2 text-sm text-foreground"
+        aria-label={t('trainingBoard.roster.player', 'Jugador')}
+        disabled={rosterMode === 'loading'}
+        value={obj.playerId ?? ''}
+        onChange={(e) => assignSel(e.target.value)}
+      >
+        {rosterMode === 'loading' ? (
+          <option value={obj.playerId ?? ''}>{t('trainingBoard.roster.loading', 'Cargando plantel…')}</option>
+        ) : (
+          <>
+            <option value="">{t('trainingBoard.roster.unassigned', 'Sin asignar')}</option>
+            {orphan && (
+              <option value={obj.playerId}>
+                {obj.name || '?'} ({t('trainingBoard.roster.outOfRoster', 'fuera del plantel')})
+              </option>
+            )}
+            {players.map((p) => (
+              <option key={p.id} value={p.id} disabled={taken.has(p.id)}>
+                {[p.full_name, p.position].filter(Boolean).join(' · ')}
+                {taken.has(p.id) ? ` (${t('trainingBoard.roster.onField', 'ya en el campo')})` : ''}
+              </option>
+            ))}
+          </>
+        )}
+      </select>
+    );
+  };
+
   const ctxBar = (() => {
     if (isPlaying) return <span className="px-1 text-muted-foreground">{t('trainingBoard.ctx.playing', 'Reproduciendo animación')}</span>;
     if (sel) {
@@ -1132,16 +1255,21 @@ export function TacticalBoard({ orgId, userId }: { orgId: string; userId: string
                 onFocus={endEdit}
                 onBlur={endEdit}
               />
-              <Input
-                className="h-8 w-32"
-                value={obj.name ?? ''}
-                maxLength={18}
-                placeholder={t('trainingBoard.ctx.name', 'Nombre')}
-                aria-label={t('trainingBoard.ctx.name', 'Nombre')}
-                onChange={(e) => editSel('name', e.target.value)}
-                onFocus={endEdit}
-                onBlur={endEdit}
-              />
+              {isOwnPlayerToken(obj) && rosterMode !== 'none' ? (
+                playerPicker(obj)
+              ) : (
+                // Rival (sin plantel) u org sin jugadores cargados: nombre libre como antes.
+                <Input
+                  className="h-8 w-32"
+                  value={obj.name ?? ''}
+                  maxLength={18}
+                  placeholder={t('trainingBoard.ctx.name', 'Nombre')}
+                  aria-label={t('trainingBoard.ctx.name', 'Nombre')}
+                  onChange={(e) => editSel('name', e.target.value)}
+                  onFocus={endEdit}
+                  onBlur={endEdit}
+                />
+              )}
               <span className="inline-flex overflow-hidden rounded-md border border-border">
                 {(['a', 'b'] as TeamKey[]).map((tm) => (
                   <button
@@ -1217,6 +1345,67 @@ export function TacticalBoard({ orgId, userId }: { orgId: string; userId: string
 
   const label = (text: string) => <span className="text-xs text-muted-foreground">{text}</span>;
   const nativeSelect = 'h-9 w-full rounded-md border border-border bg-panel px-2 text-sm text-foreground';
+
+  const ownAssigned = d.objects.filter((o) => isOwnPlayerToken(o) && o.playerId).length;
+  const rosterSection = (() => {
+    if (teamsQ.isError)
+      return (
+        <div className="flex items-center justify-between gap-2 text-sm text-danger">
+          {t('trainingBoard.roster.teamsError', 'No se pudieron cargar tus equipos.')}
+          <Button variant="secondary" size="sm" onClick={() => void teamsQ.refetch()}>
+            {t('trainingBoard.roster.retry', 'Reintentar')}
+          </Button>
+        </div>
+      );
+    if (teamsQ.isPending) return <p className="text-sm text-muted-foreground">{t('trainingBoard.roster.loading', 'Cargando plantel…')}</p>;
+    if (!teams.length)
+      return <p className="text-sm text-muted-foreground">{t('trainingBoard.roster.noTeams', 'Tu organización aún no tiene equipos. Créalos en Equipos para asignar jugadores a las fichas.')}</p>;
+    return (
+      <div className="flex flex-col gap-2">
+        <label className="flex flex-col gap-1">
+          {label(t('trainingBoard.roster.team', 'Equipo'))}
+          <select className={nativeSelect} value={rosterTeamId ?? ''} disabled={teams.length < 2} onChange={(e) => pickRosterTeam(e.target.value)}>
+            {teams.map((tm) => (
+              <option key={tm.id} value={tm.id}>
+                {tm.season ? `${tm.name} (${tm.season})` : tm.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        {playersQ.isError ? (
+          <div className="flex items-center justify-between gap-2 text-sm text-danger">
+            {t('trainingBoard.roster.playersError', 'No se pudo cargar el plantel.')}
+            <Button variant="secondary" size="sm" onClick={() => void playersQ.refetch()}>
+              {t('trainingBoard.roster.retry', 'Reintentar')}
+            </Button>
+          </div>
+        ) : playersQ.isPending ? (
+          <p className="text-sm text-muted-foreground">{t('trainingBoard.roster.loading', 'Cargando plantel…')}</p>
+        ) : !players.length ? (
+          <p className="text-sm text-muted-foreground">{t('trainingBoard.roster.noPlayers', 'Este equipo no tiene jugadores activos.')}</p>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground">
+              {t('trainingBoard.roster.count', '{{count}} jugadores activos', { count: players.length })}
+              {'. '}
+              {t(
+                'trainingBoard.roster.help',
+                'Al colocar una formación del equipo A, las fichas se rellenan con tus jugadores según su posición. Selecciona una ficha (o haz doble clic) para cambiar el jugador.',
+              )}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" onClick={fillRoster} disabled={isPlaying}>
+                {t('trainingBoard.roster.fill', 'Asignar jugadores a las fichas')}
+              </Button>
+              <Button variant="ghost" onClick={clearRoster} disabled={isPlaying || !ownAssigned}>
+                {t('trainingBoard.roster.clear', 'Quitar jugadores')}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  })();
 
   const panel = (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -1421,6 +1610,12 @@ export function TacticalBoard({ orgId, userId }: { orgId: string; userId: string
               })}
             </div>
 
+            <h4 className="mt-1 flex items-center gap-1.5 text-base font-semibold text-foreground">
+              <Users className="size-4" aria-hidden="true" />
+              {t('trainingBoard.roster.title', 'Mi equipo (fichas del equipo A)')}
+            </h4>
+            {rosterSection}
+
             <h4 className="mt-1 text-base font-semibold text-foreground">{t('trainingBoard.drill.formations', 'Formaciones')}</h4>
             {(
               [
@@ -1546,7 +1741,14 @@ export function TacticalBoard({ orgId, userId }: { orgId: string; userId: string
 
   return (
     <div
-      className="flex h-[calc(100dvh-9rem)] min-h-[560px] flex-col overflow-hidden rounded-lg border border-border bg-card"
+      ref={rootRef}
+      className={cn(
+        'flex flex-col overflow-hidden bg-card',
+        // En pantalla completa el navegador ya fuerza 100%x100% (estilo UA de
+        // :fullscreen); estas clases cubren Safari con prefijo y quitan el
+        // min-h que en un móvil apaisado (<560 px de alto) desbordaría.
+        fs.active ? 'h-dvh w-full' : 'h-[calc(100dvh-9rem)] min-h-[560px] rounded-lg border border-border',
+      )}
       style={{ ['--tb-ca' as string]: d.colors.a, ['--tb-cb' as string]: d.colors.b, ['--tb-cg' as string]: d.colors.ga }}
     >
       {/* Barra superior */}
@@ -1576,6 +1778,18 @@ export function TacticalBoard({ orgId, userId }: { orgId: string; userId: string
           <ImageDown className="size-4" />
           {t('trainingBoard.export.png', 'Exportar imagen')}
         </Button>
+        {fs.supported && (
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={() => void fs.toggle()}
+            aria-pressed={fs.active}
+            title={fs.active ? t('trainingBoard.top.exitFullscreen', 'Salir de pantalla completa (Esc)') : t('trainingBoard.top.fullscreen', 'Pantalla completa')}
+            aria-label={fs.active ? t('trainingBoard.top.exitFullscreen', 'Salir de pantalla completa (Esc)') : t('trainingBoard.top.fullscreen', 'Pantalla completa')}
+          >
+            {fs.active ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+          </Button>
+        )}
         <Button variant="secondary" className="lg:hidden" onClick={() => setPanelOpen((v) => !v)} aria-label={t('trainingBoard.panel.open', 'Abrir panel de sesión')}>
           <Menu className="size-4" />
           {t('trainingBoard.tabs.session', 'Sesión')}
@@ -1636,6 +1850,7 @@ export function TacticalBoard({ orgId, userId }: { orgId: string; userId: string
             onPointerMove={onPointerMove}
             onPointerUp={endPointer}
             onPointerCancel={endPointer}
+            onDoubleClick={onDoubleClick}
           >
             <g ref={worldRef}>
               <g ref={fieldRef} />
@@ -1685,7 +1900,8 @@ export function TacticalBoard({ orgId, userId }: { orgId: string; userId: string
 
       {/* Biblioteca */}
       <Dialog open={libOpen} onOpenChange={setLibOpen}>
-        <DialogContent className="max-w-[560px]">
+        {/* En pantalla completa solo se ve el subárbol de rootRef: el portal va dentro. */}
+        <DialogContent className="max-w-[560px]" container={fs.active ? rootRef.current : undefined}>
           <DialogHeader className="flex flex-row items-center gap-2.5 space-y-0">
             <DialogTitle className="flex-1">{t('trainingBoard.lib.title', 'Mis sesiones')}</DialogTitle>
             <Button onClick={createSession}>{t('trainingBoard.lib.new', 'Nueva sesión')}</Button>
@@ -1721,6 +1937,11 @@ export function TacticalBoard({ orgId, userId }: { orgId: string; userId: string
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* El Toaster global vive en AppShell, fuera de la capa de pantalla
+          completa (invisible aquí). Mientras dure, una segunda instancia
+          dentro del elemento muestra los mismos avisos del store. */}
+      {fs.active && <Toaster />}
     </div>
   );
 }

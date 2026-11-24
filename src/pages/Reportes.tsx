@@ -1,11 +1,14 @@
 /**
  * Reportes — genera y consulta reportes PDF con marca ATHLOS.
  *
- * Generar (semanal del plantel, post-partido, rival) pasa por el backend
- * (POST /v1/reports, roles de escritura); el historial y la descarga leen
- * directo de Supabase con RLS (cualquier miembro de la org). Ningún PDF
+ * Generar (ocho tipos: semanal, carga mensual, ficha individual, riesgo de
+ * lesión, post-partido, temporada, rival, shortlist de mercado) pasa por el
+ * backend (POST /v1/reports, roles de escritura); el historial y la descarga
+ * leen directo de Supabase con RLS (cualquier miembro de la org). Ningún PDF
  * incluye datos médicos individuales porque cualquier miembro, incluido
- * `viewer`, puede abrirlos (ver services/report_service.py en el backend).
+ * `viewer`, puede abrirlos, salvo el de riesgo de lesión: solo admin/medical
+ * lo generan y, con la migración 033, solo ellos lo leen (ver
+ * services/report_service.py y report_kinds.py en el backend).
  */
 import { FileBarChart2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';

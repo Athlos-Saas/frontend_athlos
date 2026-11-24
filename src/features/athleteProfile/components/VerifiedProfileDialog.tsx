@@ -12,8 +12,10 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { Field } from '@/components/ui/Field';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Switch } from '@/components/ui/Switch';
+import { supabase } from '@/lib/supabase';
 import { toast } from '@/store/toastStore';
 import {
   PROFILE_SECTIONS,
@@ -25,8 +27,22 @@ import {
   type AthleteProfileSettings,
   type ProfileSection,
 } from '../api';
-import { publicProfileUrl } from '../constants';
+import {
+  CONSENT_EVIDENCE_CODES,
+  CONTACT_LABEL_CODES,
+  PROFILE_COUNTRIES,
+  classYearOptions,
+  publicProfileUrl,
+  sortedCountries,
+} from '../constants';
 import { useAthleteProfileManage } from '../queries';
+
+/** Valor de "sin especificar" en los desplegables (Radix no admite value=""). */
+const NONE = '__none__';
+
+/** Solo valores de la lista cerrada: uno fuera de ella daría 422 al guardar. */
+const inList = (list: readonly string[], value: string | null): string | null =>
+  value && list.includes(value) ? value : null;
 
 const EMPTY_SETTINGS: AthleteProfileSettings = {
   visible_sections: ['bio'],
@@ -43,22 +59,25 @@ const EMPTY_SETTINGS: AthleteProfileSettings = {
   consent_evidence_ref: null,
 };
 
-function settingsFromView(view: AthleteProfileManageView | undefined): AthleteProfileSettings {
+function settingsFromView(view: AthleteProfileManageView | undefined, defaultListed: boolean): AthleteProfileSettings {
   const p = view?.profile;
-  if (!p) return EMPTY_SETTINGS;
+  if (!p) return { ...EMPTY_SETTINGS, listed_in_showcase: defaultListed };
   return {
     visible_sections: p.visible_sections,
     headline: p.headline,
     bio: p.bio,
     class_year: p.class_year,
-    country: p.country,
+    country: inList(PROFILE_COUNTRIES, p.country),
     open_to_contact: p.open_to_contact,
-    contact_label: p.contact_label,
+    contact_label: inList(CONTACT_LABEL_CODES, p.contact_label),
     contact_email: p.contact_email,
-    listed_in_showcase: p.listed_in_showcase,
+    // Un borrador siempre vuelve del backend con listed=false (029 exige
+    // publicar antes de listar), así que ese valor no expresa intención: se
+    // usa el default para que "Guardar" y luego "Publicar" no lo pierda.
+    listed_in_showcase: p.is_published ? p.listed_in_showcase : defaultListed,
     athlete_consent: p.athlete_consent,
     guardian_consent: p.guardian_consent,
-    consent_evidence_ref: p.consent_evidence_ref,
+    consent_evidence_ref: inList(CONSENT_EVIDENCE_CODES, p.consent_evidence_ref),
   };
 }
 
@@ -70,23 +89,68 @@ export interface VerifiedProfileDialogProps {
   playerName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /**
+   * Valor inicial de "Aparecer en la vitrina" cuando el atleta aún no tiene
+   * perfil. Desde la Vitrina se abre en `true`: quien publica desde ahí quiere
+   * que aparezca, y publicar sin listar era otra forma de ver la vitrina vacía.
+   */
+  defaultListed?: boolean;
 }
 
 /**
- * Gestión del perfil verificado desde la ficha del jugador (solo admin/coach;
- * el backend lo revalida). Publicar es un acto explícito y separado de
- * guardar: guardar nunca expone nada nuevo por sí solo.
+ * Gestión del perfil verificado desde la ficha del jugador o la Vitrina (solo
+ * admin/coach; el backend lo revalida). Publicar es un acto explícito y
+ * separado de guardar: guardar nunca expone nada nuevo por sí solo.
+ *
+ * Todo campo estructurado es un desplegable (regla de producto: el usuario no
+ * escribe valores que luego hay que buscar o mostrar). Solo quedan como texto
+ * el titular y la biografía, que son narrativa sin lista razonable posible.
  */
-export function VerifiedProfileDialog({ orgId, playerId, playerName, open, onOpenChange }: VerifiedProfileDialogProps) {
-  const { t } = useTranslation();
+export function VerifiedProfileDialog({
+  orgId,
+  playerId,
+  playerName,
+  open,
+  onOpenChange,
+  defaultListed = false,
+}: VerifiedProfileDialogProps) {
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const manage = useAthleteProfileManage(orgId, playerId, open);
   const [form, setForm] = useState<AthleteProfileSettings>(EMPTY_SETTINGS);
   const [busy, setBusy] = useState<'save' | 'publish' | null>(null);
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    if (manage.data) setForm(settingsFromView(manage.data));
-  }, [manage.data]);
+    if (manage.data) setForm(settingsFromView(manage.data, defaultListed));
+  }, [manage.data, defaultListed]);
+
+  // El email de contacto se ELIGE, no se escribe: el de la cuenta de quien
+  // publica (staff con login en la org, o sea institucional) o el ya
+  // guardado. Abrir un campo libre era la vía para que terminara ahí el email
+  // personal del atleta.
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (alive) setSessionEmail(data.session?.user.email?.toLowerCase() ?? null);
+      })
+      .catch(() => {
+        if (alive) setSessionEmail(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [open]);
+
+  const countries = useMemo(() => sortedCountries(i18n.language), [i18n.language]);
+  const classYears = useMemo(() => classYearOptions(form.class_year), [form.class_year]);
+  const emailOptions = useMemo(
+    () => Array.from(new Set([sessionEmail, form.contact_email].filter((e): e is string => !!e))),
+    [sessionEmail, form.contact_email],
+  );
 
   const profile = manage.data?.profile ?? null;
   const athlete = manage.data?.athlete;
@@ -117,7 +181,19 @@ export function VerifiedProfileDialog({ orgId, playerId, playerName, open, onOpe
 
   const applyView = (view: AthleteProfileManageView) => {
     queryClient.setQueryData(['athleteProfile', 'manage', orgId, playerId], view);
+    // El estado cambió: la lista "Tus atletas en la vitrina" y la búsqueda
+    // tienen que reflejarlo sin esperar al staleTime.
+    void queryClient.invalidateQueries({ queryKey: ['athleteProfile', 'roster', orgId] });
+    void queryClient.invalidateQueries({ queryKey: ['athleteProfile', 'showcase'] });
   };
+
+  const setOpenToContact = (value: boolean) =>
+    setForm((prev) => ({
+      ...prev,
+      open_to_contact: value,
+      // Prellenado: sin esto el switch dejaba un campo obligatorio vacío.
+      contact_email: value && !prev.contact_email ? sessionEmail : prev.contact_email,
+    }));
 
   const fail = (error: unknown) =>
     toast({
@@ -290,17 +366,37 @@ export function VerifiedProfileDialog({ orgId, playerId, playerName, open, onOpe
                 </Field>
                 <div className="grid grid-cols-2 gap-3">
                   <Field label={t('verifiedProfile.manage.classYear', 'Promoción (año de egreso)')} htmlFor="vp-class">
-                    <Input
-                      id="vp-class"
-                      type="number"
-                      min={2000}
-                      max={2100}
-                      value={form.class_year ?? ''}
-                      onChange={(e) => update('class_year', e.target.value ? Number(e.target.value) : null)}
-                    />
+                    <Select
+                      value={form.class_year != null ? String(form.class_year) : NONE}
+                      onValueChange={(v) => update('class_year', v === NONE ? null : Number(v))}
+                    >
+                      <SelectTrigger id="vp-class">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        <SelectItem value={NONE}>{t('verifiedProfile.manage.notSpecified', 'Sin especificar')}</SelectItem>
+                        {classYears.map((year) => (
+                          <SelectItem key={year} value={String(year)}>
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </Field>
                   <Field label={t('verifiedProfile.manage.country', 'País')} htmlFor="vp-country">
-                    <Input id="vp-country" maxLength={56} value={form.country ?? ''} onChange={(e) => update('country', nullIfEmpty(e.target.value))} />
+                    <Select value={form.country ?? NONE} onValueChange={(v) => update('country', v === NONE ? null : v)}>
+                      <SelectTrigger id="vp-country">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        <SelectItem value={NONE}>{t('verifiedProfile.manage.notSpecified', 'Sin especificar')}</SelectItem>
+                        {countries.map((c) => (
+                          <SelectItem key={c.code} value={c.code}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </Field>
                 </div>
               </div>
@@ -310,7 +406,7 @@ export function VerifiedProfileDialog({ orgId, playerId, playerName, open, onOpe
             <div className="space-y-3">
               <label className="flex items-center justify-between gap-3">
                 <span className="text-sm font-semibold text-foreground">{t('verifiedProfile.manage.openToContact', 'Disponible para ser contactado')}</span>
-                <Switch checked={form.open_to_contact} onCheckedChange={(v) => update('open_to_contact', v)} />
+                <Switch checked={form.open_to_contact} onCheckedChange={setOpenToContact} />
               </label>
               {form.open_to_contact && (
                 <div>
@@ -320,15 +416,40 @@ export function VerifiedProfileDialog({ orgId, playerId, playerName, open, onOpe
                   </p>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Field label={t('verifiedProfile.manage.contactLabel', 'Área o cargo')} htmlFor="vp-contact-label">
-                      <Input id="vp-contact-label" maxLength={120} value={form.contact_label ?? ''} onChange={(e) => update('contact_label', nullIfEmpty(e.target.value))} />
+                      <Select value={form.contact_label ?? NONE} onValueChange={(v) => update('contact_label', v === NONE ? null : v)}>
+                        <SelectTrigger id="vp-contact-label">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={NONE}>{t('verifiedProfile.manage.notSpecified', 'Sin especificar')}</SelectItem>
+                          {CONTACT_LABEL_CODES.map((code) => (
+                            <SelectItem key={code} value={code}>
+                              {t(`verifiedProfile.contactLabel.${code}`, code)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </Field>
                     <Field
                       label={t('verifiedProfile.manage.contactEmail', 'Email institucional')}
                       htmlFor="vp-contact-email"
                       required
+                      hint={t('verifiedProfile.manage.contactEmailHint', 'Se usa el email de tu cuenta ATHLOS. Si otra persona del staff debe recibir los contactos, que publique ella el perfil.')}
                       error={contactInvalid ? t('verifiedProfile.manage.contactEmailRequired', 'Obligatorio para aceptar contacto') : undefined}
                     >
-                      <Input id="vp-contact-email" type="email" maxLength={254} value={form.contact_email ?? ''} onChange={(e) => update('contact_email', nullIfEmpty(e.target.value))} />
+                      <Select value={form.contact_email ?? NONE} onValueChange={(v) => update('contact_email', v === NONE ? null : v)}>
+                        <SelectTrigger id="vp-contact-email">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={NONE}>{t('verifiedProfile.manage.chooseEmail', 'Elige un email')}</SelectItem>
+                          {emailOptions.map((email) => (
+                            <SelectItem key={email} value={email}>
+                              {email}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </Field>
                   </div>
                 </div>
@@ -368,7 +489,22 @@ export function VerifiedProfileDialog({ orgId, playerId, playerName, open, onOpe
                 hint={t('verifiedProfile.manage.evidenceHint', 'Dónde está archivado el formulario firmado. Sin datos personales del tutor. Nunca se publica.')}
                 className="mb-0"
               >
-                <Input id="vp-evidence" maxLength={300} value={form.consent_evidence_ref ?? ''} onChange={(e) => update('consent_evidence_ref', nullIfEmpty(e.target.value))} />
+                <Select
+                  value={form.consent_evidence_ref ?? NONE}
+                  onValueChange={(v) => update('consent_evidence_ref', v === NONE ? null : v)}
+                >
+                  <SelectTrigger id="vp-evidence">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>{t('verifiedProfile.manage.notSpecified', 'Sin especificar')}</SelectItem>
+                    {CONSENT_EVIDENCE_CODES.map((code) => (
+                      <SelectItem key={code} value={code}>
+                        {t(`verifiedProfile.evidence.${code}`, code)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Field>
               {profile?.consent_recorded_at && (
                 <p className="text-xs text-muted-foreground">

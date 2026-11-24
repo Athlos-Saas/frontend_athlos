@@ -142,6 +142,30 @@ export interface AthleteProfileSettings {
 const managePath = (orgId: string, playerId: string, suffix = '') =>
   `/v1/athlete-profiles/${encodeURIComponent(playerId)}${suffix}?org_id=${encodeURIComponent(orgId)}`;
 
+/** Estado del perfil verificado de un atleta del plantel propio. */
+export type ProfileRosterStatus = 'none' | 'draft' | 'published' | 'listed';
+
+export interface ProfileRosterItem {
+  player_id: string;
+  full_name: string;
+  position: string | null;
+  status: ProfileRosterStatus;
+  updated_at: string | null;
+}
+
+export interface ProfileRoster {
+  items: ProfileRosterItem[];
+  counts: Record<ProfileRosterStatus, number>;
+}
+
+/**
+ * GET /v1/athlete-profiles?org_id= — plantel propio con el estado de cada
+ * perfil (admin/coach). Lo usa "Tus atletas en la vitrina".
+ */
+export function getProfileRoster(orgId: string): Promise<ProfileRoster> {
+  return backendFetch(`/v1/athlete-profiles?org_id=${encodeURIComponent(orgId)}`);
+}
+
 export function getAthleteProfileManage(orgId: string, playerId: string): Promise<AthleteProfileManageView> {
   return backendFetch(managePath(orgId, playerId));
 }

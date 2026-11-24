@@ -25,6 +25,20 @@ export function isAthlete(role: string | null | undefined): boolean {
   return role === ATHLETE_ROLE;
 }
 
+/**
+ * Reportes con un indicador de salud por atleta (riesgo de lesión). Espejo de
+ * HEALTH_REPORT_KINDS / HEALTH_REPORT_ROLES en atlos/services/report_service.py
+ * y de health_report_kinds() / can_read_health_reports() en
+ * 033_health_reports_access.sql. La UI solo oculta la opción: lo que impide
+ * generar es el backend (403) y lo que impide leer es la RLS de 033.
+ */
+export const HEALTH_REPORT_TYPES = ['injury_risk'] as const;
+export const HEALTH_REPORT_ROLES = ['admin', 'medical'] as const;
+
+export function canGenerateHealthReports(role: string | null | undefined): boolean {
+  return !!role && (HEALTH_REPORT_ROLES as readonly string[]).includes(role);
+}
+
 /** Espejo de ASSISTANT_ROLES en atlos/api/v1/dependencies.py — quién puede usar AthlosBot (nunca athlete). */
 export function canUseAssistant(role: string | null | undefined): boolean {
   return role === 'admin' || role === 'coach';

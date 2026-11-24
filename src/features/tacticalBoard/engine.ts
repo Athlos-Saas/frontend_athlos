@@ -59,6 +59,12 @@ export interface BoardObject {
   gk?: boolean;
   num?: string;
   name?: string;
+  /**
+   * Jugador real del plantel asignado a la ficha (solo equipo A, el propio).
+   * Opcional: las sesiones guardadas antes no lo tienen y siguen siendo
+   * fichas genéricas. `name` guarda el nombre corto para pintar sin red.
+   */
+  playerId?: string;
   text?: string;
   color?: string;
   rot?: number;
@@ -93,6 +99,8 @@ export interface TrainingSession {
   title: string;
   date: string;
   team: string;
+  /** Equipo de la org cuyo plantel alimenta las fichas del equipo A (opcional, sesiones antiguas no lo tienen). */
+  rosterTeamId?: string;
   drills: Drill[];
   updatedAt: number;
   v: number;

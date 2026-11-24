@@ -13,19 +13,26 @@
  * varios módulos; de él solo se reutiliza `backendFetch` (sesión + reintento
  * del despertar de Render).
  */
+import type { MarketLeaguesResponse, MarketPositionGroup } from '@/features/scouting/marketApi';
 import { backendFetch } from '@/lib/backendApi';
 import { supabase } from '@/lib/supabase';
 
 /** Tipos PDF de este módulo (services/report_service.py: REPORT_KINDS). */
-export const MODULE_REPORT_TYPES = ['squad_weekly', 'post_match', 'rival_scouting'] as const;
+export const MODULE_REPORT_TYPES = [
+  'squad_weekly',
+  'post_match',
+  'rival_scouting',
+  'player_individual',
+  'monthly_load',
+  'injury_risk',
+  'market_shortlist',
+  'season_summary',
+] as const;
 export type ModuleReportType = (typeof MODULE_REPORT_TYPES)[number];
 
 /** Tipos Excel que genera AthlosBot (assistant_report_tool.py): también
  * aparecen en el historial porque comparten tabla y bucket. */
 export const ASSISTANT_REPORT_TYPES = ['team_readiness', 'watchlist', 'match_report'] as const;
-
-/** Mismo TTL que el backend; el link se pide de nuevo en cada descarga. */
-export const REPORT_SIGNED_URL_TTL_S = 3600;
 
 const REPORTS_BUCKET = 'reports';
 
@@ -48,13 +55,30 @@ export interface ReportListItem extends ReportRow {
   file_format: 'pdf' | 'xlsx' | 'other';
 }
 
+/** Valores cerrados que acepta el backend (endpoints/reports.py). */
+export const INDIVIDUAL_WEEKS = [4, 8, 12] as const;
+export const SHORTLIST_MIN_MINUTES = [0, 300, 600, 900, 1200] as const;
+export const SHORTLIST_LIMITS = [10, 20, 30] as const;
+export const MARKET_POSITIONS: MarketPositionGroup[] = ['GK', 'DEF', 'MID', 'FWD'];
+
 export interface GenerateModuleReportRequest {
   report_type: ModuleReportType;
   team_id?: string;
-  /** AAAA-MM-DD, último día de la semana (squad_weekly). */
+  /**
+   * AAAA-MM-DD, último día del periodo. squad_weekly: sin valor = hoy.
+   * player_individual / monthly_load: sin valor = último día con GPS.
+   */
   period_end?: string;
   video_id?: string;
   rival_id?: string;
+  player_id?: string;
+  weeks?: (typeof INDIVIDUAL_WEEKS)[number];
+  competition?: string;
+  season?: string;
+  position?: MarketPositionGroup;
+  sort_metric?: string;
+  min_minutes?: (typeof SHORTLIST_MIN_MINUTES)[number];
+  limit?: (typeof SHORTLIST_LIMITS)[number];
 }
 
 export interface GenerateModuleReportResult {
@@ -120,13 +144,47 @@ export async function fetchReports(orgId: string): Promise<ReportListItem[]> {
   }));
 }
 
-export async function createReportDownloadUrl(storagePath: string): Promise<string> {
-  const { data, error } = await supabase.storage
-    .from(REPORTS_BUCKET)
-    .createSignedUrl(storagePath, REPORT_SIGNED_URL_TTL_S);
-  if (error) throw error;
-  if (!data?.signedUrl) throw new Error('Supabase no devolvió una URL firmada.');
-  return data.signedUrl;
+/** Nombre de archivo legible a partir del título del historial ("Semanal ·
+ * Equipo · 2026-11-18 a 2026-11-24.pdf"), sin los caracteres que Windows o
+ * macOS rechazan en un nombre. */
+export function reportFileName(title: string, storagePath: string): string {
+  const extension = storagePath.toLowerCase().endsWith('.xlsx') ? 'xlsx' : 'pdf';
+  const base = title
+    .replace(/[\\/:*?"<>|]+/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120);
+  return `${base || 'reporte-athlos'}.${extension}`;
+}
+
+/**
+ * Descarga el archivo como Blob con la sesión del usuario (RLS del bucket,
+ * 003/033) y lo guarda con `<a download>`.
+ *
+ * Por qué no un link a la URL firmada: el flujo anterior abría una pestaña
+ * vacía antes del `await` y le asignaba la URL después (frágil: bloqueadores
+ * de ventanas, pestañas huérfanas en blanco si algo fallaba a medio camino) y
+ * el botón tras generar usaba la URL firmada por el backend, que caduca en una
+ * hora y depende de que el servidor devuelva una URL absoluta. Aquí no hay
+ * ventanas nuevas y cualquier fallo (sesión vencida, RLS, archivo ausente)
+ * llega como excepción con el mensaje real, que la UI muestra en un toast.
+ */
+export async function downloadReportFile(report: { storage_path: string; title: string }): Promise<void> {
+  const { data, error } = await supabase.storage.from(REPORTS_BUCKET).download(report.storage_path);
+  if (error) throw new Error(error.message || 'Supabase Storage rechazó la descarga.');
+  if (!data || data.size === 0) throw new Error('El archivo del reporte está vacío o no existe en Storage.');
+
+  const objectUrl = URL.createObjectURL(data);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = reportFileName(report.title, report.storage_path);
+  link.rel = 'noopener';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  // Revocar en el mismo tick puede cortar la descarga en Safari/Firefox: se
+  // deja un margen holgado (un PDF de reporte pesa < 1 MB).
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
 }
 
 /**
@@ -162,6 +220,35 @@ export interface ReportRivalOption {
   id: string;
   name: string;
   competition: string | null;
+}
+
+export interface ReportPlayerOption {
+  id: string;
+  full_name: string;
+  position: string | null;
+  team_id: string;
+}
+
+/** Atletas activos (RLS: select para cualquier miembro del staff). */
+export async function fetchReportPlayers(orgId: string): Promise<ReportPlayerOption[]> {
+  const { data, error } = await supabase
+    .from('players')
+    .select('id, full_name, position, team_id')
+    .eq('org_id', orgId)
+    .eq('is_active', true)
+    .order('full_name')
+    .limit(1000);
+  if (error) throw error;
+  return data ?? [];
+}
+
+/**
+ * Ligas cargadas en Mercado actual (mismo endpoint que el módulo Scouting,
+ * `require_org_member`): las opciones de la shortlist salen de lo que hay de
+ * verdad en `league_player_stats`, nunca de una lista fija.
+ */
+export function fetchReportMarketLeagues(orgId: string): Promise<MarketLeaguesResponse> {
+  return backendFetch<MarketLeaguesResponse>(`/v1/market/leagues?org_id=${encodeURIComponent(orgId)}`);
 }
 
 export async function fetchReportTeams(orgId: string): Promise<ReportTeamOption[]> {

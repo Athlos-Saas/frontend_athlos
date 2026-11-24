@@ -40,7 +40,16 @@ export interface DataTableFilter<T> {
   label: string;
   options: string[];
   accessor: (row: T) => string;
+  /**
+   * Si se pasa, el desplegable ofrece primero esta opción ("Todos") para
+   * quitar el filtro. Sin ella, una vez elegido un valor no había forma de
+   * volver a ver todas las filas sin recargar.
+   */
+  allLabel?: string;
 }
+
+/** Valor interno de la opción "Todos" (Radix Select no admite value=""). */
+const FILTER_ALL = '__all__';
 
 export interface DataTableProps<T> {
   columns: DataTableColumn<T>[];
@@ -129,7 +138,7 @@ export function DataTable<T>({
     if (filters) {
       for (const filter of filters) {
         const value = activeFilters[filter.columnId];
-        if (value) rows = rows.filter((row) => filter.accessor(row) === value);
+        if (value && value !== FILTER_ALL) rows = rows.filter((row) => filter.accessor(row) === value);
       }
     }
 
@@ -219,6 +228,7 @@ export function DataTable<T>({
                 <SelectValue placeholder={filter.label} />
               </SelectTrigger>
               <SelectContent>
+                {filter.allLabel && <SelectItem value={FILTER_ALL}>{filter.allLabel}</SelectItem>}
                 {filter.options.map((option) => (
                   <SelectItem key={option} value={option}>
                     {option}

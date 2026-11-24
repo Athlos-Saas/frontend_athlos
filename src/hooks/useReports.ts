@@ -2,6 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   deleteReport,
+  downloadReportFile,
+  fetchReportMarketLeagues,
+  fetchReportPlayers,
   fetchReportRivals,
   fetchReports,
   fetchReportTeams,
@@ -48,6 +51,36 @@ export function useReportRivals(orgId: string) {
     queryKey: ['reports', 'rivals', orgId],
     queryFn: () => fetchReportRivals(orgId),
     staleTime: 60_000,
+  });
+}
+
+export function useReportPlayers(orgId: string) {
+  return useQuery({
+    queryKey: ['reports', 'players', orgId],
+    queryFn: () => fetchReportPlayers(orgId),
+    staleTime: 5 * 60_000,
+  });
+}
+
+/**
+ * Ligas de Mercado actual: solo se piden cuando se abre la pestaña de
+ * shortlist (`enabled`), porque van al backend y en el plan free de Render
+ * pueden costar el despertar del servicio a quien solo vino a ver el historial.
+ */
+export function useReportMarketLeagues(orgId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['reports', 'market-leagues', orgId],
+    queryFn: () => fetchReportMarketLeagues(orgId),
+    enabled,
+    staleTime: 5 * 60_000,
+  });
+}
+
+/** Descarga como Blob (ver `downloadReportFile`); expone isPending/variables
+ * para el spinner de la fila que se está bajando. */
+export function useDownloadReport() {
+  return useMutation({
+    mutationFn: (report: { id?: string; storage_path: string; title: string }) => downloadReportFile(report),
   });
 }
 

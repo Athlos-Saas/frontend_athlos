@@ -1,7 +1,7 @@
 {
   "reportsModule": {
     "title": "Reports",
-    "subtitle": "Professional reports on your squad, every match and your opponents, ready to share with the coaching staff.",
+    "subtitle": "Professional reports on your squad, each athlete, every match, your opponents and the market, ready to share with the coaching staff.",
     "types": {
       "squad_weekly": "Weekly squad",
       "post_match": "Post-match",
@@ -9,7 +9,12 @@
       "team_readiness": "Squad (AthlosBot)",
       "watchlist": "Watch list (AthlosBot)",
       "match_report": "Match (AthlosBot)",
-      "general": "General"
+      "general": "General",
+      "player_individual": "Athlete profile",
+      "monthly_load": "Monthly load",
+      "injury_risk": "Injury risk",
+      "market_shortlist": "Market shortlist",
+      "season_summary": "Season summary"
     },
     "generator": {
       "title": "Generate report",
@@ -23,7 +28,13 @@
       "generating": "Generating…",
       "success": "Report generated",
       "error": "Could not generate the report",
-      "downloadLast": "Download \"{{title}}\" ({{size}})"
+      "downloadLast": "Download \"{{title}}\" ({{size}})",
+      "monthlyLoadHelp": "Four weeks of load: team and per-athlete Player Load week by week, ACWR trend and spikes. No health data.",
+      "playerIndividualHelp": "Profile, weekly GPS load trend, ACWR, latest sessions with the models' reading, attributes within the squad and competition stats. No wellness, injuries or injury risk.",
+      "injuryRiskHelp": "Injury risk level and score per athlete with the load the model used, prediction date and the model's real metrics. No wellbeing factors or injury history.",
+      "injuryRiskRestricted": "Health data: only admins and medical staff can generate it and see it in the history.",
+      "seasonSummaryHelp": "Competition stats for the team's season, comparison with the conference average, per-player stats and monthly physical volume.",
+      "marketHelp": "Shortlist from a league loaded in Current market: key per-90 metrics with their percentile within the league and position, and the profile of the top five."
     },
     "fields": {
       "team": "Team",
@@ -39,15 +50,36 @@
       "noRivals": "No opponents yet: add them in the Rivals module",
       "ownTeam": "Simulate against (optional)",
       "ownTeamHint": "Without one of your teams, the report has no simulation.",
-      "noSimulation": "No simulation"
+      "noSimulation": "No simulation",
+      "periodEndOptional": "Closing date",
+      "periodEndOptionalHint": "Without a date, the report ends on the last day with GPS data.",
+      "lastAvailable": "Latest available data",
+      "useLastAvailable": "Use the latest available data",
+      "player": "Athlete",
+      "pickPlayer": "Choose an athlete",
+      "noPlayers": "No active athletes",
+      "weeks": "Weeks",
+      "weeksOption": "{{count}} weeks",
+      "league": "League and season",
+      "pickLeague": "Choose a league",
+      "noLeagues": "No leagues loaded in Current market.",
+      "leagueOption": "{{competition}} · {{season}} ({{players}} players)",
+      "position": "Position",
+      "sortMetric": "Sort by (percentile)",
+      "sortMetricHint": "Key metrics for the chosen position.",
+      "minMinutes": "Minimum minutes",
+      "minMinutesHint": "Percentiles are only computed from 600 minutes.",
+      "minMinutesOption": "{{count}} min",
+      "limit": "Shortlist size",
+      "limitOption": "Top {{count}}"
     },
     "history": {
       "title": "Report history",
-      "subtitle": "Every report in your organization, including the Excel files AthlosBot generates. Download links last one hour.",
+      "subtitle": "Every report in your organization, including the Excel files AthlosBot generates. \"Download\" saves the file straight to your device.",
       "loadError": "Could not load the history",
       "search": "Search by title or author…",
       "emptyTitle": "No reports yet",
-      "emptyDescription": "Generate the first one from the panel above: weekly squad, post-match or opponent.",
+      "emptyDescription": "Generate the first one from the panel above: weekly, monthly load, athlete profile, post-match, season, opponent or market.",
       "columns": {
         "date": "Date",
         "title": "Report",

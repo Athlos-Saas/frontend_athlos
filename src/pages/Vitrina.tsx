@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BadgeCheck, ChevronLeft, ChevronRight, Gauge, Mail, Route, Search, UserRound, Users } from 'lucide-react';
+import { BadgeCheck, ChevronLeft, ChevronRight, Gauge, Mail, Route, UserRound, Users } from 'lucide-react';
 
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -8,16 +8,34 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/Dialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Field } from '@/components/ui/Field';
-import { Input } from '@/components/ui/Input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { SHOWCASE_MAX_PAGE, type ShowcaseCard, type ShowcaseFilters } from '@/features/athleteProfile/api';
+import { ShowcaseRosterPanel } from '@/features/athleteProfile/components/ShowcaseRosterPanel';
 import { VerifiedAthleteCard } from '@/features/athleteProfile/components/VerifiedAthleteCard';
+import {
+  POSITION_GROUPS,
+  SHOWCASE_AGE_OPTIONS,
+  SHOWCASE_DISTANCE_OPTIONS,
+  SHOWCASE_SPEED_OPTIONS,
+  canManageVerifiedProfile,
+  countryName,
+  sortedCountries,
+} from '@/features/athleteProfile/constants';
 import { useShowcaseAthlete, useShowcaseSearch } from '@/features/athleteProfile/queries';
 
 /** Deportes ofrecidos en el filtro. Mismo conjunto que SPORT_LABEL del Header. */
 const SPORTS = ['soccer', 'basketball', 'rugby'] as const;
 
+/** Valor de "Todos/Cualquiera" en cada desplegable (Radix no admite value=""). */
+const ANY = 'all';
+
+/**
+ * Todos los filtros son desplegables (regla de producto: el usuario nunca
+ * escribe un filtro). Cada valor coincide exactamente con lo que el backend
+ * compara: deporte y país por igualdad (país = código ISO), posición por
+ * grupo GK/DEF/MID/FWD y los numéricos como umbral mínimo (gte).
+ */
 interface FilterForm {
   sport: string;
   country: string;
@@ -29,31 +47,67 @@ interface FilterForm {
 }
 
 const EMPTY_FORM: FilterForm = {
-  sport: 'all',
-  country: '',
-  position: '',
-  ageMin: '',
-  ageMax: '',
-  minTopSpeedKmh: '',
-  minDistancePerMatchKm: '',
+  sport: ANY,
+  country: ANY,
+  position: ANY,
+  ageMin: ANY,
+  ageMax: ANY,
+  minTopSpeedKmh: ANY,
+  minDistancePerMatchKm: ANY,
 };
 
-const toNum = (value: string) => (value.trim() === '' || Number.isNaN(Number(value)) ? undefined : Number(value));
+const pick = (value: string) => (value === ANY ? undefined : value);
+const pickNum = (value: string) => (value === ANY ? undefined : Number(value));
 
 function formToFilters(form: FilterForm): ShowcaseFilters {
   return {
-    sport: form.sport === 'all' ? undefined : form.sport,
-    country: form.country.trim() || undefined,
-    position: form.position.trim() || undefined,
-    ageMin: toNum(form.ageMin),
-    ageMax: toNum(form.ageMax),
-    minTopSpeedKmh: toNum(form.minTopSpeedKmh),
-    minDistancePerMatchKm: toNum(form.minDistancePerMatchKm),
+    sport: pick(form.sport),
+    country: pick(form.country),
+    position: pick(form.position),
+    ageMin: pickNum(form.ageMin),
+    ageMax: pickNum(form.ageMax),
+    minTopSpeedKmh: pickNum(form.minTopSpeedKmh),
+    minDistancePerMatchKm: pickNum(form.minDistancePerMatchKm),
   };
 }
 
+/** Desplegable de filtro con la opción "Cualquiera/Todos" primero. */
+function FilterSelect({
+  id,
+  label,
+  value,
+  anyLabel,
+  options,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  anyLabel: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <Field label={label} htmlFor={id}>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger id={id}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="max-h-72">
+          <SelectItem value={ANY}>{anyLabel}</SelectItem>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </Field>
+  );
+}
+
 function TalentCard({ card, onOpen }: { card: ShowcaseCard; onOpen: () => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <button
       type="button"
@@ -91,7 +145,7 @@ function TalentCard({ card, onOpen }: { card: ShowcaseCard; onOpen: () => void }
         <div className="col-span-2 flex items-center justify-between text-xs text-muted-foreground">
           <span>
             {t(`verifiedProfile.sport.${card.sport ?? 'soccer'}`, card.sport ?? '')}
-            {card.country && ` · ${card.country}`}
+            {card.country && ` · ${countryName(card.country, i18n.language)}`}
           </span>
           {card.open_to_contact && (
             <span className="flex items-center gap-1 text-success">
@@ -130,35 +184,58 @@ function ShowcaseDetailDialog({ cardId, onClose }: { cardId: string | null; onCl
 
 /**
  * Vitrina: búsqueda de talento verificado ENTRE organizaciones. Solo aparecen
- * perfiles publicados y que su club marcó "aparecer en la vitrina". Las
- * tarjetas no traen el enlace público (el backend no lo envía): el detalle se
- * abre aquí, autenticado. Se busca al pulsar "Buscar", no por tecla, porque el
- * backend limita solicitudes por minuto.
+ * perfiles publicados (con consentimiento) y que su club marcó "Aparecer en
+ * la vitrina". Las tarjetas no traen el enlace público (el backend no lo
+ * envía): el detalle se abre aquí, autenticado.
  *
- * `orgId` se recibe por convención de páginas; la búsqueda es entre orgs y no
- * filtra por la propia.
+ * Los filtros son desplegables y se aplican al elegir: sin teclear no hay
+ * ráfagas de solicitudes, así que el límite por minuto del backend no exige
+ * un botón "Buscar".
+ *
+ * `orgId` + `role`: la búsqueda es entre orgs y no filtra por la propia, pero
+ * admin/coach ven además "Tus atletas en la vitrina" para publicar a su
+ * plantel (la causa real de una vitrina vacía era que nadie sabía que había
+ * que publicar).
  */
-export default function Vitrina(_props: { orgId: string }) {
-  const { t } = useTranslation();
+export default function Vitrina({ orgId, role }: { orgId: string; role: string | null }) {
+  const { t, i18n } = useTranslation();
+  const canManage = canManageVerifiedProfile(role);
   const [form, setForm] = useState<FilterForm>(EMPTY_FORM);
-  const [filters, setFilters] = useState<ShowcaseFilters>({});
   const [page, setPage] = useState(1);
   const [openCard, setOpenCard] = useState<string | null>(null);
+  const rosterRef = useRef<HTMLElement>(null);
+  const filters = useMemo(() => formToFilters(form), [form]);
   const search = useShowcaseSearch({ ...filters, page });
+  const hasFilters = Object.values(form).some((value) => value !== ANY);
 
-  const update = (key: keyof FilterForm, value: string) => setForm((prev) => ({ ...prev, [key]: value }));
+  const countries = useMemo(() => sortedCountries(i18n.language), [i18n.language]);
+  const anyLabel = t('vitrina.filters.any', 'Cualquiera');
 
-  const handleSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    setFilters(formToFilters(form));
+  const update = (key: keyof FilterForm, value: string) => {
+    setForm((prev) => {
+      const next = { ...prev, [key]: value };
+      // Rango de edad coherente: si el mínimo supera al máximo se suelta el
+      // otro extremo, en vez de mandar una búsqueda que nunca devuelve nada.
+      if (next.ageMin !== ANY && next.ageMax !== ANY && Number(next.ageMin) > Number(next.ageMax)) {
+        if (key === 'ageMin') next.ageMax = ANY;
+        else next.ageMin = ANY;
+      }
+      return next;
+    });
     setPage(1);
   };
 
   const handleReset = () => {
     setForm(EMPTY_FORM);
-    setFilters({});
     setPage(1);
   };
+
+  const scrollToRoster = () => rosterRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  const ageOptions = SHOWCASE_AGE_OPTIONS.map((age) => ({
+    value: String(age),
+    label: t('vitrina.filters.ageValue', '{{age}} años', { age }),
+  }));
 
   return (
     <div className="space-y-6 pb-10">
@@ -175,58 +252,82 @@ export default function Vitrina(_props: { orgId: string }) {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="rounded-lg border border-border bg-card p-4 shadow-subtle">
+      <div className="rounded-lg border border-border bg-card p-4 shadow-subtle">
         <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label={t('vitrina.filters.sport', 'Deporte')}>
-            <Select value={form.sport} onValueChange={(v) => update('sport', v)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('vitrina.filters.allSports', 'Todos')}</SelectItem>
-                {SPORTS.map((sport) => (
-                  <SelectItem key={sport} value={sport}>
-                    {t(`verifiedProfile.sport.${sport}`, sport)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field label={t('vitrina.filters.position', 'Posición')} htmlFor="vt-position">
-            <Input id="vt-position" maxLength={40} value={form.position} onChange={(e) => update('position', e.target.value)} />
-          </Field>
-          <Field label={t('vitrina.filters.country', 'País')} htmlFor="vt-country">
-            <Input id="vt-country" maxLength={56} value={form.country} onChange={(e) => update('country', e.target.value)} />
-          </Field>
+          <FilterSelect
+            id="vt-sport"
+            label={t('vitrina.filters.sport', 'Deporte')}
+            value={form.sport}
+            anyLabel={t('vitrina.filters.allSports', 'Todos')}
+            options={SPORTS.map((sport) => ({ value: sport, label: t(`verifiedProfile.sport.${sport}`, sport) }))}
+            onChange={(v) => update('sport', v)}
+          />
+          <FilterSelect
+            id="vt-position"
+            label={t('vitrina.filters.position', 'Posición')}
+            value={form.position}
+            anyLabel={t('vitrina.filters.allPositions', 'Todas')}
+            options={POSITION_GROUPS.map((group) => ({ value: group, label: t(`vitrina.positionGroup.${group}`, group) }))}
+            onChange={(v) => update('position', v)}
+          />
+          <FilterSelect
+            id="vt-country"
+            label={t('vitrina.filters.country', 'País')}
+            value={form.country}
+            anyLabel={t('vitrina.filters.allCountries', 'Todos')}
+            options={countries.map((c) => ({ value: c.code, label: c.name }))}
+            onChange={(v) => update('country', v)}
+          />
           <div className="grid grid-cols-2 gap-2">
-            <Field label={t('vitrina.filters.ageMin', 'Edad mín.')} htmlFor="vt-age-min">
-              <Input id="vt-age-min" type="number" min={8} max={60} value={form.ageMin} onChange={(e) => update('ageMin', e.target.value)} />
-            </Field>
-            <Field label={t('vitrina.filters.ageMax', 'Edad máx.')} htmlFor="vt-age-max">
-              <Input id="vt-age-max" type="number" min={8} max={60} value={form.ageMax} onChange={(e) => update('ageMax', e.target.value)} />
-            </Field>
+            <FilterSelect
+              id="vt-age-min"
+              label={t('vitrina.filters.ageMin', 'Edad mín.')}
+              value={form.ageMin}
+              anyLabel={anyLabel}
+              options={ageOptions}
+              onChange={(v) => update('ageMin', v)}
+            />
+            <FilterSelect
+              id="vt-age-max"
+              label={t('vitrina.filters.ageMax', 'Edad máx.')}
+              value={form.ageMax}
+              anyLabel={anyLabel}
+              options={ageOptions}
+              onChange={(v) => update('ageMax', v)}
+            />
           </div>
-          <Field label={t('vitrina.filters.minSpeed', 'Velocidad p95 mín. (km/h)')} htmlFor="vt-speed">
-            <Input id="vt-speed" type="number" min={0} max={45} step={0.5} value={form.minTopSpeedKmh} onChange={(e) => update('minTopSpeedKmh', e.target.value)} />
-          </Field>
-          <Field label={t('vitrina.filters.minDistance', 'Distancia mín. por partido (km)')} htmlFor="vt-distance">
-            <Input id="vt-distance" type="number" min={0} max={20} step={0.1} value={form.minDistancePerMatchKm} onChange={(e) => update('minDistancePerMatchKm', e.target.value)} />
-          </Field>
+          <FilterSelect
+            id="vt-speed"
+            label={t('vitrina.filters.minSpeed', 'Velocidad p95 mín. (km/h)')}
+            value={form.minTopSpeedKmh}
+            anyLabel={anyLabel}
+            options={SHOWCASE_SPEED_OPTIONS.map((kmh) => ({
+              value: String(kmh),
+              label: t('vitrina.filters.speedValue', '≥ {{value}} km/h', { value: kmh }),
+            }))}
+            onChange={(v) => update('minTopSpeedKmh', v)}
+          />
+          <FilterSelect
+            id="vt-distance"
+            label={t('vitrina.filters.minDistance', 'Distancia mín. por partido (km)')}
+            value={form.minDistancePerMatchKm}
+            anyLabel={anyLabel}
+            options={SHOWCASE_DISTANCE_OPTIONS.map((km) => ({
+              value: String(km),
+              label: t('vitrina.filters.distanceValue', '≥ {{value}} km', { value: km }),
+            }))}
+            onChange={(v) => update('minDistancePerMatchKm', v)}
+          />
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs text-muted-foreground">
             {t('vitrina.filters.note', 'Los filtros solo aplican a los datos que cada club decidió mostrar.')}
           </p>
-          <div className="flex gap-2">
-            <Button type="button" variant="ghost" size="sm" onClick={handleReset}>
-              {t('vitrina.filters.reset', 'Limpiar')}
-            </Button>
-            <Button type="submit" size="sm">
-              <Search className="size-4" aria-hidden="true" /> {t('vitrina.filters.search', 'Buscar')}
-            </Button>
-          </div>
+          <Button type="button" variant="ghost" size="sm" onClick={handleReset} disabled={!hasFilters}>
+            {t('vitrina.filters.reset', 'Limpiar')}
+          </Button>
         </div>
-      </form>
+      </div>
 
       {search.isLoading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -241,11 +342,41 @@ export default function Vitrina(_props: { orgId: string }) {
           onRetry={() => search.refetch()}
         />
       ) : !search.data || search.data.items.length === 0 ? (
-        <EmptyState
-          icon={Users}
-          title={t('vitrina.emptyTitle', 'Sin perfiles para estos filtros')}
-          description={t('vitrina.emptyBody', 'Prueba a ampliar la búsqueda. Solo aparecen perfiles publicados y listados por su club.')}
-        />
+        hasFilters ? (
+          <EmptyState
+            icon={Users}
+            title={t('vitrina.emptyTitle', 'Sin perfiles para estos filtros')}
+            description={t('vitrina.emptyBody', 'Prueba a ampliar la búsqueda. Solo aparecen perfiles publicados y listados por su club.')}
+            action={
+              <Button variant="secondary" size="sm" onClick={handleReset}>
+                {t('vitrina.filters.reset', 'Limpiar')}
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState
+            icon={BadgeCheck}
+            title={t('vitrina.emptyAllTitle', 'La vitrina todavía no tiene perfiles')}
+            description={
+              canManage
+                ? t(
+                    'vitrina.emptyAllBodyManager',
+                    'Solo aparecen atletas cuyo club publicó su perfil verificado, con consentimiento, y activó "Aparecer en la vitrina". Empieza por los tuyos: publícalos desde la lista de abajo.',
+                  )
+                : t(
+                    'vitrina.emptyAllBody',
+                    'Solo aparecen atletas cuyo club publicó su perfil verificado, con consentimiento, y activó "Aparecer en la vitrina". Pide a un admin o entrenador de tu organización que publique a sus atletas.',
+                  )
+            }
+            action={
+              canManage ? (
+                <Button size="sm" onClick={scrollToRoster}>
+                  {t('vitrina.emptyAllCta', 'Publicar a mis atletas')}
+                </Button>
+              ) : undefined
+            }
+          />
+        )
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -274,6 +405,8 @@ export default function Vitrina(_props: { orgId: string }) {
           )}
         </>
       )}
+
+      {canManage && <ShowcaseRosterPanel ref={rosterRef} orgId={orgId} />}
 
       <ShowcaseDetailDialog cardId={openCard} onClose={() => setOpenCard(null)} />
     </div>

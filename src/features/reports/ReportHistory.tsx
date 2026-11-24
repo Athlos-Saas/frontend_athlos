@@ -1,10 +1,9 @@
 /**
  * Historial de reportes de la organización (PDF del módulo + Excel de
- * AthlosBot). Lectura directa con RLS; la URL firmada se pide en el momento
- * de descargar porque caduca en una hora y el historial puede quedar abierto
- * mucho más tiempo.
+ * AthlosBot). Lectura directa con RLS; el archivo se baja como Blob en el
+ * momento de pulsar "Descargar" (ver `downloadReportFile`), sin pestañas
+ * nuevas ni URLs firmadas que caduquen con el historial abierto.
  */
-import { useState } from 'react';
 import { Download, FileSpreadsheet, FileText, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -15,10 +14,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { useDeleteReport, useReportsList } from '@/hooks/useReports';
+import { useDeleteReport, useDownloadReport, useReportsList } from '@/hooks/useReports';
 import { toast } from '@/store/toastStore';
 import { isAdmin } from '@/utils/permissions';
-import { createReportDownloadUrl, type ReportListItem } from './api';
+import type { ReportListItem } from './api';
 
 type LoadState = 'loading' | 'error' | 'ready';
 
@@ -26,6 +25,11 @@ const TYPE_VARIANT: Record<string, NonNullable<BadgeProps['variant']>> = {
   squad_weekly: 'ai',
   post_match: 'purple',
   rival_scouting: 'warning',
+  player_individual: 'ai',
+  monthly_load: 'purple',
+  injury_risk: 'danger',
+  market_shortlist: 'success',
+  season_summary: 'warning',
   team_readiness: 'success',
   watchlist: 'danger',
   match_report: 'neutral',
@@ -40,7 +44,8 @@ export function ReportHistory({ orgId, role }: { orgId: string; role: string | n
   const { t, i18n } = useTranslation();
   const reports = useReportsList(orgId);
   const remove = useDeleteReport(orgId);
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const download = useDownloadReport();
+  const downloadingId = download.isPending ? (download.variables?.id ?? null) : null;
   const admin = isAdmin(role);
 
   const state: LoadState = reports.isLoading ? 'loading' : reports.error ? 'error' : 'ready';
@@ -56,27 +61,14 @@ export function ReportHistory({ orgId, role }: { orgId: string; role: string | n
     });
 
   const handleDownload = async (report: ReportListItem) => {
-    // Se abre la pestaña ANTES del await para que el bloqueador de ventanas
-    // emergentes la trate como respuesta directa al clic; luego se le asigna
-    // la URL firmada. Sin 'noopener' en los features: con él `window.open`
-    // devuelve null y no habría pestaña a la que asignarle la URL; en su lugar
-    // se corta `opener` a mano.
-    const tab = window.open('', '_blank');
-    if (tab) tab.opener = null;
-    setDownloadingId(report.id);
     try {
-      const url = await createReportDownloadUrl(report.storage_path);
-      if (tab) tab.location.href = url;
-      else window.location.assign(url);
+      await download.mutateAsync(report);
     } catch (error) {
-      tab?.close();
       toast({
         title: t('reportsModule.history.downloadError', 'No se pudo descargar el reporte'),
         description: error instanceof Error ? error.message : String(error),
         variant: 'danger',
       });
-    } finally {
-      setDownloadingId(null);
     }
   };
 
@@ -202,6 +194,7 @@ export function ReportHistory({ orgId, role }: { orgId: string; role: string | n
                   size="sm"
                   onClick={() => void handleDownload(row)}
                   isLoading={downloadingId === row.id}
+                  disabled={download.isPending && downloadingId !== row.id}
                   aria-label={t('reportsModule.history.downloadAria', 'Descargar {{title}}', { title: row.title })}
                 >
                   {downloadingId !== row.id && <Download className="size-4" aria-hidden="true" />}

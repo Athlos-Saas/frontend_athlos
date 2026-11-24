@@ -20,29 +20,38 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = 'DialogOverlay';
 
-export const DialogContent = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
-  <DialogPrimitive.Portal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        'animate-slide-up fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2',
-        'rounded-lg border border-border bg-panel p-6 shadow-elevated focus:outline-none',
-        className,
-      )}
-      {...props}
-    >
-      {children}
-      <DialogPrimitive.Close className="focus-ring absolute right-4 top-4 rounded-sm text-muted-foreground hover:text-foreground">
-        <X className="size-4" aria-hidden="true" />
-        <span className="sr-only">Cerrar</span>
-      </DialogPrimitive.Close>
-    </DialogPrimitive.Content>
-  </DialogPrimitive.Portal>
-));
+export interface DialogContentProps extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
+  /**
+   * Nodo donde se monta el portal (por defecto document.body). Necesario
+   * cuando el diálogo se abre desde un elemento en pantalla completa: solo ese
+   * elemento (y sus hijos) se ve en la capa superior, así que un portal a body
+   * quedaría invisible. Ver features/tacticalBoard/useFullscreen.ts.
+   */
+  container?: HTMLElement | null;
+}
+
+export const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Content>, DialogContentProps>(
+  ({ className, children, container, ...props }, ref) => (
+    <DialogPrimitive.Portal container={container}>
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        ref={ref}
+        className={cn(
+          'animate-slide-up fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2',
+          'rounded-lg border border-border bg-panel p-6 shadow-elevated focus:outline-none',
+          className,
+        )}
+        {...props}
+      >
+        {children}
+        <DialogPrimitive.Close className="focus-ring absolute right-4 top-4 rounded-sm text-muted-foreground hover:text-foreground">
+          <X className="size-4" aria-hidden="true" />
+          <span className="sr-only">Cerrar</span>
+        </DialogPrimitive.Close>
+      </DialogPrimitive.Content>
+    </DialogPrimitive.Portal>
+  ),
+);
 DialogContent.displayName = 'DialogContent';
 
 export function DialogHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {

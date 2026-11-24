@@ -2,11 +2,22 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import {
   getAthleteProfileManage,
+  getProfileRoster,
   getPublicAthleteProfile,
   getShowcaseAthlete,
   searchShowcase,
   type ShowcaseFilters,
 } from './api';
+
+/** Plantel propio con estado del perfil (solo admin/coach: `enabled`). */
+export function useProfileRoster(orgId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['athleteProfile', 'roster', orgId],
+    queryFn: () => getProfileRoster(orgId),
+    enabled: enabled && !!orgId,
+    staleTime: 30_000,
+  });
+}
 
 export function useAthleteProfileManage(orgId: string, playerId: string, enabled: boolean) {
   return useQuery({

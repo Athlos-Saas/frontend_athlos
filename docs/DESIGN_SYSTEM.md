@@ -49,6 +49,14 @@ label + hint + error + `aria-describedby` automático), `DatePicker`,
 Overlays: `Dialog` (modal), `Drawer` (panel lateral), `DropdownMenu`,
 `Tooltip`, `CommandPalette` (⌘K), `Toast`/`Toaster` (con `store/toastStore.ts`).
 
+Pantalla completa (Fullscreen API, ver `features/tacticalBoard/useFullscreen.ts`):
+solo el subárbol del elemento en pantalla completa es visible, así que un
+portal a `document.body` desaparece. `DialogContent` acepta `container` para
+montarse dentro de ese elemento, y el `Toaster` global no se ve: el componente
+en pantalla completa monta su propio `<Toaster />` mientras dure. Dentro de
+ese modo se prefieren `<select>` nativos a `Select` de Radix (su popup lo
+pinta el navegador, sin portal).
+
 Navegación/datos: `Tabs`, `Breadcrumb`, `Pagination`, `Table` (shell con
 sticky header + skeleton), `Skeleton`, `Spinner`, `EmptyState`, `ErrorState`.
 

@@ -95,7 +95,7 @@
       "minorNotice": "El atleta es menor de edad: sin consentimiento del tutor no se puede publicar.",
       "noBirthdateNotice": "No hay fecha de nacimiento cargada: se trata como menor y hace falta el consentimiento del tutor.",
       "evidence": "Referencia del respaldo (interna)",
-      "evidenceHint": "Dónde está archivado el formulario firmado. Sin datos personales del tutor. Nunca se publica.",
+      "evidenceHint": "Dónde está archivado el formulario firmado. Nunca se publica.",
       "consentRecorded": "Registrado por {{name}} el {{date}}",
       "listed": "Aparecer en la vitrina",
       "listedHint": "Scouts y clubes de otras organizaciones ATHLOS podrán encontrarlo en la búsqueda. Sin esto, solo lo ve quien tenga el enlace.",
@@ -109,7 +109,27 @@
       "unpublishBody": "El enlace dejará de funcionar y el perfil saldrá de la vitrina de inmediato.",
       "unpublished": "Perfil despublicado",
       "unpublishedByConsent": "Perfil despublicado",
-      "unpublishedByConsentBody": "Se retiró un consentimiento obligatorio, así que el enlace dejó de funcionar."
+      "unpublishedByConsentBody": "Se retiró un consentimiento obligatorio, así que el enlace dejó de funcionar.",
+      "notSpecified": "Sin especificar",
+      "chooseEmail": "Elige un email",
+      "contactEmailHint": "Se usa el email de tu cuenta ATHLOS. Si otra persona del staff debe recibir los contactos, que publique ella el perfil."
+    },
+    "contactLabel": {
+      "sporting_director": "Dirección deportiva",
+      "head_coach": "Entrenador principal",
+      "coaching_staff": "Cuerpo técnico",
+      "recruiting": "Reclutamiento",
+      "athletics_department": "Departamento de deportes",
+      "academy_director": "Dirección de la academia",
+      "scholarships_office": "Oficina de becas",
+      "administration": "Administración del club"
+    },
+    "evidence": {
+      "signed_paper_club_archive": "Formulario en papel, archivo del club",
+      "signed_digital_club_drive": "Formulario escaneado, carpeta digital del club",
+      "esignature_platform": "Plataforma de firma electrónica",
+      "enrollment_file": "Expediente de inscripción del atleta",
+      "federation_registration": "Ficha de registro en la federación/liga"
     }
   },
   "publicAthlete": {
@@ -139,7 +159,13 @@
       "minDistance": "Distancia mín. por partido (km)",
       "note": "Los filtros solo aplican a los datos que cada club decidió mostrar.",
       "reset": "Limpiar",
-      "search": "Buscar"
+      "search": "Buscar",
+      "any": "Cualquiera",
+      "allPositions": "Todas",
+      "allCountries": "Todos",
+      "ageValue": "{{age}} años",
+      "speedValue": "≥ {{value}} km/h",
+      "distanceValue": "≥ {{value}} km"
     },
     "card": {
       "age": "{{age}} años",
@@ -154,6 +180,36 @@
     "page": "Página {{page}}",
     "refineHint": "Hay más resultados: afina los filtros para verlos.",
     "detailTitle": "Perfil verificado",
-    "detailError": "Este perfil ya no está disponible"
+    "detailError": "Este perfil ya no está disponible",
+    "positionGroup": {
+      "GK": "Portero",
+      "DEF": "Defensa",
+      "MID": "Mediocampista",
+      "FWD": "Delantero"
+    },
+    "emptyAllTitle": "La vitrina todavía no tiene perfiles",
+    "emptyAllBodyManager": "Solo aparecen atletas cuyo club publicó su perfil verificado, con consentimiento, y activó \"Aparecer en la vitrina\". Empieza por los tuyos: publícalos desde la lista de abajo.",
+    "emptyAllBody": "Solo aparecen atletas cuyo club publicó su perfil verificado, con consentimiento, y activó \"Aparecer en la vitrina\". Pide a un admin o entrenador de tu organización que publique a sus atletas.",
+    "emptyAllCta": "Publicar a mis atletas",
+    "roster": {
+      "title": "Tus atletas en la vitrina",
+      "description": "Un atleta aparece en la vitrina solo cuando publicas su perfil verificado con consentimiento y marcas \"Aparecer en la vitrina\".",
+      "colName": "Atleta",
+      "colPosition": "Posición",
+      "colStatus": "Estado",
+      "filterStatus": "Estado",
+      "filterAll": "Todos los estados",
+      "status": {
+        "listed": "En la vitrina",
+        "published": "Publicado, fuera de la vitrina",
+        "draft": "Borrador",
+        "none": "Sin perfil"
+      },
+      "publish": "Publicar",
+      "manage": "Gestionar",
+      "loadError": "No se pudo cargar tu plantel",
+      "emptyTitle": "Tu organización aún no tiene atletas",
+      "emptyBody": "Carga el plantel en Atletas para poder publicar sus perfiles."
+    }
   }
 }

@@ -1,7 +1,7 @@
 {
   "reportsModule": {
     "title": "Reportes",
-    "subtitle": "Reportes profesionales del plantel, de cada partido y de tus rivales, listos para compartir con el cuerpo técnico.",
+    "subtitle": "Reportes profesionales del plantel, de cada atleta, de cada partido, de tus rivales y del mercado, listos para compartir con el cuerpo técnico.",
     "types": {
       "squad_weekly": "Semanal del plantel",
       "post_match": "Post-partido",
@@ -9,7 +9,12 @@
       "team_readiness": "Plantel (AthlosBot)",
       "watchlist": "A vigilar (AthlosBot)",
       "match_report": "Partido (AthlosBot)",
-      "general": "General"
+      "general": "General",
+      "player_individual": "Ficha individual",
+      "monthly_load": "Carga mensual",
+      "injury_risk": "Riesgo de lesión",
+      "market_shortlist": "Shortlist de mercado",
+      "season_summary": "Resumen de temporada"
     },
     "generator": {
       "title": "Generar reporte",
@@ -23,7 +28,13 @@
       "generating": "Generando…",
       "success": "Reporte generado",
       "error": "No se pudo generar el reporte",
-      "downloadLast": "Descargar \"{{title}}\" ({{size}})"
+      "downloadLast": "Descargar \"{{title}}\" ({{size}})",
+      "monthlyLoadHelp": "Cuatro semanas de carga: Player Load del equipo y de cada atleta semana a semana, evolución del ACWR y picos. Sin datos de salud.",
+      "playerIndividualHelp": "Perfil, tendencia de carga GPS por semana, ACWR, últimas sesiones con la lectura de los modelos, atributos dentro del plantel y stats de competición. Sin wellness, lesiones ni riesgo de lesión.",
+      "injuryRiskHelp": "Nivel y score de riesgo de lesión por atleta con la carga que usó el modelo, fecha de la predicción y métricas reales del modelo. No incluye factores de bienestar ni historial de lesiones.",
+      "injuryRiskRestricted": "Dato de salud: solo admin y cuerpo médico pueden generarlo y verlo en el historial.",
+      "seasonSummaryHelp": "Estadísticas de competición de la temporada del equipo, comparación con la media de la conferencia, stats por jugador y volumen físico por mes.",
+      "marketHelp": "Shortlist de una liga cargada en Mercado actual: métricas clave por 90 minutos con su percentil dentro de la liga y la posición, y el perfil de los cinco mejores."
     },
     "fields": {
       "team": "Equipo",
@@ -39,15 +50,36 @@
       "noRivals": "No hay rivales: cárgalos en el módulo Rivales",
       "ownTeam": "Simular contra (opcional)",
       "ownTeamHint": "Sin equipo propio, el reporte no incluye simulación.",
-      "noSimulation": "Sin simulación"
+      "noSimulation": "Sin simulación",
+      "periodEndOptional": "Fecha de cierre",
+      "periodEndOptionalHint": "Sin fecha, el reporte termina en el último día con datos GPS.",
+      "lastAvailable": "Último dato disponible",
+      "useLastAvailable": "Usar el último dato disponible",
+      "player": "Atleta",
+      "pickPlayer": "Elige un atleta",
+      "noPlayers": "No hay atletas activos",
+      "weeks": "Semanas",
+      "weeksOption": "{{count}} semanas",
+      "league": "Liga y temporada",
+      "pickLeague": "Elige una liga",
+      "noLeagues": "No hay ligas cargadas en Mercado actual.",
+      "leagueOption": "{{competition}} · {{season}} ({{players}} jugadores)",
+      "position": "Posición",
+      "sortMetric": "Ordenar por (percentil)",
+      "sortMetricHint": "Métricas clave de la posición elegida.",
+      "minMinutes": "Minutos mínimos",
+      "minMinutesHint": "El percentil solo se calcula desde 600 minutos.",
+      "minMinutesOption": "{{count}} min",
+      "limit": "Tamaño de la shortlist",
+      "limitOption": "Top {{count}}"
     },
     "history": {
       "title": "Historial de reportes",
-      "subtitle": "Todos los reportes de tu organización, incluidos los Excel que genera AthlosBot. Los enlaces de descarga duran una hora.",
+      "subtitle": "Todos los reportes de tu organización, incluidos los Excel que genera AthlosBot. \"Descargar\" baja el archivo directamente a tu equipo.",
       "loadError": "No se pudo cargar el historial",
       "search": "Buscar por título o autor…",
       "emptyTitle": "Todavía no hay reportes",
-      "emptyDescription": "Genera el primero desde el panel de arriba: semanal del plantel, post-partido o rival.",
+      "emptyDescription": "Genera el primero desde el panel de arriba: semanal, carga mensual, ficha individual, post-partido, temporada, rival o mercado.",
       "columns": {
         "date": "Fecha",
         "title": "Reporte",
