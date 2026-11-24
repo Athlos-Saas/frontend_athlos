@@ -487,6 +487,84 @@ export function fieldSVG(f: FieldSpec, clipId = 'fclip'): string {
   return out + '</g>';
 }
 
+/* ---------- Cotas (medidas reales a escala) ---------- */
+
+/**
+ * Cotas del campo: largo y ancho en los márgenes y, en una sola mitad para no
+ * ensuciar el área de juego, área grande, área chica, punto penal, radio del
+ * círculo central y ancho de portería. Los números salen del mismo `FieldSpec`
+ * con el que se dibujan las líneas (10 unidades = 1 m), así que la cota y el
+ * dibujo nunca pueden divergir. Solo deportes con marcas reglamentarias en
+ * `FIELDS` (fútbol 11, media cancha, fútbol 7); sala, básquet y libre no.
+ *
+ * `vertical`: el mundo se gira -90° en pantallas altas; cada texto se
+ * contra-gira para que siempre se lea de izquierda a derecha.
+ */
+export function dimsSVG(f: FieldSpec, vertical: boolean, locale = 'es'): string {
+  if (f.kind !== 'soccer') return '';
+  const L = f.L * 10;
+  const W = f.W * 10;
+  const cy = W / 2;
+  const m = f.m * 10;
+  const fs = r1(18 * Math.max(f.s, 0.75));
+  const sfs = r1(fs * 0.72);
+  const col = '#F2C14E';
+  const meters = (u: number) => `${(u / 10).toLocaleString(locale, { maximumFractionDigits: 2 })} m`;
+  const ln = `stroke="${col}" stroke-width="${r1(1.3 * Math.max(f.s, 0.7))}" fill="none"`;
+  const dash = `${ln} stroke-dasharray="6 4" opacity=".85"`;
+  // Halo oscuro bajo el texto (paint-order) para que se lea sobre el césped y las líneas blancas.
+  const label = (x: number, y: number, text: string, angle = 0, size = fs) => {
+    const a = angle + (vertical ? 90 : 0);
+    const rot = a ? ` transform="rotate(${a} ${r1(x)} ${r1(y)})"` : '';
+    return `<text x="${r1(x)}" y="${r1(y)}"${rot} text-anchor="middle" dominant-baseline="central" font-family="${FONT}" font-weight="700" font-size="${size}" fill="${col}" stroke="#13261B" stroke-width="${r1(size / 4)}" stroke-linejoin="round" paint-order="stroke">${text}</text>`;
+  };
+  // Cota con topes: segmento entre dos puntos y marcas perpendiculares de `t` unidades.
+  const cota = (x1: number, y1: number, x2: number, y2: number, t = 6) => {
+    const horiz = y1 === y2;
+    const tk = (x: number, y: number) => (horiz ? `M${x},${y - t}V${y + t}` : `M${x - t},${y}H${x + t}`);
+    return `<path d="M${x1},${y1}L${x2},${y2}${tk(x1, y1)}${tk(x2, y2)}" ${ln}/>`;
+  };
+
+  let out = '<g pointer-events="none">';
+  // Largo (margen superior) y ancho (margen derecho, más allá de la portería).
+  const x0 = f.half ? L / 2 : 0;
+  const yTop = -m * 0.55;
+  out += cota(x0, yTop, L, yTop) + label((x0 + L) / 2, yTop, meters(L - x0));
+  const xR = L + m * 0.72;
+  out += cota(xR, 0, xR, W) + label(xR, cy, meters(W), -90);
+
+  // Marcas interiores en una sola mitad: la izquierda, o la derecha si es media cancha.
+  const side = f.half ? 1 : 0;
+  const X = (v: number) => (side ? L - v : v);
+  const [pd, pw] = f.pa!;
+  const [gd, gw] = f.ga!;
+  const sp = f.spot!;
+  const cc = f.cc!;
+  const [gW, gD] = f.goal!;
+  const off = 14 * Math.max(f.s, 0.75);
+
+  // Área grande: profundidad bajo su línea inferior y ancho por dentro.
+  const yPa = cy + pw / 2 + off;
+  out += cota(X(0), yPa, X(pd), yPa) + label((X(0) + X(pd)) / 2, yPa + sfs * 0.9, meters(pd), 0, sfs);
+  const xPa = X(pd - off);
+  out += cota(xPa, cy - pw / 2, xPa, cy + pw / 2) + label(xPa, cy - pw / 4, meters(pw), -90, sfs);
+  // Área chica: profundidad sobre su línea superior y ancho por dentro.
+  const yGa = cy - gw / 2 - off * 0.7;
+  out += cota(X(0), yGa, X(gd), yGa, 4) + label((X(0) + X(gd)) / 2, yGa - sfs * 0.8, meters(gd), 0, sfs);
+  const xGa = X(gd - off * 0.7);
+  out += cota(xGa, cy - gw / 2, xGa, cy + gw / 2, 4) + label(xGa, cy + gw / 4, meters(gw), -90, sfs);
+  // Punto penal: distancia desde la línea de meta.
+  out += `<path d="M${X(0)},${cy}H${X(sp)}" ${dash}/>` + label((X(gd) + X(sp)) / 2, cy - sfs * 0.8, meters(sp), 0, sfs);
+  // Portería: ancho junto a la red, en el margen izquierdo. En media cancha
+  // ese margen lo ocupa la cota del ancho, así que ahí se omite.
+  if (!f.half) out += label(-gD - off * 0.6, cy, meters(gW), -90, sfs);
+  // Radio del círculo central, a 45° hacia la mitad anotada.
+  const k = Math.SQRT1_2 * cc;
+  const ex = side ? L / 2 + k : L / 2 - k;
+  out += `<path d="M${L / 2},${cy}L${ex},${cy + k}" ${dash}/>` + label((L / 2 + ex) / 2 + (side ? 1 : -1) * sfs * 0.9, cy + k / 2, `r ${meters(cc)}`, 0, sfs);
+  return out + '</g>';
+}
+
 /* ---------- SVG de piezas y dibujos ---------- */
 
 function teamColor(d: Drill, o: BoardObject): string {
@@ -627,11 +705,12 @@ export function drawSVG(w: Drawing, f: FieldSpec, selected: boolean): string {
 /* ---------- Exportar imagen ---------- */
 
 /** PNG del ejercicio con el encabezado del prototipo (número, nombre, sesión, equipo, minutos, jugadores). */
-export async function renderDrillPng(s: TrainingSession, drillIndex: number, fallbackDrillName: string): Promise<Blob> {
+/** `dimsLocale`: idioma de las cotas si están visibles en pantalla; `null` = PNG sin cotas. */
+export async function renderDrillPng(s: TrainingSession, drillIndex: number, fallbackDrillName: string, dimsLocale: string | null = null): Promise<Blob> {
   const d = s.drills[drillIndex];
   const f = fieldOf(d);
   const b = bbox(f);
-  const inner = fieldSVG(f) + d.drawings.map((w) => drawSVG(w, f, false)).join('') + d.objects.map((o) => objSVG(o, d, f, 0, false)).join('');
+  const inner = fieldSVG(f) + (dimsLocale ? dimsSVG(f, false, dimsLocale) : '') + d.drawings.map((w) => drawSVG(w, f, false)).join('') + d.objects.map((o) => objSVG(o, d, f, 0, false)).join('');
   const W = 1800;
   const H = Math.round((b.h * W) / b.w);
   const head = 120;

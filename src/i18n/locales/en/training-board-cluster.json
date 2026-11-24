@@ -199,6 +199,8 @@
     },
     "top": {
       "exitFullscreen": "Exit full screen (Esc)",
+      "showDims": "Show field measurements",
+      "hideDims": "Hide field measurements",
       "fullscreen": "Full screen",
       "redo": "Redo (Ctrl+Y)",
       "redoShort": "Redo",

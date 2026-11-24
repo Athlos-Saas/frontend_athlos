@@ -199,6 +199,8 @@
     },
     "top": {
       "exitFullscreen": "Salir de pantalla completa (Esc)",
+      "showDims": "Mostrar medidas del campo",
+      "hideDims": "Ocultar medidas del campo",
       "fullscreen": "Pantalla completa",
       "redo": "Rehacer (Ctrl+Y)",
       "redoShort": "Rehacer",

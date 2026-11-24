@@ -7,6 +7,7 @@ import {
   FolderOpen,
   ImageDown,
   Maximize2,
+  Ruler,
   Menu,
   Minimize2,
   Play,
@@ -47,6 +48,7 @@ import {
   downloadBlob,
   drawSVG,
   fieldOf,
+  dimsSVG,
   fieldSVG,
   formationsFor,
   isDrawTool,
@@ -138,6 +140,8 @@ interface Store {
 
 const MAX_HIST = 80;
 const SAVE_DEBOUNCE_MS = 650;
+/** Preferencia del navegador para mostrar las cotas del campo ('0' = ocultas). */
+const DIMS_KEY = 'athlos.tacticalBoard.dims';
 
 export function TacticalBoard({ orgId, userId }: { orgId: string; userId: string }) {
   const { t, i18n } = useTranslation();
@@ -215,6 +219,21 @@ export function TacticalBoard({ orgId, userId }: { orgId: string; userId: string
 
   const fs = useFullscreen(rootRef);
 
+  // Cotas del campo (medidas reales a escala). Visibles por defecto; la
+  // preferencia es del navegador, no de la sesión: es una ayuda de lectura,
+  // no parte del ejercicio. Ref además del estado porque renderBoard también
+  // corre desde el ResizeObserver, con un cierre viejo.
+  const [showDims, setShowDims] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(DIMS_KEY) !== '0';
+    } catch {
+      return true;
+    }
+  });
+  const showDimsRef = useRef(showDims);
+  showDimsRef.current = showDims;
+  const dimsLocale = i18n.language;
+
   // Plantel para las fichas del equipo A (el propio). El equipo elegido se
   // guarda en la sesión; si no hay o ya no existe, el primero (temporada más
   // reciente), igual que Equipos y el Módulo entrenador.
@@ -258,12 +277,12 @@ export function TacticalBoard({ orgId, userId }: { orgId: string; userId: string
     const f = field();
     const b = bbox(f);
     s.vertical = isVertical(f);
-    const key = d.field + '|' + s.vertical;
+    const key = d.field + '|' + s.vertical + '|' + showDimsRef.current + '|' + dimsLocale;
     if (key !== s.fieldKey) {
       s.fieldKey = key;
       svg.setAttribute('viewBox', s.vertical ? `${b.y} ${-(b.x + b.w)} ${b.h} ${b.w}` : `${b.x} ${b.y} ${b.w} ${b.h}`);
       world.setAttribute('transform', s.vertical ? 'rotate(-90)' : '');
-      fieldRef.current.innerHTML = fieldSVG(f);
+      fieldRef.current.innerHTML = fieldSVG(f) + (showDimsRef.current ? dimsSVG(f, s.vertical, dimsLocale) : '');
     }
     const rot = s.vertical ? 90 : 0;
     const textFallback = tx().text;
@@ -1127,9 +1146,21 @@ export function TacticalBoard({ orgId, userId }: { orgId: string; userId: string
 
   /* ---------- Exportar / importar ---------- */
 
+  const toggleDims = () => {
+    const next = !showDims;
+    showDimsRef.current = next;
+    setShowDims(next);
+    try {
+      localStorage.setItem(DIMS_KEY, next ? '1' : '0');
+    } catch {
+      /* sin almacenamiento (modo privado): la preferencia dura la visita */
+    }
+    fullRender();
+  };
+
   const exportPNG = async () => {
     try {
-      const blob = await renderDrillPng(s.S, s.cur, tx().drill);
+      const blob = await renderDrillPng(s.S, s.cur, tx().drill, showDims ? dimsLocale : null);
       downloadBlob(blob, slug(drill().name) + '.png');
       toast({ title: t('trainingBoard.toast.pngDone', 'Imagen exportada'), variant: 'success' });
     } catch {
@@ -1777,6 +1808,16 @@ export function TacticalBoard({ orgId, userId }: { orgId: string; userId: string
         <Button className="hidden lg:inline-flex" onClick={exportPNG}>
           <ImageDown className="size-4" />
           {t('trainingBoard.export.png', 'Exportar imagen')}
+        </Button>
+        <Button
+          variant={showDims ? 'primary' : 'secondary'}
+          size="icon"
+          onClick={toggleDims}
+          aria-pressed={showDims}
+          title={showDims ? t('trainingBoard.top.hideDims', 'Ocultar medidas del campo') : t('trainingBoard.top.showDims', 'Mostrar medidas del campo')}
+          aria-label={showDims ? t('trainingBoard.top.hideDims', 'Ocultar medidas del campo') : t('trainingBoard.top.showDims', 'Mostrar medidas del campo')}
+        >
+          <Ruler className="size-4" />
         </Button>
         {fs.supported && (
           <Button
