@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/Skeleton';
 import { StatCard } from '@/components/ui/StatCard';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { WellbeingAlertsCard } from '@/features/wellbeing/components/WellbeingFlags';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/store/toastStore';
 import { getDateLocale } from '@/utils/dateLocale';
@@ -155,6 +156,9 @@ export default function Alertas({ orgId }: { orgId: string }) {
           accent="purple"
         />
       </div>
+
+      {/* Bienestar psicológico (032): el backend decide qué ve cada rol; sin acceso no se renderiza nada. */}
+      <WellbeingAlertsCard orgId={orgId} />
 
       {injuries.length > 0 && (
         <Card className="mb-5 border-danger/30">

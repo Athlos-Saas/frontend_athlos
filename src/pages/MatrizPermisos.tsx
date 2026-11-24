@@ -88,11 +88,13 @@ function PermissionFolder({ group, isOpen, onToggle, isNavGroup, overrides, savi
                       // la base), el checkbox refleja el AND de esas claves — no puede
                       // mostrarse "permitido" acá y "bloqueado" en la fila hermana si
                       // ambas son, en los hechos, el mismo candado.
-                      const checked = keys.every((k) => overrides.get(cellKey(k, role)) ?? row.defaultRoles.includes(role));
+                      // neverRoles: la base no concede esta fila a ese rol aunque haya override.
+                      const neverLocked = !isNavGroup && !!row.neverRoles?.includes(role);
+                      const checked = !neverLocked && keys.every((k) => overrides.get(cellKey(k, role)) ?? row.defaultRoles.includes(role));
                       const savingKey = keys.find((k) => savingKeys.has(cellKey(k, role)));
                       const navLocked = isNavGroup && row.key === ADMIN_LOCKED_NAV_KEY && role === 'admin';
                       const enforcedAdminLocked = !isNavGroup && row.enforced && role === 'admin';
-                      const locked = navLocked || enforcedAdminLocked;
+                      const locked = navLocked || enforcedAdminLocked || neverLocked;
                       const box = (
                         <Checkbox
                           checked={checked}
@@ -110,6 +112,13 @@ function PermissionFolder({ group, isOpen, onToggle, isNavGroup, overrides, savi
                               <TooltipContent>
                                 {t('matrizPermisos.tooltip.navAdminLocked', 'Los administradores siempre pueden acceder a Administración.')}
                               </TooltipContent>
+                            </Tooltip>
+                          ) : neverLocked ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex">{box}</span>
+                              </TooltipTrigger>
+                              <TooltipContent>{t('wellbeing.matrix.neverTooltip')}</TooltipContent>
                             </Tooltip>
                           ) : enforcedAdminLocked ? (
                             <Tooltip>

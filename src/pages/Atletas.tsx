@@ -26,7 +26,7 @@ export default function Atletas({ orgId, role }: { orgId: string; role: string |
           <PerfilesMl orgId={orgId} />
         </TabsContent>
         <TabsContent value="wellness">
-          <Wellness orgId={orgId} />
+          <Wellness orgId={orgId} role={role} />
         </TabsContent>
       </Tabs>
     </div>

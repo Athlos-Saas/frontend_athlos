@@ -30,6 +30,13 @@ export interface PermissionRow {
    * backend vía `key` directamente, o ser solo configuración objetivo).
    */
   enforcementKeys?: string[];
+  /**
+   * Roles a los que la base NUNCA concede esta fila, aunque se guarde un
+   * override (p. ej. bienestar psicológico para analyst/viewer, 032). Su
+   * checkbox se muestra desmarcado y bloqueado: marcarlo prometería algo que
+   * RLS y el backend no cumplen.
+   */
+  neverRoles?: OrgUserRole[];
 }
 
 export interface PermissionGroup {
@@ -97,6 +104,32 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
         gap: 'El formulario no tiene ningún gate visual — lo ve y puede intentar enviarlo cualquier rol autenticado, incluido viewer.',
         enforced: true,
         enforcementKeys: ['wellness_entries.write'],
+      },
+    ],
+  },
+  {
+    key: 'bienestar',
+    label: 'Bienestar psicológico (salud mental)',
+    rows: [
+      {
+        key: 'bienestar.ver_detalle',
+        label: 'Ver respuestas y perfil individual (dimensiones, línea base, tendencias)',
+        defaultRoles: ['admin', 'medical'],
+        comoSeGatea:
+          'RLS: select en wellbeing_checkins vía wellbeing_access_level() (032) y backend GET /v1/wellbeing — conectado a este checkbox. Coach desmarcado por defecto: solo ve el resumen y las banderas. Cargar en nombre del jugador exige además ser admin o medical.',
+        enforced: true,
+        enforcementKeys: ['wellbeing.read'],
+        neverRoles: ['analyst', 'viewer'],
+      },
+      {
+        key: 'bienestar.ver_banderas',
+        label: 'Ver estado resumido y banderas (sin respuestas ni puntuaciones)',
+        defaultRoles: ['admin', 'medical', 'coach'],
+        comoSeGatea:
+          'Backend: GET /v1/wellbeing/flags (Alertas) y la pestaña de la ficha en modo resumen — conectado a este checkbox. Quien tiene "ver respuestas" ve las banderas igual. "Pidió hablar con alguien" solo lo ve quien tiene "ver respuestas".',
+        enforced: true,
+        enforcementKeys: ['wellbeing.flags'],
+        neverRoles: ['analyst', 'viewer'],
       },
     ],
   },

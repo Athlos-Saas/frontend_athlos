@@ -10,11 +10,12 @@
  * siempre de su propio jugador.
  *
  * Orden de la página = orden de uso: 1) wellness de hoy (lo que se hace a
- * diario), 2) su carga, 3) su ficha, 4) sus partidos en video, 5) sus
+ * diario, con el bloque de bienestar psicológico) y el check-in semanal
+ * opcional, 2) su carga, 3) su ficha, 4) sus partidos en video, 5) sus
  * lesiones (sin notas clínicas).
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Activity, CheckCircle2, Clapperboard, HeartPulse, LogOut, Minus, Plus, Stethoscope, UserRound } from 'lucide-react';
+import { Activity, Brain, CheckCircle2, Clapperboard, HeartPulse, LogOut, Minus, Plus, Stethoscope, UserRound } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { TrendAreaChart } from '@/components/charts/TrendAreaChart';
@@ -49,6 +50,12 @@ import {
   usePlayerVideoTracks,
   usePlayerWellness,
 } from '@/features/playerProfile/queries';
+import { shiftIsoDate } from '@/features/wellbeing/dates';
+import { compactAnswers, type WellbeingAnswers } from '@/features/wellbeing/items';
+import { useMyWellbeingCheckins, useSubmitWellbeing } from '@/features/wellbeing/queries';
+import { PORTAL_WELLBEING_LOOKBACK_DAYS, WeeklyCheckinCard } from '@/features/wellbeing/components/WeeklyCheckinCard';
+import { WellbeingDailyFields } from '@/features/wellbeing/components/WellbeingFields';
+import { WellbeingPrivacyNote } from '@/features/wellbeing/components/WellbeingNotices';
 import { toast } from '@/store/toastStore';
 import { cn } from '@/utils/cn';
 
@@ -190,8 +197,9 @@ function PortalContent({ orgId, playerId }: { orgId: string; playerId: string })
   const { t } = useTranslation();
   return (
     <div className="space-y-8">
-      <section id={SECTION_IDS.today} className="scroll-mt-32">
+      <section id={SECTION_IDS.today} className="scroll-mt-32 space-y-4">
         <WellnessToday orgId={orgId} playerId={playerId} />
+        <WeeklyCheckinCard orgId={orgId} playerId={playerId} today={localIsoDate()} />
       </section>
       <section id={SECTION_IDS.load} className="scroll-mt-32">
         <SectionTitle icon={Activity}>{t('athletePortal.load.title', 'Mi carga reciente')}</SectionTitle>
@@ -235,7 +243,9 @@ const DEFAULT_CHECK_IN: Omit<WellnessCheckIn, 'entry_date'> = {
   sleep_hours: 7.5,
   sleep_quality: 3,
   soreness: 2,
-  mood: 4,
+  // Sin preselección: el ánimo ahora vive en el bloque de bienestar, con anclas
+  // verbales, y un valor por defecto sesga la respuesta (antes arrancaba en 4).
+  mood: null,
 };
 
 function ScalePicker({
@@ -293,7 +303,16 @@ function WellnessToday({ orgId, playerId }: { orgId: string; playerId: string })
   const wellness = usePlayerWellness(orgId, playerId);
   const submit = useSubmitWellness(orgId, playerId);
   const todayEntry = useMemo(() => (wellness.data ?? []).find((entry) => entry.entry_date === today), [wellness.data, today]);
+  // Misma consulta (misma queryKey) que el check-in semanal: una sola lectura.
+  const wellbeing = useMyWellbeingCheckins(orgId, playerId, shiftIsoDate(today, -PORTAL_WELLBEING_LOOKBACK_DAYS));
+  const submitWellbeing = useSubmitWellbeing(orgId);
+  const todayWellbeing = useMemo(
+    () => (wellbeing.data ?? []).find((row) => row.kind === 'daily' && row.entry_date === today),
+    [wellbeing.data, today],
+  );
   const [form, setForm] = useState(DEFAULT_CHECK_IN);
+  const [answers, setAnswers] = useState<WellbeingAnswers>({});
+  const [wantsToTalk, setWantsToTalk] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   // Si ya cargó hoy, el formulario arranca con lo que cargó (corregir, no reescribir de cero).
@@ -308,34 +327,50 @@ function WellnessToday({ orgId, playerId }: { orgId: string; playerId: string })
     }));
   }, [todayEntry]);
 
+  useEffect(() => {
+    if (!todayWellbeing) return;
+    setAnswers(todayWellbeing.answers ?? {});
+    setWantsToTalk(todayWellbeing.wants_to_talk);
+  }, [todayWellbeing]);
+
   const setField = <K extends keyof typeof form>(key: K) => (value: (typeof form)[K]) => setForm((previous) => ({ ...previous, [key]: value }));
 
-  const handleSubmit = () => {
-    submit.mutate(
-      { entry_date: today, ...form },
-      {
-        onSuccess: () => {
-          setIsEditing(false);
-          toast({ title: t('athletePortal.wellness.savedTitle', 'Wellness guardado'), variant: 'success' });
-        },
-        onError: (error) => {
-          toast({
-            title: t('athletePortal.wellness.saveErrorTitle', 'No se pudo guardar tu wellness'),
-            description: error instanceof Error ? error.message : undefined,
-            variant: 'danger',
-          });
-        },
-      },
-    );
+  const handleSubmit = async () => {
+    const hasWellbeing = Object.keys(compactAnswers(answers)).length > 0 || wantsToTalk;
+    try {
+      await submit.mutateAsync({ entry_date: today, ...form });
+      // Todo el bloque de bienestar es opcional. Si el atleta vacía una fila
+      // que ya existía no se envía nada: la base no admite una fila vacía y
+      // el atleta no puede borrar (lo ya respondido queda como estaba).
+      if (hasWellbeing) {
+        await submitWellbeing.mutateAsync({ playerId, entryDate: today, kind: 'daily', answers, wantsToTalk });
+      }
+      setIsEditing(false);
+      toast({
+        title: t('athletePortal.wellness.savedTitle', 'Wellness guardado'),
+        description: wantsToTalk ? t('wellbeing.talk.sent') : undefined,
+        variant: 'success',
+      });
+    } catch (error) {
+      toast({
+        title: t('athletePortal.wellness.saveErrorTitle', 'No se pudo guardar tu wellness'),
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'danger',
+      });
+    }
   };
 
-  if (wellness.isLoading) return <Skeleton className="h-72 w-full" />;
-  if (wellness.isError) {
+  if (wellness.isLoading || wellbeing.isLoading) return <Skeleton className="h-72 w-full" />;
+  if (wellness.isError || wellbeing.isError) {
+    const error = wellness.error ?? wellbeing.error;
     return (
       <ErrorState
         title={t('athletePortal.error.sectionTitle', 'No se pudo cargar esta sección')}
-        description={wellness.error instanceof Error ? wellness.error.message : undefined}
-        onRetry={() => wellness.refetch()}
+        description={error instanceof Error ? error.message : undefined}
+        onRetry={() => {
+          wellness.refetch();
+          wellbeing.refetch();
+        }}
       />
     );
   }
@@ -358,7 +393,9 @@ function WellnessToday({ orgId, playerId }: { orgId: string; playerId: string })
               <Badge variant="warning">
                 {t('athletePortal.wellness.soreness', 'Dolor muscular (0-10)')}: {todayEntry.soreness ?? '--'}
               </Badge>
+              {todayWellbeing && <Badge variant="purple">{t('wellbeing.portal.dailyDoneBadge')}</Badge>}
             </div>
+            {todayWellbeing?.wants_to_talk && <p className="mt-2 text-xs text-muted-foreground">{t('wellbeing.talk.sent')}</p>}
           </div>
         </div>
         <Button variant="secondary" className="mt-4 w-full" onClick={() => setIsEditing(true)}>
@@ -433,16 +470,24 @@ function WellnessToday({ orgId, playerId }: { orgId: string; playerId: string })
           value={form.soreness}
           onChange={setField('soreness')}
         />
-        <ScalePicker
-          label={t('athletePortal.wellness.mood', 'Ánimo')}
-          min={1}
-          max={5}
-          value={form.mood}
-          onChange={setField('mood')}
-          lowLabel={t('athletePortal.wellness.scaleLow', 'Mal')}
-          highLabel={t('athletePortal.wellness.scaleHigh', 'Muy bien')}
-        />
-        <Button size="lg" className="w-full" isLoading={submit.isPending} onClick={handleSubmit}>
+        <div className="space-y-4 border-t border-border pt-5">
+          <div>
+            <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <Brain className="size-5 text-purple" aria-hidden="true" />
+              {t('wellbeing.portal.dailyTitle')}
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground">{t('wellbeing.portal.dailySubtitle')}</p>
+          </div>
+          <WellbeingPrivacyNote includeMood />
+          <WellbeingDailyFields
+            answers={answers}
+            onAnswer={(key, value) => setAnswers((previous) => ({ ...previous, [key]: value ?? undefined }))}
+            wantsToTalk={wantsToTalk}
+            onWantsToTalk={setWantsToTalk}
+            mood={{ value: form.mood, onChange: setField('mood') }}
+          />
+        </div>
+        <Button size="lg" className="w-full" isLoading={submit.isPending || submitWellbeing.isPending} onClick={handleSubmit}>
           {t('athletePortal.wellness.submit', 'Enviar wellness')}
         </Button>
       </div>

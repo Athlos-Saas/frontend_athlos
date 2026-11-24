@@ -1,0 +1,167 @@
+{
+  "wellbeing": {
+    "tab": "Psychological wellbeing",
+    "form": {
+      "notAnswered": "Not answered"
+    },
+    "items": {
+      "mood": { "q": "How is your mood today?", "a1": "Very low", "a2": "Low", "a3": "Okay", "a4": "Good", "a5": "Very good" },
+      "d_stress": { "q": "How much stress or pressure do you feel today?", "a1": "None", "a2": "A little", "a3": "Some", "a4": "Quite a lot", "a5": "A huge amount" },
+      "d_motivation": { "q": "How much do you want to train or compete today?", "a1": "Not at all", "a2": "A little", "a3": "As usual", "a4": "Quite a lot", "a5": "Really a lot" },
+      "d_confidence": { "q": "How sure do you feel today about what you can do in your sport?", "a1": "Not sure at all", "a2": "A little", "a3": "As usual", "a4": "Quite sure", "a5": "Very sure" },
+      "d_focus": { "q": "How clear is your head today for concentrating?", "a1": "Very scattered", "a2": "Hard to focus", "a3": "As usual", "a4": "Quite clear", "a5": "Fully focused" },
+      "d_connection": { "q": "How do you feel about your team and your people (teammates, staff, home)?", "a1": "Very bad", "a2": "Bad", "a3": "Okay", "a4": "Good", "a5": "Very good" },
+      "w_energy": { "q": "I felt energetic and wanted to move." },
+      "w_tension_nerves": { "q": "I felt nervous or tense thinking about training or matches." },
+      "w_tension_switch_off": { "q": "I found it hard to switch off from competition, even when I wanted to rest." },
+      "w_mood_enjoy": { "q": "I enjoyed the things I did, in and outside of sport." },
+      "w_mood_down": { "q": "I felt sad or down." },
+      "w_irritability": { "q": "I got angry or annoyed easily." },
+      "w_mental_fatigue": { "q": "My head felt tired or overloaded." },
+      "w_confidence": { "q": "I trusted my abilities in training and matches." },
+      "w_motivation": { "q": "I wanted to improve and give my best." },
+      "w_pressure_perform": { "q": "In important moments I was able to perform the way I know I can." },
+      "w_pressure_block": { "q": "Pressure (results, coaches, family) froze me up." },
+      "w_resilience_reset": { "q": "After a mistake I was able to leave it behind and stay focused." },
+      "w_resilience_dwell": { "q": "I kept going over my mistakes for a long time." },
+      "w_cohesion": { "q": "I felt part of the team and supported by my teammates." },
+      "w_balance_organize": { "q": "I was able to fit sport around school, work or family." },
+      "w_balance_crowded": { "q": "I felt sport left me no time for other things that matter to me." }
+    },
+    "weeklyStem": "Over the last 7 days…",
+    "weeklyScale": { "a1": "Never", "a2": "Rarely", "a3": "Sometimes", "a4": "Often", "a5": "Almost always" },
+    "talk": {
+      "q": "Would you like to talk to someone on the staff?",
+      "hint": "If you say yes, we let your club's medical staff know so they can reach out. You don't have to explain why.",
+      "yes": "Yes, I'd like that",
+      "no": "Not right now",
+      "sent": "We let your club's medical staff know: someone will reach out to you."
+    },
+    "disclaimer": {
+      "title": "A wellbeing monitoring tool, not a clinical diagnosis.",
+      "body": "Each athlete is compared only with themselves (their baseline), never with teammates. Scores summarise answers to short questions; they do not measure or label any condition.",
+      "referral": "If you see warning signs, talk to the athlete and refer them to a mental health professional."
+    },
+    "privacy": {
+      "title": "Who sees your answers?",
+      "body": "Only your club's medical staff and administrators. Your coach sees at most a general heads-up (for example, that it would be good to check in with you), not your answers, unless the club has allowed it. They are never shared outside the club.",
+      "mood": "Your mood (the first question) is saved with your wellness, as always, and your staff can see it.",
+      "noWrongAnswers": "It's not a test: there are no right or wrong answers, and you can skip any question.",
+      "urgent": "If you need help urgently, talk to a trusted adult now or call your country's emergency number."
+    },
+    "portal": {
+      "dailyTitle": "How are you feeling inside?",
+      "dailySubtitle": "6 quick questions (about 20 seconds). All of them are optional.",
+      "dailyDoneBadge": "Wellbeing recorded",
+      "weeklyTitle": "Weekly check-in",
+      "weeklySubtitle": "Optional, about 2 minutes. It helps you and your staff see how you are doing week by week.",
+      "weeklyStart": "Start weekly check-in",
+      "weeklyLater": "Not now",
+      "weeklySubmit": "Send",
+      "weeklyProgress": "{{answered}} of {{total}} answered",
+      "weeklySavedTitle": "Weekly check-in saved. Thank you!",
+      "weeklyDoneTitle": "Weekly check-in done",
+      "weeklyDoneDescription": "We'll suggest the next one from {{date}}.",
+      "weeklyErrorTitle": "Couldn't load the weekly check-in",
+      "saveErrorTitle": "Couldn't save the check-in"
+    },
+    "staff": {
+      "title": "Psychological wellbeing (entered on the athlete's behalf)",
+      "subtitle": "For answers the athlete gave on paper or during a consultation. Medical staff and administrators only.",
+      "player": "Athlete",
+      "date": "Date",
+      "kind": "Type",
+      "kindDaily": "Daily check-in",
+      "kindWeekly": "Weekly check-in",
+      "moodElsewhere": "Overall mood is recorded in the wellness form.",
+      "editingExisting": "There is already a check-in for this athlete, date and type: saving will correct it.",
+      "save": "Save check-in",
+      "savedTitle": "Wellbeing check-in saved",
+      "saveErrorTitle": "Couldn't save the check-in",
+      "loadErrorTitle": "Couldn't load the check-in"
+    },
+    "dimensions": {
+      "mood": "Mood",
+      "calm": "Calm (low stress)",
+      "motivation": "Motivation",
+      "confidence": "Confidence",
+      "focus": "Focus",
+      "connection": "Connection with their people",
+      "energy": "Energy",
+      "serenity": "Composure (low irritability)",
+      "mental_freshness": "Mental freshness",
+      "pressure": "Handling pressure",
+      "resilience": "Bouncing back from mistakes",
+      "cohesion": "Team cohesion",
+      "life_balance": "Life-sport balance"
+    },
+    "trend": { "up": "Rising", "down": "Falling", "stable": "Stable" },
+    "status": {
+      "ok": "Within their usual range",
+      "attention": "Worth checking in",
+      "building_baseline": "Building baseline",
+      "no_data": "No recent answers"
+    },
+    "flags": {
+      "none": "No signals in recent days.",
+      "sustained_decline": {
+        "label": "Sustained decline",
+        "description": "Mood or calm below their baseline on at least 3 of the last 5 days."
+      },
+      "stress_spike": {
+        "label": "Stress spike",
+        "description": "Stress at the top of the scale, or far above what is usual for this athlete, in the last 3 days."
+      },
+      "wants_to_talk": {
+        "label": "Asked to talk to someone",
+        "description": "The athlete asked to talk to someone on the staff in the last 7 days."
+      }
+    },
+    "profile": {
+      "errorTitle": "Couldn't load psychological wellbeing",
+      "statusTitle": "Current status",
+      "lastCheckin": "Last answer: {{date}} · {{n}} days with answers in 28 days",
+      "noCheckins": "No answers yet.",
+      "flagsOnlyNote": "You see a summary. Answers and scores are visible to the medical staff only.",
+      "emptyDailyTitle": "No daily check-ins in the last 28 days",
+      "emptyDailyDescription": "The athlete answers them in their portal together with wellness; the medical staff can also enter them.",
+      "dailyRadarTitle": "Last 7 days vs their baseline",
+      "dailyRadarDescription": "0-100, 100 = most favourable state. Only dimensions with a baseline.",
+      "buildingBaseline": "Building their baseline: at least {{min}} answers in {{days}} days are needed to compare with what is usual for them.",
+      "dailyTableTitle": "Daily check-in dimensions",
+      "dailyTableDescription": "Deviation = 7-day mean minus their baseline (previous 28 days). Trend = 7 days vs 28 days.",
+      "baselinePending": "{{n}}/{{min}}",
+      "scaleNote": "0-100 scale in the favourable direction: for calm, 100 = no stress at all. One step on the 1-5 answer scale equals 25 points.",
+      "trendTitle": "Daily evolution",
+      "trendDescription": "Last 28 days; the dashed line is their baseline.",
+      "weeklyTitle": "Weekly profile by dimension",
+      "weeklyDescription": "Last weekly check-in: {{date}} ({{n}} in the last 12 weeks)",
+      "weeklyStale": "older than 2 weeks",
+      "latestWeekly": "Latest weekly",
+      "weeklyBaselinePending": "{{n}}/3",
+      "emptyWeeklyTitle": "No weekly check-ins",
+      "emptyWeeklyDescription": "The portal suggests it to the athlete once a week; it is optional.",
+      "last7": "Last 7 days",
+      "baseline": "Their baseline",
+      "col": {
+        "dimension": "Dimension",
+        "last7": "7 days",
+        "last28": "28 days",
+        "baseline": "Baseline",
+        "deviation": "Deviation",
+        "trend": "Trend",
+        "latest": "Latest"
+      }
+    },
+    "alerts": {
+      "title": "Psychological wellbeing",
+      "descriptionDetail": "Athletes with signals in recent days, starting with anyone who asked to talk to someone.",
+      "descriptionFlags": "Athletes worth checking in with. Answers are visible to the medical staff only.",
+      "empty": "No wellbeing signals in recent days.",
+      "errorTitle": "Couldn't load wellbeing signals"
+    },
+    "matrix": {
+      "neverTooltip": "The database never grants psychological wellbeing to this role, even if it is ticked here."
+    }
+  }
+}

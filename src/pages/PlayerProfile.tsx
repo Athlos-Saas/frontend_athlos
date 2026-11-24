@@ -24,6 +24,7 @@ import { deriveStatus } from '@/features/playerProfile/insights';
 import { uploadPlayerActionPhoto, uploadPlayerModel, uploadPlayerPhoto } from '@/features/playerProfile/mediaStorage';
 import { usePlayerCore, usePlayerInjuries, usePlayerMediaUrl } from '@/features/playerProfile/queries';
 import { VerifiedProfileAction } from '@/features/athleteProfile/components/VerifiedProfileAction';
+import { useWellbeingAccess } from '@/features/wellbeing/queries';
 
 const TabResumen = lazy(() => import('@/features/playerProfile/tabs/TabResumen'));
 const TabEstadisticas = lazy(() => import('@/features/playerProfile/tabs/TabEstadisticas'));
@@ -33,6 +34,7 @@ const TabSalud = lazy(() => import('@/features/playerProfile/tabs/TabSalud'));
 const TabScouting = lazy(() => import('@/features/playerProfile/tabs/TabScouting'));
 const TabDocumentos = lazy(() => import('@/features/playerProfile/tabs/TabDocumentos'));
 const TabMultimedia = lazy(() => import('@/features/playerProfile/tabs/TabMultimedia'));
+const TabBienestar = lazy(() => import('@/features/playerProfile/tabs/TabBienestar'));
 
 const TAB_FALLBACK = <Skeleton className="h-64 w-full" />;
 
@@ -55,6 +57,9 @@ export default function PlayerProfile({ orgId, role }: { orgId: string; role: st
   const mediaPhotoPath = core.data?.action_photo_url ?? core.data?.photo_url ?? null;
 
   const status = useMemo(() => deriveStatus(injuries.data ?? []), [injuries.data]);
+  // Bienestar psicológico (032): la pestaña solo existe para roles con acceso
+  // (admin, medical; coach en modo resumen). analyst/viewer ni la ven.
+  const wellbeingAccess = useWellbeingAccess(orgId, role);
   const age = calculateAge(core.data?.birthdate);
 
   const handleSave = async (updated: PlayerUpdate) => {
@@ -214,6 +219,7 @@ export default function PlayerProfile({ orgId, role }: { orgId: string; role: st
                 <TabsTrigger value="rendimiento">{t('playerProfile.tabs.rendimiento', 'Rendimiento')}</TabsTrigger>
                 <TabsTrigger value="historial">{t('playerProfile.tabs.historial', 'Historial')}</TabsTrigger>
                 <TabsTrigger value="salud">{t('playerProfile.tabs.salud', 'Salud')}</TabsTrigger>
+                {wellbeingAccess.level !== 'none' && <TabsTrigger value="bienestar">{t('wellbeing.tab')}</TabsTrigger>}
                 <TabsTrigger value="scouting">{t('playerProfile.tabs.scouting', 'Scouting')}</TabsTrigger>
                 <TabsTrigger value="documentos">{t('playerProfile.tabs.documentos', 'Documentos')}</TabsTrigger>
                 <TabsTrigger value="multimedia">{t('playerProfile.tabs.multimedia', 'Multimedia')}</TabsTrigger>
@@ -244,6 +250,13 @@ export default function PlayerProfile({ orgId, role }: { orgId: string; role: st
                   <TabSalud orgId={orgId} playerId={playerId} />
                 </Suspense>
               </TabsContent>
+              {wellbeingAccess.level !== 'none' && (
+                <TabsContent value="bienestar">
+                  <Suspense fallback={TAB_FALLBACK}>
+                    <TabBienestar orgId={orgId} playerId={playerId} level={wellbeingAccess.level} />
+                  </Suspense>
+                </TabsContent>
+              )}
               <TabsContent value="scouting">
                 <Suspense fallback={TAB_FALLBACK}>
                   <TabScouting orgId={orgId} playerId={playerId} />

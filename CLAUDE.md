@@ -98,8 +98,8 @@ Regla para cualquier cosa nueva:
 
 ## Datos sensibles de atletas
 
-`wellness_entries` e `injuries` son **datos de salud de personas
-identificables**, y los videos y el `.npz` de tracking son datos biométricos de
+`wellness_entries`, `injuries` y `wellbeing_checkins` (ánimo y perfil
+psicológico) son **datos de salud de personas identificables**, y los videos y el `.npz` de tracking son datos biométricos de
 rendimiento. Estándar más alto que el resto: no salen en logs, no viajan en
 respuestas que no los necesitan, no entran a la knowledge base de AthlosBot, y
 el acceso por rol se revisa explícitamente (no todos los roles con lectura

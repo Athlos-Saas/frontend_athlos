@@ -103,7 +103,8 @@ export interface WellnessCheckIn {
   sleep_hours: number;
   sleep_quality: number;
   soreness: number;
-  mood: number;
+  /** null = no respondió (no se envía, así no pisa un ánimo cargado por el staff ese día). */
+  mood: number | null;
 }
 
 /**
@@ -117,9 +118,13 @@ export function useSubmitWellness(orgId: string, playerId: string | null) {
   return useMutation({
     mutationFn: async (entry: WellnessCheckIn) => {
       if (!playerId) throw new Error('Cuenta sin jugador enlazado.');
+      const { mood, ...rest } = entry;
       const { error } = await supabase
         .from('wellness_entries')
-        .upsert({ org_id: orgId, player_id: playerId, ...entry }, { onConflict: 'player_id,entry_date' });
+        .upsert(
+          { org_id: orgId, player_id: playerId, ...rest, ...(mood === null ? {} : { mood }) },
+          { onConflict: 'player_id,entry_date' },
+        );
       if (error) throw error;
     },
     onSuccess: () => {

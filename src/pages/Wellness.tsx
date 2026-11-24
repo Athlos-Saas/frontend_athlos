@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Spinner } from '@/components/ui/Spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
 import { usePagedRows } from '@/hooks/usePagedRows';
+import { StaffWellbeingEntry } from '@/features/wellbeing/components/StaffWellbeingEntry';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/store/toastStore';
 import type { Player, WellnessEntry } from '@/types/domain';
@@ -60,7 +61,7 @@ function SliderField({ id, label, min, max, step = 1, value, onChange }: SliderF
   );
 }
 
-export default function Wellness({ orgId }: { orgId: string }) {
+export default function Wellness({ orgId, role = null }: { orgId: string; role?: string | null }) {
   const { t } = useTranslation();
   const [players, setPlayers] = useState<Player[] | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState('');
@@ -235,6 +236,9 @@ export default function Wellness({ orgId }: { orgId: string }) {
             <Pagination page={entriesPager.page} pageCount={entriesPager.pageCount} onPageChange={entriesPager.setPage} className="mt-4" />
           )}
         </Card>
+
+        {/* Bienestar psicológico: solo admin/medical con acceso detail (032). */}
+        <StaffWellbeingEntry orgId={orgId} role={role} players={players} />
       </div>
     </div>
   );
